@@ -9,7 +9,7 @@ a person would see and checks it against itself:
   a polyline with gaps; a distance that is not the sum of its parts; a summary
   that says "same path" about two paths; an explanation pointing at a segment
   the chosen route actually uses; a time that is not distance over the stated
-  pace.
+  pace; a sentence with "inf" or "nan" where a number should be.
 * **Flags** are outcomes worth a person's eyes, not errors: a long detour taken
   to avoid missing data rather than a recorded barrier; a profile route
   physically shorter than the shortest one; a snap far from the requested point.
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -358,6 +359,21 @@ def _seconds(route: Route) -> tuple[int, int]:
     return (round(route.duration.low_seconds), round(route.duration.high_seconds))
 
 
+#: A number a person cannot read: ``inf`` or ``nan`` printed into a sentence.
+_NOT_A_NUMBER = re.compile(r"\b(?:inf|nan)\b", re.IGNORECASE)
+
+
+def check_wording(text: str | None, profile: str | None) -> list[Finding]:
+    """What people read never carries a number that is not one.
+
+    Found on real data: open farmland answered "The origin is inf m from the
+    nearest mapped path".
+    """
+    if text is None or not _NOT_A_NUMBER.search(text):
+        return []
+    return [Finding("wording", "defect", profile, f"unreadable number in {text!r}")]
+
+
 def audit_case(
     graph: RoutableGraph,
     case: AuditCase,
@@ -449,6 +465,10 @@ def audit_case(
         if serialize is not None:
             outcome.findings.extend(check_response(serialize(comparison), comparison))
         outcome.profiles.append(result)
+
+    for result in outcome.profiles:
+        for text in (result.headline, result.failure):
+            outcome.findings.extend(check_wording(text, result.profile))
 
     if len(set(fingerprints.values())) > 1:
         outcome.findings.append(
