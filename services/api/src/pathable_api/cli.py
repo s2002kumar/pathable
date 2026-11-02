@@ -30,6 +30,8 @@ import asyncio
 import collections
 import datetime as dt
 import json
+import os
+import platform
 import sys
 import time
 import uuid
@@ -240,7 +242,7 @@ from pathable_api.routing.activation import (
     rollback_target,
     verify_rollback_target,
 )
-from pathable_api.routing.benchmark import build_measurement_grid, measure
+from pathable_api.routing.benchmark import build_measurement_grid, measure, measure_corpus
 from pathable_api.routing.evaluation import as_records, compare_algorithms, evaluate
 from pathable_api.routing.graph import GraphRepository, NoActiveDatasetError, graph_from_payload
 from pathable_api.routing.load_benchmark import (
@@ -388,6 +390,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Profile to measure; repeatable. Defaults to standard and wheelchair.",
     )
+
+    corpus_bench = benchmark_actions.add_parser(
+        "corpus",
+        help=(
+            "Time Dijkstra, A* and the whole comparison on the fixed Waterloo journey "
+            "corpus, and check the two searches agree on cost. Warm, single process."
+        ),
+    )
+    corpus_bench.add_argument(
+        "--region", default="waterloo", choices=sorted(region.slug for region in PILOT_REGIONS)
+    )
+    corpus_bench.add_argument("--repeats", type=int, default=5)
+    corpus_bench.add_argument(
+        "--profile",
+        action="append",
+        default=None,
+        help="Profile to measure; repeatable. Defaults to standard and wheelchair.",
+    )
+    corpus_bench.add_argument("--json", default=None, help="Write the full report here.")
 
     load_bench = benchmark_actions.add_parser(
         "load",
@@ -1176,6 +1197,8 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 return await _truth_audit(database, args)
             case "benchmark" if args.benchmark_command == "load":
                 return await _benchmark_load(database, args)
+            case "benchmark" if args.benchmark_command == "corpus":
+                return await _benchmark_corpus(database, args)
             case "benchmark":
                 return await _benchmark(database, args)
             case "gazetteer" if args.gazetteer_command == "build":
@@ -1788,6 +1811,82 @@ async def _benchmark(database: Database, args: argparse.Namespace) -> int:
             f"{summary.profile:<18}{summary.samples:>5}{summary.failures:>6}"
             f"{summary.p50_ms:>10.2f}{summary.p95_ms:>10.2f}{summary.max_ms:>10.2f}"
         )
+    return EXIT_OK
+
+
+async def _benchmark_corpus(database: Database, args: argparse.Namespace) -> int:
+    """Measure routing on the fixed corpus, with the conditions written beside it."""
+    if args.repeats < 1:
+        print("error: ask for at least one repeat.", file=sys.stderr)
+        return EXIT_MISCONFIGURED
+    profiles = [get_profile(key) for key in (args.profile or ["standard", "wheelchair"])]
+    definition = region_definition(args.region)
+
+    before = machine_memory()
+    repository = GraphRepository()
+    async with database.session() as session:
+        graph = await repository.active_graph(session, definition.slug)
+    loaded = process_memory()
+
+    report = measure_corpus(
+        graph,
+        WATERLOO_CASES,
+        profiles,
+        repeats=args.repeats,
+        compare_profile=get_profile("wheelchair"),
+    )
+    after = process_memory()
+    payload: dict[str, object] = {
+        "region": definition.slug,
+        "dataset_id": str(graph.dataset_id),
+        "dataset_checksum": graph.checksum,
+        "routing_policy_version": ROUTING_POLICY_VERSION,
+        "environment": {
+            **describe_environment(),
+            "processor": platform.processor(),
+            "logical_cpus": os.cpu_count(),
+        },
+        "machine_memory_before_load": asdict(before),
+        "graph": {
+            "nodes": graph.node_count,
+            "segments": graph.segment_count,
+            "load_seconds_reported": round(graph.load_seconds, 2),
+            "load_note": (
+                "One load, timed by the loader itself, on the machine described. "
+                "`pathable benchmark load` is the dedicated measurement."
+            ),
+        },
+        "process_memory_after_load": asdict(loaded),
+        "process_memory_after_routing": asdict(after),
+        "cases": len(WATERLOO_CASES),
+        "profiles": [profile.key for profile in profiles],
+        **report,
+    }
+
+    summary = report["summary"]
+    print(
+        f"{definition.display_name}: {graph.node_count} nodes, {graph.segment_count} segments, "
+        f"routing policy {ROUTING_POLICY_VERSION}, {args.repeats} repeats per journey."
+    )
+    for profile_key, algorithms in summary["by_profile"].items():
+        for algorithm, figures in algorithms.items():
+            print(
+                f"  {profile_key:<12}{algorithm:<10} n {figures['n']:>3}  "
+                f"p50 {figures['p50_ms']} ms  p95 {figures['p95_ms']} ms  "
+                f"max {figures['max_ms']} ms  median expanded {figures['median_expanded_nodes']}"
+            )
+    agreement = summary["cost_agreement"]
+    print(f"  cost agreement: {agreement['agree']} agree, {agreement['disagree']} disagree")
+    print(f"  comparison (wheelchair, A*): {summary['comparison']}")
+    print(f"  RSS after load {loaded.rss_mb} MB, peak {after.peak_rss_mb} MB")
+
+    if args.json:
+        Path(args.json).write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"Wrote {args.json}")
+    if agreement["disagree"]:
+        return EXIT_FAILED
     return EXIT_OK
 
 

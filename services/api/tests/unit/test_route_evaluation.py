@@ -13,6 +13,7 @@ import pytest
 
 from pathable_api.geo.fixtures import NODES, build_synthetic_network
 from pathable_api.routing.ablation import build_variants, run_ablation, summarise_ablation
+from pathable_api.routing.benchmark import measure_corpus
 from pathable_api.routing.evaluation import (
     CaseComparison,
     RouteCase,
@@ -244,3 +245,27 @@ class TestEndsThatMoved:
         assert moved.detour_m is None
         assert moved.detour_fraction is None
         assert as_records([moved])[0]["ends_moved_m"] == moved.ends_moved_m
+
+
+class TestCorpusBenchmark:
+    def test_it_times_both_searches_and_counts_their_agreement(self, graph: RoutableGraph) -> None:
+        profiles = [get_profile("standard"), get_profile("wheelchair")]
+        report = measure_corpus(
+            graph,
+            [CROSS_THE_FIXTURE, NOWHERE],
+            profiles,
+            repeats=2,
+            compare_profile=get_profile("wheelchair"),
+        )
+
+        # Two journeys, two profiles: a journey neither search can route agrees
+        # too, and is not timed as if it were a route.
+        assert report["summary"]["cost_agreement"] == {"agree": 4, "disagree": 0}
+        routed = [run for run in report["runs"] if run["routed"]]
+        assert {run["case"] for run in routed} == {"a-to-d"}
+        assert all(len(run["runs_ms"]) == 2 for run in routed)
+        for profile in ("standard", "wheelchair"):
+            for algorithm in ("dijkstra", "astar"):
+                assert report["summary"]["by_profile"][profile][algorithm]["n"] == 1
+        assert [item["case"] for item in report["comparisons"]] == ["a-to-d", "off-network"]
+        assert "perf_counter" in report["method"]
