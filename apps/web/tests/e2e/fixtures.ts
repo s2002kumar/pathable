@@ -259,8 +259,8 @@ function comparisonFor(origin: Point, destination: Point) {
         pace_label: 'walking pace',
         basis: 'assumed_pace',
       },
-      // Both routes are timed at the traveller's pace, so the times compare.
-      pace_profile: 'wheelchair',
+      // The shortest route is always timed at walking pace.
+      pace_profile: 'standard',
       coordinates: straight,
       segments: segments.standard,
       ...snapped,
@@ -366,7 +366,7 @@ function comparisonFor(origin: Point, destination: Point) {
       },
     ],
     dataset: DATASET,
-    routing_policy_version: 2,
+    routing_policy_version: 3,
     ml_predictions_used: false,
     summary: {
       kind: 'different_path',
@@ -547,7 +547,7 @@ export const NO_ACCESSIBLE_ROUTE = {
       pace_label: 'walking pace',
       basis: 'assumed_pace',
     },
-    pace_profile: 'wheelchair',
+    pace_profile: 'standard',
     coordinates: [
       [-80.54, 43.47],
       [-80.5385, 43.47],
@@ -606,13 +606,13 @@ export const NO_ACCESSIBLE_ROUTE = {
     acquired_at: '2026-08-12T00:00:00+00:00',
     attribution: '© OpenStreetMap contributors, ODbL 1.0',
   },
-  routing_policy_version: 2,
+  routing_policy_version: 3,
   ml_predictions_used: false,
   summary: {
-    kind: 'different_path',
-    headline: '+226 m to avoid 1 recorded stairway.',
-    primary_code: 'avoids_stairs',
-    primary_basis: 'recorded',
+    kind: 'no_profile_route',
+    headline: 'No route found that meets the wheelchair profile.',
+    primary_code: null,
+    primary_basis: null,
   },
 };
 

@@ -79,17 +79,18 @@ test.describe('route comparison', () => {
       await expect(page.getByTestId('mobile-stairs')).toContainText('1 on shortest');
       return;
     }
-    await expect(page.getByTestId('difference-extra')).toHaveText('+226 m detour');
-    // The engine's own statement, word for word.
-    await expect(page.getByTestId('main-difference')).toContainText(
-      'Avoids 1 recorded stairway on the shortest route (14 steps in total)',
+    await expect(page.getByTestId('difference-extra')).toHaveText('+226 m');
+    // The comparison in one line, the API's own sentence, and what it rests on.
+    await expect(page.getByTestId('comparison-headline')).toHaveText(
+      '+226 m to avoid 1 recorded stairway.',
     );
+    await expect(page.getByTestId('comparison-basis')).toHaveText('Recorded in OpenStreetMap');
     // And the four categories against the shortest route, each labelled.
     await expect(page.getByTestId('dock-stairs')).toContainText('Your profile rule');
     await expect(page.getByTestId('dock-grade')).toContainText('Recorded · OSM');
   });
 
-  test('gives no travel time for a route the profile cannot use', async ({ page }) => {
+  test('times the shortest route at walking pace, beside what rules it out', async ({ page }) => {
     await page.goto(PLANNER);
     await waitForMapReady(page);
     await chooseTwoPoints(page);
@@ -99,9 +100,12 @@ test.describe('route comparison', () => {
     await expect(shortest).not.toContainText(/Est\. \d+ min/);
     if (!isPhone(page)) {
       await expect(page.getByTestId('difference-shortest-time')).toHaveText(
-        'Time unavailable for this profile',
+        /^About \d+(–\d+)? min at walking pace$/,
       );
-      await expect(page.getByTestId('difference-accessible-time')).toHaveText(/^Est\. \d+ min$/);
+      await expect(page.getByTestId('difference-accessible-time')).toHaveText(
+        /^About \d+(–\d+)? min at an assumed wheelchair pace$/,
+      );
+      await expect(page.getByText(/min faster/)).toHaveCount(0);
     } else {
       await expect(page.getByTestId('route-blocked')).toContainText('14 recorded steps');
       await expect(shortest).toContainText('Incompatible with Wheelchair profile');
@@ -301,11 +305,17 @@ test.describe('route comparison', () => {
     await expect(page.getByRole('button', { name: /try again/i })).toBeVisible();
   });
 
-  test('place search is submit-only', async ({ page }) => {
-    // Per-keystroke geocoding is forbidden by the provider's usage policy.
-    const searches: string[] = [];
+  test('place search suggests as you type, and stops when the provider will not', async ({
+    page,
+  }) => {
+    // A provider whose usage policy forbids per-keystroke queries answers an
+    // as-you-type search with "not searched"; the field then searches only
+    // when asked.
+    const searches: Array<Record<string, unknown>> = [];
     page.on('request', (request) => {
-      if (request.url().includes('/api/v1/geocode/search')) searches.push(request.url());
+      if (request.url().includes('/api/v1/geocode/search')) {
+        searches.push(JSON.parse(request.postData() ?? '{}') as Record<string, unknown>);
+      }
     });
     await page.route('**/api/v1/geocode/search', async (route) => {
       await route.fulfill({
@@ -319,7 +329,11 @@ test.describe('route comparison', () => {
     await page.getByLabel('Start location').fill('Waterloo Public Square');
     await page.waitForTimeout(500);
 
-    expect(searches).toHaveLength(0);
+    expect(searches).toHaveLength(1);
+    expect(searches[0]).toMatchObject({ query: 'Waterloo Public Square', autocomplete: true });
+    await page.getByLabel('Start location').fill('Waterloo Public Square King');
+    await page.waitForTimeout(500);
+    expect(searches).toHaveLength(1);
 
     await page.getByRole('button', { name: 'Search for a start' }).click();
     await expect(page.getByText(/place search is not available here/i)).toBeVisible();
@@ -368,13 +382,13 @@ test.describe('route comparison', () => {
     await page.getByLabel('Start location').fill('Davis Centre');
     await page.getByRole('button', { name: 'Search for a start' }).click();
     await expect(page.getByTestId('search-attribution')).toContainText('as of 2026-08-16');
-    await page.getByRole('button', { name: 'Davis Centre, university' }).click();
+    await page.getByRole('option', { name: 'Davis Centre, university' }).click();
     await expect(page.getByTestId('endpoint-origin-value')).toContainText('Davis Centre');
     await expect(page.getByLabel('Start location')).toHaveValue('Davis Centre');
 
     await page.getByLabel('Target endpoint').fill('Waterloo Park');
     await page.getByRole('button', { name: 'Search for a destination' }).click();
-    await page.getByRole('button', { name: 'Waterloo Park, park' }).click();
+    await page.getByRole('option', { name: 'Waterloo Park, park' }).click();
     await expect(page.getByTestId('endpoint-destination-value')).toContainText('Waterloo Park');
 
     // Choosing a place drafts the journey; the press is still the request.

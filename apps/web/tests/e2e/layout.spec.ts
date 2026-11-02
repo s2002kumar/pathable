@@ -274,7 +274,7 @@ test.describe('layout', () => {
       'difference-accessible',
       'difference-shortest',
       'difference-extra',
-      'main-difference',
+      'comparison-summary',
       'evidence-dock',
       'dock-stairs',
       'dock-grade',
@@ -454,7 +454,7 @@ test.describe('reflow', () => {
         'difference-accessible',
         'difference-shortest',
         'difference-extra',
-        'main-difference',
+        'comparison-summary',
         'evidence-dock',
       ] as const;
       expect(await visibleIn(page, ids)).toEqual(Object.fromEntries(ids.map((id) => [id, true])));
