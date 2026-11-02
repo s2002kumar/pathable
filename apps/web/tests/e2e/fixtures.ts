@@ -471,6 +471,45 @@ export async function stubRouteComparison(page: Page): Promise<void> {
   });
 }
 
+/**
+ * The comparison when the profile route had to start and end elsewhere: the
+ * longest headline the API writes, no length difference, and the caution that
+ * says how far each end moved.
+ */
+export async function stubMovedEndComparison(page: Page): Promise<void> {
+  await page.route(COMPARE_PATTERN, async (route) => {
+    const request = safeJson(route.request().postData());
+    const base = comparisonFor(
+      request?.origin ?? { longitude: -80.54, latitude: 43.47 },
+      request?.destination ?? { longitude: -80.534, latitude: 43.47 },
+    );
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...base,
+        distance_comparable: false,
+        extra_distance_m: null,
+        extra_distance_fraction: null,
+        summary: {
+          ...base.summary,
+          headline:
+            'Starts 12 m away and ends 52 m away: the map has no path for this profile to where the shortest route begins and ends.',
+        },
+        cautions: [
+          ...base.cautions,
+          {
+            code: 'profile_route_moved_endpoint',
+            summary:
+              'Your wheelchair route starts 12 m away and ends 52 m away from the shortest route’s: the path nearest the point you chose cannot be reached under this profile in the map data, so it uses the nearest one that can.',
+            evidence: { start_moved_m: 12, end_moved_m: 52 },
+          },
+        ],
+      }),
+    });
+  });
+}
+
 type Point = { longitude: number; latitude: number };
 
 function safeJson(text: string | null): { origin?: Point; destination?: Point } | null {

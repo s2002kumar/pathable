@@ -78,15 +78,21 @@
   left: var(--panel-gap);
 }
 
-/* A window shorter than the frames (SHORT_DESKTOP_QUERY): the gap dock under
-   the evidence panel would leave the panel too short for its own actions, so
-   the dock sits to the panel's right and the panel keeps the map's height. */
+/* A window shorter than the frames (SHORT_DESKTOP_QUERY): a dock under the
+   panel would leave the panel too short for what it has to show, so the dock
+   sits to the panel's right and the panel keeps the map's height. For the
+   evidence panel that is its own actions. For the comparison it is the second
+   route: at 1366 x 768 the dock left the panel 460 px, and a moved-end
+   headline pushed the shortest route's card 47 px below it — 95 px, the whole
+   card, at 1280 x 720. */
 @media (min-width: 720px) and (min-height: 600px) and (max-height: 1099px) {
-  .dockArea[data-layout='evidence'] {
+  .dockArea[data-layout='evidence'],
+  .dockArea[data-layout='compare'] {
     left: calc(410px + 2 * var(--panel-gap));
   }
 
-  .panelArea[data-layout='evidence'] {
+  .panelArea[data-layout='evidence'],
+  .panelArea[data-layout='compare'] {
     max-height: calc(100% - 2 * var(--panel-gap));
   }
 }
