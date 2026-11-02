@@ -8,13 +8,14 @@ tests/integration/test_place_search.py.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
 
-from pathable_api.geo.geocoding import GeocodingError, SearchOutcome
-from pathable_api.geo.regions import RegionDefinition
+from pathable_api.geo.geocoding import GeocodingError, NominatimGeocoder, SearchOutcome
+from pathable_api.geo.regions import RegionDefinition, region_definition
 from pathable_api.main import create_app
 from tests.conftest import build_settings, settings_from
 
@@ -111,11 +112,12 @@ class TestConfiguration:
 class _FailingProvider:
     name = "local"
     enabled = True
+    autocomplete = True
 
     async def search(
-        self, query: str, *, region: RegionDefinition, limit: int = 5
+        self, query: str, *, region: RegionDefinition, limit: int = 5, autocomplete: bool = False
     ) -> SearchOutcome:
-        del query, region, limit
+        del query, region, limit, autocomplete
         raise GeocodingError("Place search is unavailable right now.")
 
 
@@ -129,3 +131,16 @@ class TestProviderFailure:
         assert response.status_code == 503
         assert response.json()["code"] == "geocoding_unavailable"
         assert response.json()["message"] == "Place search is unavailable right now."
+
+
+class TestAutocomplete:
+    def test_a_provider_that_forbids_it_reports_it_did_not_search(self) -> None:
+        # Nominatim's usage policy forbids searching as somebody types. Asked to,
+        # it says it did not search — and makes no request.
+        provider = NominatimGeocoder(contact="ops@example.org", user_agent="test")
+        outcome = asyncio.run(
+            provider.search("Davis", region=region_definition("waterloo"), autocomplete=True)
+        )
+
+        assert outcome.searched is False
+        assert outcome.matches == []

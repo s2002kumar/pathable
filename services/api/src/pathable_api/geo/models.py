@@ -31,7 +31,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pathable_api.db.base import Base
@@ -617,6 +617,14 @@ class GazetteerEntry(Base):
     osm_type: Mapped[str] = mapped_column(String(8), nullable=False)
     osm_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     osm_version: Mapped[int | None] = mapped_column(Integer)
+    #: Short codes OpenStreetMap records for the place (`ref`, `short_name`).
+    codes: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'")
+    )
+    #: Initials generated from the name; kept apart from recorded codes.
+    initialisms: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'")
+    )
 
     __table_args__ = (
         _enum_check("kind", PlaceKind, "kind"),

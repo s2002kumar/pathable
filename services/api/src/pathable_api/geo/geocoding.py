@@ -72,6 +72,11 @@ class GeocodeResult:
     #: What the provider called this — a road, a building, a suburb. Untouched,
     #: because normalising it across providers would lose more than it gained.
     category: str | None = None
+    #: The local index only: place, address or street.
+    kind: str | None = None
+    #: The local index only: how the query matched — a recorded code, generated
+    #: initials, the name or address, or the typo-tolerant pass.
+    matched_on: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,6 +116,9 @@ class GeocodingProvider(Protocol):
     #: Whether this provider can search at all. A provider that can may still
     #: report that it did not, for a region it has no data for.
     enabled: bool
+    #: Whether this provider may be searched as somebody types. A provider that
+    #: may not answers an as-you-type search with "not searched".
+    autocomplete: bool
 
     async def search(
         self,
@@ -118,6 +126,7 @@ class GeocodingProvider(Protocol):
         *,
         region: RegionDefinition,
         limit: int = MAX_RESULTS,
+        autocomplete: bool = False,
     ) -> SearchOutcome:
         """Find candidate locations for a place name inside ``region``."""
         ...
@@ -128,6 +137,7 @@ class DisabledGeocoder:
 
     name = "disabled"
     enabled = False
+    autocomplete = False
 
     async def search(
         self,
@@ -135,8 +145,9 @@ class DisabledGeocoder:
         *,
         region: RegionDefinition,
         limit: int = MAX_RESULTS,
+        autocomplete: bool = False,
     ) -> SearchOutcome:
-        del query, region, limit
+        del query, region, limit, autocomplete
         return NOT_SEARCHED
 
 
@@ -151,6 +162,9 @@ class LocalGazetteer:
 
     name = "local"
     enabled = True
+    #: Searching is a query against the application's own database, so it may
+    #: run on every pause in typing.
+    autocomplete = True
 
     def __init__(self, database: Database | None) -> None:
         self._database = database
@@ -161,7 +175,9 @@ class LocalGazetteer:
         *,
         region: RegionDefinition,
         limit: int = MAX_RESULTS,
+        autocomplete: bool = False,
     ) -> SearchOutcome:
+        del autocomplete  # the same search either way
         text = _checked(query)
         if self._database is None:
             return NOT_SEARCHED
@@ -189,6 +205,8 @@ class LocalGazetteer:
                     longitude=match.longitude,
                     latitude=match.latitude,
                     category=match.category,
+                    kind=match.kind.value,
+                    matched_on=match.matched_on,
                 )
                 for match in found
             ],
@@ -207,6 +225,8 @@ class NominatimGeocoder:
 
     name = "nominatim"
     enabled = True
+    #: Its usage policy forbids searching as somebody types.
+    autocomplete = False
 
     def __init__(
         self,
@@ -236,7 +256,12 @@ class NominatimGeocoder:
         *,
         region: RegionDefinition,
         limit: int = MAX_RESULTS,
+        autocomplete: bool = False,
     ) -> SearchOutcome:
+        if autocomplete:
+            # Not searched rather than refused: a client falls back to a search
+            # on submit, which the policy allows.
+            return NOT_SEARCHED
         text = _checked(query)
         if not text:
             return SearchOutcome(attribution=NOMINATIM_ATTRIBUTION)
