@@ -22,6 +22,7 @@ Two things have to be got right for the split to be honest:
 
 from __future__ import annotations
 
+import math
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -88,7 +89,6 @@ class EdgeIndex:
         longitude: float,
         latitude: float,
         *,
-        candidates: int = 12,
         accept: Callable[[RoutableEdge], bool] | None = None,
         max_distance_m: float | None = None,
     ) -> EdgeSnap | None:
@@ -103,35 +103,42 @@ class EdgeIndex:
         "No route exists" and "the nearest line to your finger is a cycleway"
         are very different answers, and only one of them is true.
 
-        The index ranks by planar degree distance, which is not metres and is
-        mildly wrong at this latitude — a degree of longitude is about 73% of a
-        degree of latitude here. So it is used only to shortlist, and the winner
-        is chosen by a real geodesic measurement among the candidates.
+        The index works in degrees, which are not metres: a degree of longitude
+        is about 73% of a degree of latitude here. So it only gathers
+        candidates, inside a window wide enough to hold every segment within a
+        distance in metres, and the winner is chosen by geodesic measurement. A
+        winner further away than the window's distance is not trusted, because a
+        segment just outside the window can be nearer; the window widens instead.
+        Stopping at the first window that held any segment at all let closed
+        paths within 60 m hide an open one 100 m away, inside the snapping limit.
         """
         if self._tree is None:
             return None
 
         point = Point(longitude, latitude)
 
-        # The overwhelmingly common case: the nearest segments are usable. Try
-        # the tree's own nearest query first, which is about a hundred times
-        # cheaper than a radius sweep, and only widen the search when everything
-        # close by is closed to this traveller.
-        best = self._best_of(
-            point,
-            self._shortlist(point, candidates=candidates, filtered=False),
-            accept=accept,
-            max_distance_m=max_distance_m,
-        )
-        if best is not None or accept is None:
-            return best
+        # The nearest segment in degrees is rarely far from the nearest in
+        # metres, so a first window of its real distance almost always settles
+        # it: the common case costs one small query, not a sweep.
+        planar = self._tree.query_nearest(point, return_distance=False, all_matches=True)
+        first_m = min(_project_onto(self._edges[int(index)], point).distance_m for index in planar)
+        radii = (max(first_m, _SMALLEST_WINDOW_M), *(r for r in _SEARCH_RADII_M if r > first_m))
 
-        return self._best_of(
-            point,
-            self._shortlist(point, candidates=candidates, filtered=True),
-            accept=accept,
-            max_distance_m=max_distance_m,
-        )
+        best: EdgeSnap | None = None
+        for radius_m in radii:
+            best = self._best_of(
+                point,
+                self._within(point, radius_m),
+                accept=accept,
+                max_distance_m=max_distance_m,
+            )
+            if best is not None and best.distance_m <= radius_m:
+                return best
+            if max_distance_m is not None and radius_m >= max_distance_m:
+                # Anything usable within the limit was inside this window and
+                # would have been returned.
+                return None
+        return best
 
     def _best_of(
         self,
@@ -153,39 +160,34 @@ class EdgeIndex:
                 best = snap
         return best
 
-    def _shortlist(self, point: Point, *, candidates: int, filtered: bool) -> list[int]:
-        """Candidate segment indices, nearest first.
+    def _within(self, point: Point, radius_m: float) -> list[int]:
+        """Every segment that could be within `radius_m` metres, and some that are not.
 
-        Without a filter the tree's own nearest query is enough. With one, the
-        nearest few may all be unusable, so a radius search is needed to reach
-        past them — bounded, so a point genuinely off the network still fails
-        rather than dragging in the whole city.
+        The window is a circle in degrees whose radius is the distance in
+        degrees of longitude, the shorter axis, so it covers the distance north
+        and south with room to spare.
         """
-        if not filtered:
-            indices = self._tree.query_nearest(  # type: ignore[union-attr]
-                point, max_distance=None, return_distance=False, all_matches=True, exclusive=False
-            )
-            return [int(index) for index in indices][:candidates]
-
-        for radius_m in _SEARCH_RADII_M:
-            # Degrees, using the shorter of the two axes at this latitude so the
-            # window is never smaller than the distance asked for.
-            radius = radius_m / _METRES_PER_DEGREE_LONGITUDE
-            found = self._tree.query(point.buffer(radius))  # type: ignore[union-attr]
-            indices = [int(index) for index in found]
-            if indices:
-                return indices
-        return []
+        per_degree = _METRES_PER_DEGREE_LATITUDE * math.cos(math.radians(point.y))
+        radius = radius_m * _WINDOW_MARGIN / per_degree
+        found = self._tree.query(point.buffer(radius))  # type: ignore[union-attr]
+        return [int(index) for index in found]
 
 
-#: Widening windows for a filtered search. Most points resolve in the first, and
-#: the last is the point at which "there is nothing walkable near here" is the
-#: honest answer rather than a reason to keep looking.
+#: Widening windows. Most points resolve in the first, and the last is the point
+#: at which "there is nothing walkable near here" is the honest answer rather
+#: than a reason to keep looking.
 _SEARCH_RADII_M: tuple[float, ...] = (60.0, 200.0, 500.0)
 
-#: A degree of longitude at the pilot latitude, in metres. Deliberately the
-#: smaller of the two axes so a radius in degrees never under-covers.
-_METRES_PER_DEGREE_LONGITUDE = 80_000.0
+#: The first window is never smaller than this, so a point lying exactly on a
+#: segment still has a window to look in.
+_SMALLEST_WINDOW_M = 1.0
+
+#: A degree of latitude, in metres, on the sphere the window is sized on.
+_METRES_PER_DEGREE_LATITUDE = 111_320.0
+
+#: The sphere is not the ellipsoid geodesic distances are measured on; a 2%
+#: wider window absorbs the difference.
+_WINDOW_MARGIN = 1.02
 
 
 def _project_onto(edge: RoutableEdge, point: Point) -> EdgeSnap:
