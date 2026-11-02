@@ -507,9 +507,13 @@ def shadow_pair(
     return graph, shadow_kerb_graph(graph, plan), plan
 
 
-def test_a_municipal_curb_ramp_on_the_longer_crossing_moves_the_wheelchair_route() -> None:
+def test_curb_ramps_at_both_ends_of_the_longer_crossing_move_the_wheelchair_route() -> None:
     streets, nodes = two_crossings()
-    graph, shadow, plan = shadow_pair(streets, [row(1, [extent(3, 0.0, 1.5)])])
+    # One ramp at each end: since routing policy 3 a crossing's kerb is the
+    # whole crossing's, and one end alone leaves the other unknown.
+    graph, shadow, plan = shadow_pair(
+        streets, [row(1, [extent(3, 0.0, 1.5)]), row(2, [extent(3, 16.5, 18.0)])]
+    )
     journey = corner_journey(streets, nodes)
 
     result, pair = run_pair(
@@ -525,8 +529,9 @@ def test_a_municipal_curb_ramp_on_the_longer_crossing_moves_the_wheelchair_route
     assert pair is not None
     assert result.cause is not None
     assert result.cause["cost_delta_m"] < 0
+    # The crossing's one unknown-kerb charge, once, not once per half.
     assert result.cause["kerb_cost_delta_m"] == pytest.approx(-90.0)
-    assert result.cause["records"] == [1]
+    assert result.cause["records"] == [1, 2]
     assert f"{nodes['a0']}->{nodes['m1']}#0" in result.shadow.path
     assert result.shadow.unknown_kerb_crossings == result.base.unknown_kerb_crossings - 1
     assert not result.unexplained
@@ -550,10 +555,33 @@ def test_the_shortest_distance_route_never_moves() -> None:
     assert result.base.path == result.shadow.path
 
 
-def test_a_ramp_on_the_chosen_crossing_changes_only_its_cost() -> None:
+def test_a_curb_ramp_at_one_end_leaves_the_crossing_unknown() -> None:
+    # Regression for routing policy 3: one recorded kerb says nothing about the
+    # other end. Policy 2 took a lone dropped kerb as the crossing's kerb when
+    # the crossing was a single segment, and charged the other piece as unknown
+    # when it was two — the same evidence, read two ways.
     streets, nodes = two_crossings()
-    # The eastern crossing is the baseline's choice; a ramp there lowers its cost only.
-    graph, shadow, plan = shadow_pair(streets, [row(1, [extent(4, 0.0, 1.5)])])
+    graph, shadow, plan = shadow_pair(streets, [row(1, [extent(3, 0.0, 1.5)])])
+
+    result, _ = run_pair(
+        corner_journey(streets, nodes),
+        WHEELCHAIR,
+        graph,
+        shadow,
+        plan.substitutions,
+        (kerb_lookup(graph), kerb_lookup(shadow)),
+    )
+
+    assert result.base.path == result.shadow.path
+    assert result.shadow.effective_m == pytest.approx(result.base.effective_m)
+
+
+def test_ramps_on_the_chosen_crossing_change_only_its_cost() -> None:
+    streets, nodes = two_crossings()
+    # The eastern crossing is the baseline's choice; ramps there lower its cost only.
+    graph, shadow, plan = shadow_pair(
+        streets, [row(1, [extent(4, 0.0, 1.5)]), row(2, [extent(4, 12.5, 14.0)])]
+    )
 
     result, _ = run_pair(
         corner_journey(streets, nodes),

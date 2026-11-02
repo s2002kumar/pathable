@@ -30,6 +30,7 @@ from pathable_api.routing.engine import (
 )
 from pathable_api.routing.graph import RoutableGraph, graph_from_payload
 from pathable_api.routing.profiles import (
+    SELECTABLE_PROFILE_KEYS,
     STANDARD,
     MobilityProfile,
     build_custom_profile,
@@ -568,26 +569,24 @@ class TestComparison:
         )
         assert comparison.ml_predictions_used is False
 
-    def test_both_routes_are_timed_at_the_same_pace(self, graph: RoutableGraph) -> None:
-        # Regression (D5): the shortest route was timed at a standard walking
-        # pace and the accessible route at the traveller's, and the two times
-        # were shown side by side — so part of the gap was a difference in
-        # assumed pace, not in route.
-        profile = get_profile("wheelchair")
-        comparison = compare_routes(graph, origin=A, destination=D, profile=profile)
-        standard = comparison.standard_route
-        accessible = comparison.accessible_route
-        assert standard is not None
-        assert accessible is not None
-
-        assert standard.pace_profile_key == accessible.pace_profile_key == "wheelchair"
-        own_pace = compute_route(graph, origin=A, destination=D, profile=STANDARD)
-        assert standard.estimated_duration_seconds == pytest.approx(
-            own_pace.with_pace_of(profile).estimated_duration_seconds
-        )
-        assert standard.estimated_duration_seconds > own_pace.estimated_duration_seconds
-        # Only the estimate changed: the route itself is the shortest route.
-        assert standard.distance_m == pytest.approx(own_pace.distance_m)
+    def test_the_shortest_route_keeps_walking_pace_whatever_the_profile(
+        self, graph: RoutableGraph
+    ) -> None:
+        # Regression: the shortest route was re-timed at the chosen profile's
+        # pace, so switching from wheelchair to walker changed the shortest
+        # route's time although the route had not moved. It is the baseline: it
+        # is computed, and timed, for standard walking.
+        own = compute_route(graph, origin=A, destination=D, profile=STANDARD)
+        for key in SELECTABLE_PROFILE_KEYS:
+            comparison = compare_routes(graph, origin=A, destination=D, profile=get_profile(key))
+            standard = comparison.standard_route
+            accessible = comparison.accessible_route
+            assert standard is not None
+            assert accessible is not None
+            assert standard.pace_profile_key == "standard"
+            assert standard.duration == own.duration
+            assert accessible.pace_profile_key == key
+            assert accessible.duration.pace == get_profile(key).pace
 
     def test_a_custom_comparison_is_timed_at_its_base_pace(self, graph: RoutableGraph) -> None:
         comparison = compare_routes(
@@ -598,7 +597,9 @@ class TestComparison:
         )
 
         assert comparison.standard_route is not None
-        assert comparison.standard_route.pace_profile_key == "stroller"
+        assert comparison.standard_route.pace_profile_key == "standard"
+        assert comparison.accessible_route is not None
+        assert comparison.accessible_route.pace_profile_key == "stroller"
 
     def test_it_marks_what_the_profile_excludes_on_the_shortest_route(
         self, graph: RoutableGraph

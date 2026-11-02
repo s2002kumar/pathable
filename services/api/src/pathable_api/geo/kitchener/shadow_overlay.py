@@ -46,7 +46,7 @@ from typing import Any
 import duckdb
 import numpy as np
 
-from pathable_api.geo.enums import SurfaceClass
+from pathable_api.geo.enums import KerbType, SurfaceClass
 from pathable_api.geo.features import EdgeFeatures, normalise_surface
 from pathable_api.geo.kitchener.correspondence import CoordinateTransform
 from pathable_api.geo.kitchener.osm_extract import StudyExtract
@@ -516,6 +516,7 @@ def substitute_features(
     *,
     policy: str,
     digest: str,
+    node_kerbs: Mapping[str, KerbType] | None = None,
 ) -> RoutableGraph:
     """A second graph: the baseline with only the named segments' features replaced.
 
@@ -549,4 +550,8 @@ def substitute_features(
         node_positions=baseline.node_positions,
         segment_count=baseline.segment_count,
         _segments=segments,
+        node_kerbs=dict(baseline.node_kerbs) if node_kerbs is None else dict(node_kerbs),
+        # Kerbs and surfaces change; which paths connect does not.
+        component_of=baseline.component_of,
+        step_free_component_of=baseline.step_free_component_of,
     )

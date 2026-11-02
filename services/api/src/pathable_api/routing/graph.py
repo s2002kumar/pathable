@@ -24,7 +24,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from networkx import MultiDiGraph
+from networkx import MultiDiGraph, subgraph_view, weakly_connected_components
 from shapely import wkb as shapely_wkb
 from shapely.geometry import LineString, Point
 from sqlalchemy import func, select
@@ -46,6 +46,7 @@ from pathable_api.geo.features import EdgeFeatures
 from pathable_api.geo.models import DatasetVersion, GraphEdge, GraphNode, PilotRegion
 from pathable_api.geo.network import NetworkPayload
 from pathable_api.routing.snapping import EdgeIndex, EdgeSnap
+from pathable_api.routing.units import assign_units, recorded_node_kerbs
 
 logger = get_logger(__name__)
 
@@ -69,6 +70,9 @@ class RoutableEdge:
     name: str | None
     foot_forward: bool = True
     foot_backward: bool = True
+    #: The OpenStreetMap way this segment was cut from, when known. It is what
+    #: makes the pieces of one crossing or stairway one unit (`routing.units`).
+    source_way_id: str | None = None
 
     @property
     def identity(self) -> str:
@@ -139,6 +143,21 @@ class RoutableGraph:
     #: version-keyed cache already amortises across every request.
     _edge_index: EdgeIndex | None = None
     _segments: list[RoutableEdge] = field(default_factory=list)
+    #: Kerbs recorded on nodes, by node id: what each crossing's kerb was read
+    #: from, kept so a study can add a record and read the crossing again.
+    node_kerbs: dict[str, KerbType] = field(default_factory=dict)
+    #: Which part of the walkable network each node is in, joined only by
+    #: segments somebody may walk. Two points in different parts have no route
+    #: between them under any profile, and knowing it up front saves a search of
+    #: everything reachable from one end.
+    component_of: dict[str, int] = field(default_factory=dict)
+    #: The same, joined only by segments that are also not stairways: the parts
+    #: a step-free traveller can move between.
+    step_free_component_of: dict[str, int] = field(default_factory=dict)
+
+    def parts_for(self, exclude_steps: bool) -> dict[str, int]:
+        """The connected parts a traveller can move between."""
+        return self.step_free_component_of if exclude_steps else self.component_of
 
     @property
     def node_count(self) -> int:
@@ -283,6 +302,13 @@ _EDGE_COLUMNS = (
     GraphEdge.ambiguous_direction,
     GraphEdge.foot_forward,
     GraphEdge.foot_backward,
+    GraphEdge.source_way_id,
+)
+
+#: Nodes whose tags can say anything about a kerb. Only these are read: a crossing
+#: needs its kerbs, and the other 150,000 nodes' tags are never consulted.
+_KERB_NODE_CONDITION = GraphNode.raw_tags.has_key("kerb") | (
+    GraphNode.raw_tags["barrier"].astext == "kerb"
 )
 
 
@@ -325,13 +351,19 @@ async def load_graph(
         ).where(GraphEdge.dataset_version_id == dataset.id)
     )
 
-    segment_count = 0
-    segments: list[RoutableEdge] = []
-    for row in edge_rows:
-        edge = _to_routable_edge(row)
+    kerb_rows = await session.execute(
+        select(GraphNode.source_node_id, GraphNode.raw_tags).where(
+            GraphNode.dataset_version_id == dataset.id, _KERB_NODE_CONDITION
+        )
+    )
+    node_kerbs = recorded_node_kerbs((str(node_id), tags) for node_id, tags in kerb_rows)
+
+    # Crossings and stairways are costed as the units they are, so every piece
+    # is marked before any of them enters the graph.
+    segments = assign_units([_to_routable_edge(row) for row in edge_rows], node_kerbs)
+    for edge in segments:
         _add_edge(graph, edge)
-        segments.append(edge)
-        segment_count += 1
+    segment_count = len(segments)
 
     elapsed = time.perf_counter() - started
     logger.info(
@@ -354,6 +386,9 @@ async def load_graph(
         segment_count=segment_count,
         load_seconds=elapsed,
         _segments=segments,
+        node_kerbs=node_kerbs,
+        component_of=connected_parts(graph, step_free=False),
+        step_free_component_of=connected_parts(graph, step_free=True),
     )
 
 
@@ -378,20 +413,26 @@ def graph_from_payload(
         graph.add_node(node.source_node_id, x=node.longitude, y=node.latitude)
 
     for edge in payload.edges:
-        routable = RoutableEdge(
-            edge_id=uuid.uuid4(),
-            source_u=edge.source_u,
-            source_v=edge.source_v,
-            edge_key=edge.edge_key,
-            length_m=edge.length,
-            geometry=edge.geometry,
-            features=edge.features,
-            name=_name_of(edge.features.raw_tags),
-            foot_forward=edge.direction.forward,
-            foot_backward=edge.direction.backward,
+        segments.append(
+            RoutableEdge(
+                edge_id=uuid.uuid4(),
+                source_u=edge.source_u,
+                source_v=edge.source_v,
+                edge_key=edge.edge_key,
+                length_m=edge.length,
+                geometry=edge.geometry,
+                features=edge.features,
+                name=_name_of(edge.features.raw_tags),
+                foot_forward=edge.direction.forward,
+                foot_backward=edge.direction.backward,
+                source_way_id=edge.source_way_id,
+            )
         )
+
+    node_kerbs = recorded_node_kerbs((node.source_node_id, node.raw_tags) for node in payload.nodes)
+    segments = assign_units(segments, node_kerbs)
+    for routable in segments:
         _add_edge(graph, routable)
-        segments.append(routable)
 
     return RoutableGraph(
         dataset_id=dataset_id or uuid.uuid4(),
@@ -401,7 +442,39 @@ def graph_from_payload(
         node_positions=positions,
         segment_count=payload.edge_count,
         _segments=segments,
+        node_kerbs=node_kerbs,
+        component_of=connected_parts(graph, step_free=False),
+        step_free_component_of=connected_parts(graph, step_free=True),
     )
+
+
+def _walkable(edge: DirectedEdge, *, step_free: bool) -> bool:
+    features = edge.features
+    if features.foot_access.is_prohibited or features.general_access.is_prohibited:
+        return False
+    return not (step_free and features.steps is TriState.YES)
+
+
+def connected_parts(graph: MultiDiGraph[str], *, step_free: bool) -> dict[str, int]:
+    """Number each part of the walkable network, largest first, by node.
+
+    Only segments somebody may walk join two parts — and, with ``step_free``,
+    only those that are not stairways. Counting a ``foot=no`` road or an
+    ``access=private`` corridor as a connection put a Columbia Icefield
+    corridor in the same part as the rest of Waterloo while no walkable path
+    joined them. Direction is ignored: a one-way path still joins two parts, and
+    whether it can be used is the search's question, not this one's.
+    """
+    walkable = subgraph_view(
+        graph,
+        filter_edge=lambda u, v, key: _walkable(
+            graph.edges[u, v, key]["edge"], step_free=step_free
+        ),
+    )
+    parts = sorted(
+        weakly_connected_components(walkable), key=lambda nodes: (-len(nodes), min(nodes))
+    )
+    return {node: index for index, nodes in enumerate(parts) for node in nodes}
 
 
 def _add_edge(graph: MultiDiGraph[str], edge: RoutableEdge) -> None:
@@ -487,4 +560,5 @@ def _to_routable_edge(row: Any) -> RoutableEdge:
         name=row.name if isinstance(row.name, str) else None,
         foot_forward=bool(row.foot_forward),
         foot_backward=bool(row.foot_backward),
+        source_way_id=row.source_way_id,
     )
