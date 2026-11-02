@@ -527,7 +527,9 @@ def as_records(outcomes: Sequence[CaseOutcome]) -> list[dict[str, Any]]:
         case = outcome.case
         records.append(
             {
-                "key": case.key,
+                # "case", as waterloo-routes.json names a journey. Named "key",
+                # the secret scan read "gradient-40585154-up" as a credential.
+                "case": case.key,
                 "description": case.description,
                 "categories": list(case.categories),
                 "origin": list(case.origin),
