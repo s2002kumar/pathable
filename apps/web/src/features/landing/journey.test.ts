@@ -58,7 +58,9 @@ describe('the recorded journey', () => {
     // A stairway drawn as two segments is one stairway (routing policy 3).
     const stairways = new Set(
       ROUTE.standard.segments
-        .map((segment, index) => (segment.steps === 'yes' ? (segment.stairway ?? -1 - index) : null))
+        .map((segment, index) =>
+          segment.steps === 'yes' ? (segment.stairway ?? -1 - index) : null,
+        )
         .filter((unit) => unit !== null),
     );
     expect(stairways.size).toBe(ROUTE.standard.stairways);
