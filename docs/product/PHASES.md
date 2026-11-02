@@ -753,6 +753,38 @@ It adds no routing capability. It is part of what Gate D asks for, not Gate D.
 
 ---
 
+## Waterloo Core v2 (2026-11-02)
+
+A product-correctness card. It moves no phase gate and adds no machine
+learning, no new region and no infrastructure.
+
+**What changed.** The comparison is "shortest pedestrian route" against "your
+selected mobility route". Routing policy 3 charges and counts a crossing or
+stairway once however many segments OpenStreetMap draws it in, and reads a
+crossing's kerb from every kerb recorded along it
+([ADR 0008](../adr/0008-accessibility-cost-model.md)). The shortest route is a
+fixed baseline at walking pace; time is a range at a named, assumed pace. Ends
+snap to paths that connect, and a moved end is said first. Search suggests as
+you type, with the campus codes OpenStreetMap records. A product truth audit
+routes 41 real journeys under every profile and checks each comparison against
+itself.
+
+**Evidence.** [`WATERLOO_CORE_V2.md`](../evidence/WATERLOO_CORE_V2.md): 0
+defects in 246 comparisons, 18 flags each inspected; 37 of 40 search queries
+found within the allowed rank; 17 of 20 corpus routes differ for a wheelchair,
+median detour 51.5 m.
+
+**Branch.** `feature/waterloo-core-v2`, from `main` at `e62b7e8`. Not merged,
+not deployed: the live pilot still runs policy 2, and `infra/vps/smoke.py`
+expects policy 3's answer.
+
+**Not done, by decision.** Building codes from the University's own list need
+its permission ([KI-15](../development/KNOWN_ISSUES.md)); accessible entrances
+have no licensed coordinate source ([KI-16](../development/KNOWN_ISSUES.md)).
+Nobody outside this repository has judged a route.
+
+---
+
 ## Standing rules
 
 1. **Never claim a capability before the phase that builds it.**

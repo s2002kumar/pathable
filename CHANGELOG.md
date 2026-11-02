@@ -13,6 +13,25 @@ The repository has been public and source-visible since 2026-09-14
 
 ### Added
 
+- **Waterloo Core v2: the comparison is "shortest pedestrian route" against
+  "your selected mobility route".** Routing policy 3 charges and counts a
+  crossing or stairway OpenStreetMap draws in several segments once, and reads
+  a crossing's kerb from every kerb recorded along it: one recorded kerb leaves
+  the crossing unknown. The shortest route is timed at walking pace whatever
+  profile it is shown beside; each route's time is a range at a named, assumed
+  pace, with no fixed allowance for crossings or steps. Requests whose ends
+  fall on parts of the network that do not connect move one end within 150 m
+  or fail at once, and say so. A one-line summary ("+97 m to avoid 3 recorded
+  stairways.", "Same path as shortest route.") leads the comparison, with the
+  evidence behind it shown on the map on request. Place search suggests as you
+  type, from the local index only, and finds campus codes OpenStreetMap
+  records (DC, SLC, MC, E5) and generated initials (gazetteer version 2,
+  migration `0008`). `pathable truth-audit` checks 41 real journeys under
+  every profile; `pathable gazetteer evaluate` scores a 40-query search corpus.
+  Evidence: `docs/evidence/WATERLOO_CORE_V2.md`. On the twenty-journey corpus
+  17 of 20 wheelchair routes differ (18 under policy 2), median detour 51.5 m
+  (86.1 m).
+
 - **Per-client rate limits on route comparison and place search (closes
   KI-13).** Each client may make 30 route comparisons and 60 searches a minute;
   beyond that the API answers 429 with `Retry-After` and code `rate_limited`
@@ -236,6 +255,14 @@ The repository has been public and source-visible since 2026-09-14
   2026-09-25. (The shortest route's time in a comparison does change — see D5.)
 
 ### Fixed
+
+- **Messages and labels that contradicted the data** (Waterloo Core v2): an
+  off-network point was "inf m" from the nearest path; a route with no surface
+  tag anywhere said "some route segments have no surface tag (0% recorded)"; a
+  stairway drawn in two segments was counted as two, in the planner, on the
+  phone card and on the landing page (the verified journey has 3 stairways, not
+  4); a route ending 25 m from the shortest route's end was called "43 m
+  shorter"; a restaurant's short name was called a building code.
 
 - **The site's search description still called it "a local engineering build".**
   It now says it is a public pilot for Waterloo on one server that advises and
