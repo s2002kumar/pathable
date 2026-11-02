@@ -42,6 +42,7 @@ from sqlalchemy import String, cast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pathable_api import __version__
+from pathable_api.api.v1.routes import comparison_response, dataset_provenance
 from pathable_api.core.config import ConfigurationError, get_settings
 from pathable_api.core.event_loop import selector_loop_factory
 from pathable_api.core.logging import configure_logging, get_logger
@@ -226,6 +227,8 @@ from pathable_api.geo.overture.osm_versions import VersionEvidenceError, read_ve
 from pathable_api.geo.overture.pathable import PathAbleSideError, load_identities
 from pathable_api.geo.pbf import import_from_pbf
 from pathable_api.geo.regions import PILOT_REGIONS, region_definition, seed_pilot_regions
+from pathable_api.geo.search_corpus import SEARCH_CORPUS, SEARCH_CORPUS_VERSION
+from pathable_api.geo.search_evaluation import evaluate_search, summarise_search
 from pathable_api.routing.ablation import run_ablation, summarise_ablation
 from pathable_api.routing.activation import (
     IDENTICAL,
@@ -247,7 +250,16 @@ from pathable_api.routing.load_benchmark import (
     run_load_benchmark,
 )
 from pathable_api.routing.load_benchmark import render as render_load_benchmark
-from pathable_api.routing.profiles import get_profile
+from pathable_api.routing.profiles import ROUTING_POLICY_VERSION, get_profile
+from pathable_api.routing.truth_audit import (
+    TRUTH_AUDIT_VERSION,
+    CaseOutcome,
+    audit_profiles,
+)
+from pathable_api.routing.truth_audit import as_records as truth_records
+from pathable_api.routing.truth_audit import run_audit as run_truth_audit
+from pathable_api.routing.truth_audit import totals as truth_totals
+from pathable_api.routing.truth_corpus import TRUTH_CORPUS, TRUTH_CORPUS_VERSION
 from pathable_api.routing.waterloo_cases import WATERLOO_CASES
 
 logger = get_logger(__name__)
@@ -448,6 +460,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Also route without the unknown-data penalties, to see what they buy.",
     )
 
+    truth_audit = subcommands.add_parser(
+        "truth-audit",
+        help=(
+            "Route the truth-audit corpus under every profile and check what each "
+            "comparison says against the routes themselves."
+        ),
+    )
+    truth_audit.add_argument(
+        "--region", required=True, choices=sorted(region.slug for region in PILOT_REGIONS)
+    )
+    truth_audit.add_argument("--json", required=True, help="Write the full audit here.")
+    truth_audit.add_argument(
+        "--case",
+        action="append",
+        default=None,
+        help="Route only this case (repeatable). Every case by default.",
+    )
+
     coverage = subcommands.add_parser(
         "coverage", help="Report what the map records about a region, category by category."
     )
@@ -551,6 +581,16 @@ def build_parser() -> argparse.ArgumentParser:
             "When the extract's data is current to (ISO 8601). Defaults to the extract's own "
             "header; left unknown if neither says."
         ),
+    )
+    gazetteer_evaluate_command = gazetteer_actions.add_parser(
+        "evaluate",
+        help="Run the search-quality corpus against the region's place index.",
+    )
+    gazetteer_evaluate_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_evaluate_command.add_argument(
+        "--json", required=True, help="Write every query and its results here."
     )
     gazetteer_search_command = gazetteer_actions.add_parser(
         "search", help="Search a region's place index exactly as the API does."
@@ -1132,12 +1172,16 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 return await _coverage(database, args)
             case "evaluate":
                 return await _evaluate(database, args)
+            case "truth-audit":
+                return await _truth_audit(database, args)
             case "benchmark" if args.benchmark_command == "load":
                 return await _benchmark_load(database, args)
             case "benchmark":
                 return await _benchmark(database, args)
             case "gazetteer" if args.gazetteer_command == "build":
                 return await _gazetteer_build(database, args)
+            case "gazetteer" if args.gazetteer_command == "evaluate":
+                return await _gazetteer_evaluate(database, args)
             case "gazetteer":
                 return await _gazetteer_search(database, args)
             case "overture":
@@ -1450,6 +1494,112 @@ async def _apply_elevation(database: Database, args: argparse.Namespace) -> int:
     if provider.attribution:
         print(f"  attribution {provider.attribution}")
     return EXIT_OK
+
+
+async def _gazetteer_evaluate(database: Database, args: argparse.Namespace) -> int:
+    """Every corpus query against the region's index; exits non-zero on no index."""
+    async with database.session() as session:
+        build = await gazetteer_build(session, args.region)
+        if build is None:
+            print(f"error: no place index for {args.region}. Run gazetteer build.", file=sys.stderr)
+            return EXIT_MISCONFIGURED
+        records = await evaluate_search(session, build.id, SEARCH_CORPUS)
+
+    summary = summarise_search(records)
+    document = {
+        "corpus_version": SEARCH_CORPUS_VERSION,
+        "index": {
+            "gazetteer_version": build.configuration.get("gazetteer_version"),
+            "file_name": build.file_name,
+            "file_sha256": build.file_sha256,
+            "source_timestamp": (
+                None if build.source_timestamp is None else build.source_timestamp.isoformat()
+            ),
+            "places": build.place_count,
+            "addresses": build.address_count,
+            "streets": build.street_count,
+        },
+        "run": describe_environment(),
+        "summary": summary,
+        "queries": records,
+    }
+    Path(args.json).write_text(
+        json.dumps(document, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
+    for record in records:
+        top = record["results"][0]["label"] if record["results"] else "(nothing)"
+        mark = "pass" if record["passed"] else "MISS"
+        print(f"  {mark}  {record['query']:32} rank {record['rank']}  -> {top}")
+    print(json.dumps(summary, indent=1))
+    return EXIT_OK
+
+
+async def _truth_audit(database: Database, args: argparse.Namespace) -> int:
+    """Route the corpus, check every comparison, and write every outcome.
+
+    Exits non-zero when any check finds a defect — a contradiction that must
+    never happen. Flags are outcomes to inspect and do not fail the run.
+    """
+    definition = region_definition(args.region)
+    repository = GraphRepository()
+    async with database.session() as session:
+        graph = await repository.active_graph(session, definition.slug)
+        provenance = await dataset_provenance(session, graph, definition.slug)
+
+    wanted = set(args.case or ())
+    cases = tuple(case for case in TRUTH_CORPUS if not wanted or case.key in wanted)
+    unknown = wanted - {case.key for case in cases}
+    if unknown:
+        print(f"error: no such case: {', '.join(sorted(unknown))}", file=sys.stderr)
+        return EXIT_MISCONFIGURED
+
+    profiles = audit_profiles()
+    print(
+        f"{definition.display_name}: {graph.segment_count} segments (loaded in "
+        f"{graph.load_seconds:.1f}s). {len(cases)} cases x {len(profiles)} profiles."
+    )
+
+    def progress(outcome: CaseOutcome) -> None:
+        defects = sum(1 for finding in outcome.findings if finding.severity == "defect")
+        flags = sum(1 for finding in outcome.findings if finding.severity == "flag")
+        print(f"  {outcome.case.key:34} defects {defects}  flags {flags}", flush=True)
+
+    started = time.perf_counter()
+    outcomes = run_truth_audit(
+        graph,
+        cases,
+        profiles,
+        serialize=lambda comparison: comparison_response(comparison, provenance).model_dump(
+            mode="json"
+        ),
+        progress=progress,
+    )
+    elapsed = time.perf_counter() - started
+
+    summary = truth_totals(outcomes)
+    # The dataset's age in days changes every day the file is regenerated; the
+    # source timestamp it is computed from is kept.
+    dataset = provenance.model_dump(mode="json", exclude={"evidence_age_days"})
+    document = {
+        "audit": {
+            "truth_audit_version": TRUTH_AUDIT_VERSION,
+            "corpus_version": TRUTH_CORPUS_VERSION,
+            "routing_policy_version": ROUTING_POLICY_VERSION,
+            "profiles": [profile.key for profile in profiles],
+            "custom_profile": profiles[-1].description,
+        },
+        "dataset": dataset,
+        "run": {**describe_environment(), "route_seconds": round(elapsed, 1)},
+        "totals": summary,
+        "cases": truth_records(outcomes),
+    }
+    Path(args.json).write_text(
+        json.dumps(document, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    print(json.dumps(summary, indent=1))
+    print(f"Wrote {args.json}")
+    return EXIT_FAILED if summary["defects"] else EXIT_OK
 
 
 async def _evaluate(database: Database, args: argparse.Namespace) -> int:
