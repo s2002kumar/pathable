@@ -418,6 +418,8 @@ class TestApi:
             "longitude": pytest.approx(-80.5420),
             "latitude": pytest.approx(43.4728),
             "category": "university",
+            "kind": "place",
+            "matched_on": "name",
         }
         assert "as of 2026-08-16" in body["attribution"]
         assert "OpenStreetMap contributors, ODbL" in body["attribution"]

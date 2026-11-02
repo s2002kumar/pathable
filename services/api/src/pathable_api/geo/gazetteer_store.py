@@ -248,10 +248,12 @@ async def search_gazetteer(
 
     # One result per thing a person would pick: the campus's address is
     # recorded on two of its elements, and listing it twice reads as a mistake.
-    seen: set[tuple[str, str]] = set()
+    # A stop and an information board that share a square's name are different
+    # things, so the category is part of what makes a result the same.
+    seen: set[tuple[str, str, str | None]] = set()
     matches: list[GazetteerMatch] = []
     for row in rows:
-        key = (row.kind, row.label)
+        key = (row.kind, row.label, row.category)
         if key in seen:
             continue
         seen.add(key)
