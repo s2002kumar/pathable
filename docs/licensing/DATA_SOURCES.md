@@ -144,7 +144,7 @@ Public Nominatim remains implemented, opt-in, for development comparison only.
 Its [usage policy](https://operations.osmfoundation.org/policies/nominatim/)
 forbids bulk geocoding and autocomplete and allows at most one request per
 second with an identifying User-Agent; the implementation enforces those terms
-(a process-wide lock, submit-only, a required contact address, a bounded
+(a process-wide lock, never as you type, a required contact address, a bounded
 viewbox), and it is not used for application traffic.
 
 | Option                                     | Licence                              | Status                                                                     |

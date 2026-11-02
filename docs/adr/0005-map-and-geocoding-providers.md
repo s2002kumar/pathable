@@ -90,8 +90,21 @@ provider (`GEOCODING_PROVIDER=local`).
   time). Every result set carries "Places from OpenStreetMap as of _date_.
   © OpenStreetMap contributors, ODbL 1.0", and the build reports whether the
   extract is the one the active network came from.
-- **Still submit-only.** One request per search, not per keystroke, so the same
-  client stays correct against any provider.
+- **As you type, against the local index only** _(Waterloo Core v2,
+  2026-11-02)._ A pause in typing (180 ms, two characters or more) asks the
+  local index with `autocomplete: true`; it is a query against PathAble's own
+  database. A provider whose policy forbids per-keystroke queries — public
+  Nominatim — answers such a request "not searched", makes no outbound call,
+  and the field falls back to searching on Enter. The per-client search limit
+  (60 a minute) is unchanged.
+- **Building codes and initials** _(gazetteer version 2)_. A place carries the
+  short codes OpenStreetMap records for it (`ref`, `short_name`: DC, SLC, MC,
+  E5, PAC, UW) and the initials of its name, in separate columns because one is
+  a mapper's record and the other PathAble's guess; every result says which it
+  matched. Ranking is deterministic: a recorded code, an exact name, a code
+  being typed, generated initials, then prefixes and trigram similarity. The
+  University of Waterloo's own building list is not used — see
+  [KI-15](../development/KNOWN_ISSUES.md).
 
 **Why this and not a service.** It is the lead this ADR recorded in August, and
 it needs nothing new: the data is already held and already licensed (ODbL, with
@@ -107,7 +120,8 @@ so the managed-hosting restore path (KI-8) still needs no superuser.
 | Paid (Geoapify, LocationIQ, …) | Costs money, needs an account, and their terms restrict storing or displaying results. Would need founder approval. |
 
 **What it does not do.** No address interpolation along a street, so a house
-number nobody mapped is not found. No postcodes. No as-you-type suggestions.
+number nobody mapped is not found. No postcodes. No code that OpenStreetMap does
+not record (students' "DP" for the Dana Porter Library is not found).
 Coverage and freshness are exactly the extract's — see
 [KI-11](../development/KNOWN_ISSUES.md).
 

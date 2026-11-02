@@ -18,8 +18,10 @@ traffic — and when it is on, that policy is enforced here rather than trusted 
 callers:
 
 * **One request per second, process-wide.** Enforced by a lock, not a comment.
-* **Submit-only.** There is no as-you-type endpoint, because autocomplete against
-  Nominatim means one request per keystroke and is explicitly forbidden.
+* **Never as you type.** An as-you-type search (``autocomplete=True``) is
+  answered "not searched" without a request, because autocomplete against
+  Nominatim means one request per keystroke and is explicitly forbidden. Only
+  the local index suggests as somebody types.
 * **Identified.** Every request carries a User-Agent naming the project and a
   contact address, so an operator can reach us instead of blocking us.
 * **Bounded.** Searches are restricted to the pilot region's viewbox, which keeps

@@ -425,7 +425,7 @@ def _units(items: Iterable[_Costed]) -> list[list[_Costed]]:
     """Pieces grouped into the crossings or stairways they are, in route order.
 
     A crossing split into three segments is one crossing; counting segments is
-    how "4 stairways" used to mean two.
+    how "4 stairways" came to describe three on the Davis Centre journey.
     """
     grouped: dict[str, list[_Costed]] = {}
     for item in items:
