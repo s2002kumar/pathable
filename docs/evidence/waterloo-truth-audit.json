@@ -28,8 +28,8 @@
   "python": "3.13.2",
   "platform": "Windows-11-10.0.26200-SP0",
   "machine": "AMD64",
-  "git_commit": "89121e080ef3848335aa52b24348169f5cc88307",
-  "route_seconds": 339.7
+  "git_commit": "d888ba077340eba3ffe199c762f8869cad7c94e4",
+  "route_seconds": 428.1
  },
  "totals": {
   "cases": 41,
@@ -51,7 +51,7 @@
  },
  "cases": [
   {
-   "key": "campus-dc-to-slc",
+   "case": "campus-dc-to-slc",
    "description": "Davis Centre Library to the Student Life Centre",
    "categories": [
     "campus",
@@ -266,7 +266,7 @@
    "findings": []
   },
   {
-   "key": "campus-mc-to-e5",
+   "case": "campus-mc-to-e5",
    "description": "Mathematics & Computer to Engineering 5",
    "categories": [
     "campus"
@@ -465,7 +465,7 @@
    "findings": []
   },
   {
-   "key": "campus-pac-to-dp",
+   "case": "campus-pac-to-dp",
    "description": "Physical Activities Complex to Dana Porter Library",
    "categories": [
     "campus"
@@ -704,7 +704,7 @@
    ]
   },
   {
-   "key": "campus-ev3-to-e3",
+   "case": "campus-ev3-to-e3",
    "description": "Environment 3 to Engineering 3",
    "categories": [
     "campus"
@@ -913,7 +913,7 @@
    "findings": []
   },
   {
-   "key": "campus-rev-to-mc",
+   "case": "campus-rev-to-mc",
    "description": "Ron Eydt Village across Ring Road to Mathematics & Computer",
    "categories": [
     "campus"
@@ -1127,7 +1127,7 @@
    "findings": []
   },
   {
-   "key": "campus-ml-to-sch",
+   "case": "campus-ml-to-sch",
    "description": "Modern Languages to South Campus Hall",
    "categories": [
     "campus"
@@ -1318,7 +1318,7 @@
    "findings": []
   },
   {
-   "key": "campus-stj-to-ren",
+   "case": "campus-stj-to-ren",
    "description": "St. Jerome's to Renison, next door",
    "categories": [
     "campus",
@@ -1508,7 +1508,7 @@
    "findings": []
   },
   {
-   "key": "campus-cif-to-fed",
+   "case": "campus-cif-to-fed",
    "description": "Columbia Icefield to Federation Hall",
    "categories": [
     "campus",
@@ -1729,7 +1729,7 @@
    ]
   },
   {
-   "key": "campus-grebel-to-slc",
+   "case": "campus-grebel-to-slc",
    "description": "Conrad Grebel to the Student Life Centre",
    "categories": [
     "campus"
@@ -1942,7 +1942,7 @@
    "findings": []
   },
   {
-   "key": "campus-station-to-dc",
+   "case": "campus-station-to-dc",
    "description": "University of Waterloo ION station to the Davis Centre",
    "categories": [
     "campus"
@@ -2143,7 +2143,7 @@
    "findings": []
   },
   {
-   "key": "campus-phy-to-c2",
+   "case": "campus-phy-to-c2",
    "description": "Physics to Chemistry 2",
    "categories": [
     "campus"
@@ -2340,7 +2340,7 @@
    "findings": []
   },
   {
-   "key": "campus-b1-to-cph",
+   "case": "campus-b1-to-cph",
    "description": "Biology 1 to Carl A. Pollock Hall",
    "categories": [
     "campus"
@@ -2521,7 +2521,7 @@
    "findings": []
   },
   {
-   "key": "long-dc-to-laurier",
+   "case": "long-dc-to-laurier",
    "description": "Davis Centre to Laurier's Fred Nichols Campus Centre",
    "categories": [
     "long"
@@ -2735,7 +2735,7 @@
    "findings": []
   },
   {
-   "key": "long-laurier-to-square",
+   "case": "long-laurier-to-square",
    "description": "Laurier down to Waterloo Public Square",
    "categories": [
     "long"
@@ -2944,7 +2944,7 @@
    "findings": []
   },
   {
-   "key": "long-square-to-park",
+   "case": "long-square-to-park",
    "description": "Waterloo Public Square to Waterloo Park",
    "categories": [
     "long",
@@ -3152,7 +3152,7 @@
    "findings": []
   },
   {
-   "key": "long-hospital-to-city-hall",
+   "case": "long-hospital-to-city-hall",
    "description": "Grand River Hospital to Kitchener City Hall",
    "categories": [
     "long"
@@ -3365,7 +3365,7 @@
    "findings": []
   },
   {
-   "key": "long-belmont-to-allen",
+   "case": "long-belmont-to-allen",
    "description": "Belmont Village to Allen station",
    "categories": [
     "long"
@@ -3572,7 +3572,7 @@
    "findings": []
   },
   {
-   "key": "long-northfield-to-icefield",
+   "case": "long-northfield-to-icefield",
    "description": "Northfield station to Columbia Icefield",
    "categories": [
     "long"
@@ -3799,7 +3799,7 @@
    "findings": []
   },
   {
-   "key": "long-boardwalk-to-rev",
+   "case": "long-boardwalk-to-rev",
    "description": "The Boardwalk to Ron Eydt Village, about four kilometres",
    "categories": [
     "long"
@@ -4023,7 +4023,7 @@
    "findings": []
   },
   {
-   "key": "long-square-to-hospital",
+   "case": "long-square-to-hospital",
    "description": "Waterloo Public Square to Grand River Hospital",
    "categories": [
     "long"
@@ -4241,7 +4241,7 @@
    "findings": []
   },
   {
-   "key": "long-victoria-park-to-market",
+   "case": "long-victoria-park-to-market",
    "description": "Victoria Park to Kitchener Market",
    "categories": [
     "long"
@@ -4460,7 +4460,7 @@
    "findings": []
   },
   {
-   "key": "long-downs-to-bechtel",
+   "case": "long-downs-to-bechtel",
    "description": "University Downs Park to Bechtel Park",
    "categories": [
     "long",
@@ -4681,7 +4681,7 @@
    "findings": []
   },
   {
-   "key": "long-park-to-laurier",
+   "case": "long-park-to-laurier",
    "description": "Waterloo Park to Laurier",
    "categories": [
     "long",
@@ -4899,7 +4899,7 @@
    "findings": []
   },
   {
-   "key": "stairs-700726011",
+   "case": "stairs-700726011",
    "description": "Campus stairway, 71 m, bottom to top",
    "categories": [
     "stairs",
@@ -5118,7 +5118,7 @@
    ]
   },
   {
-   "key": "stairs-744204757",
+   "case": "stairs-744204757",
    "description": "Stairway by Kitchener City Hall, 6 recorded steps",
    "categories": [
     "stairs",
@@ -5339,7 +5339,7 @@
    ]
   },
   {
-   "key": "stairs-1536295321",
+   "case": "stairs-1536295321",
    "description": "Stairway by Columbia Icefield, 29 m",
    "categories": [
     "stairs",
@@ -5497,7 +5497,7 @@
    "findings": []
   },
   {
-   "key": "stairs-797093095",
+   "case": "stairs-797093095",
    "description": "Stairway in north-east Waterloo, 41 m",
    "categories": [
     "stairs",
@@ -5694,7 +5694,7 @@
    "findings": []
   },
   {
-   "key": "gradient-40585154-up",
+   "case": "gradient-40585154-up",
    "description": "Steep path in south Kitchener, one way",
    "categories": [
     "gradient"
@@ -5901,7 +5901,7 @@
    ]
   },
   {
-   "key": "gradient-40585154-down",
+   "case": "gradient-40585154-down",
    "description": "The same steep path, the other way",
    "categories": [
     "gradient"
@@ -6088,7 +6088,7 @@
    "findings": []
   },
   {
-   "key": "gradient-34149352",
+   "case": "gradient-34149352",
    "description": "Steep path in south-east Kitchener",
    "categories": [
     "gradient"
@@ -6277,7 +6277,7 @@
    "findings": []
   },
   {
-   "key": "gradient-1369397887",
+   "case": "gradient-1369397887",
    "description": "Steep path in west Waterloo",
    "categories": [
     "gradient"
@@ -6468,7 +6468,7 @@
    "findings": []
   },
   {
-   "key": "crossing-648928668-two-kerbs",
+   "case": "crossing-648928668-two-kerbs",
    "description": "Uptown crossing with both kerbs recorded",
    "categories": [
     "crossings"
@@ -6657,7 +6657,7 @@
    "findings": []
   },
   {
-   "key": "crossing-1105419114-no-kerbs",
+   "case": "crossing-1105419114-no-kerbs",
    "description": "Uptown crossing with no kerb recorded",
    "categories": [
     "crossings"
@@ -6846,7 +6846,7 @@
    "findings": []
   },
   {
-   "key": "crossing-682330817-four-kerbs",
+   "case": "crossing-682330817-four-kerbs",
    "description": "Uptown crossing in six pieces, four kerb records",
    "categories": [
     "crossings"
@@ -7035,7 +7035,7 @@
    "findings": []
   },
   {
-   "key": "crossing-uptown-to-hub",
+   "case": "crossing-uptown-to-hub",
    "description": "Uptown square to the transit hub, several crossings",
    "categories": [
     "crossings"
@@ -7230,7 +7230,7 @@
    "findings": []
   },
   {
-   "key": "foot-no-1204792959-ends",
+   "case": "foot-no-1204792959-ends",
    "description": "End to end of a road where pedestrians are prohibited",
    "categories": [
     "foot_no"
@@ -7419,7 +7419,7 @@
    "findings": []
   },
   {
-   "key": "foot-no-1204792959-on-it",
+   "case": "foot-no-1204792959-on-it",
    "description": "Starting on that road, to Columbia Icefield",
    "categories": [
     "foot_no",
@@ -7635,7 +7635,7 @@
    "findings": []
   },
   {
-   "key": "snap-mall-parking",
+   "case": "snap-mall-parking",
    "description": "From the middle of Conestoga Mall's parking to Northfield",
    "categories": [
     "snapping"
@@ -7860,7 +7860,7 @@
    "findings": []
   },
   {
-   "key": "snap-rim-park",
+   "case": "snap-rim-park",
    "description": "Conestoga Mall to RIM Park",
    "categories": [
     "snapping",
@@ -7996,7 +7996,7 @@
    "findings": []
   },
   {
-   "key": "snap-inside-dc",
+   "case": "snap-inside-dc",
    "description": "From the middle of the Davis Centre building to MC",
    "categories": [
     "snapping",
@@ -8191,7 +8191,7 @@
    "findings": []
   },
   {
-   "key": "snap-open-field",
+   "case": "snap-open-field",
    "description": "From open farmland at the region's north-west edge",
    "categories": [
     "snapping"

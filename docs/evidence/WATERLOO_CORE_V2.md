@@ -185,7 +185,7 @@ Each comparison is built exactly as the API builds it and then checked:
   detour over 300 m and 50%, a snap over 50 m from the point asked for, ends
   that moved, and a different route with no explanation.
 
-Run on commit `89121e0`, routing policy 3, truth audit and corpus version 1:
+Run on commit `d888ba0`, routing policy 3, truth audit and corpus version 1:
 
 |                                                 |                                                 |
 | ----------------------------------------------- | ----------------------------------------------- |
