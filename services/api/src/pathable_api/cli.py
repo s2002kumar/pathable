@@ -1626,7 +1626,11 @@ async def _evaluate(database: Database, args: argparse.Namespace) -> int:
     unroutable = sum(1 for entry in comparisons if not entry.subject.routed)
 
     for entry in comparisons:
-        marker = "changed" if entry.route_changed else "same   "
+        # Two journeys with no route are not "the same route": say there is none.
+        marker = (
+            "no route" if not entry.subject.routed else "changed" if entry.route_changed else "same"
+        )
+        marker = f"{marker:<8}"
         detour = "" if entry.detour_m is None else f"{entry.detour_m:+8.1f} m"
         print(f"  [{marker}] {entry.case:<32} {detour:>12}  {entry.reason()}")
 
