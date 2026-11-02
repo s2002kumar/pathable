@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Literal
 
 from shapely.geometry import Point
@@ -34,7 +36,7 @@ from pathable_api.routing.search import (
     SearchResult,
     search,
 )
-from pathable_api.routing.snapping import EdgeSnap, prorate, split_geometry, virtual_node_id
+from pathable_api.routing.snapping import EdgeSnap, prorate, split_at, virtual_node_id
 from pathable_api.routing.units import UnitTraversal, traversals
 
 logger = get_logger(__name__)
@@ -455,8 +457,7 @@ def compute_route(
 
     started = time.perf_counter()
     overlay = _Overlay(graph)
-    start_node = overlay.attach(start_snap, "origin")
-    goal_node = overlay.attach(end_snap, "destination")
+    start_node, goal_node = overlay.attach([(start_snap, "origin"), (end_snap, "destination")])
 
     goal_position = overlay.position(goal_node)
 
@@ -532,47 +533,56 @@ class _Overlay:
         self._adjacency: dict[str, list[tuple[str, DirectedEdge]]] = {}
         self._positions: dict[str, tuple[float, float]] = {}
 
-    def attach(self, snap: EdgeSnap, label: str) -> str:
-        """Introduce a snap point and return the node routing should use."""
-        if snap.is_on_node and snap.node_id is not None:
-            return snap.node_id
+    def attach(self, snaps: Sequence[tuple[EdgeSnap, str]]) -> list[str]:
+        """Introduce snap points and return the node routing should use for each.
 
-        # Landing on an endpoint needs no split — the junction is already there.
-        if snap.fraction <= 1e-9:
-            return snap.edge.source_u
-        if snap.fraction >= 1.0 - 1e-9:
-            return snap.edge.source_v
+        Snap points on one segment cut it into one chain, junction to junction
+        through every point in order along it, so a route between two ends on
+        one segment is the stretch between them. Each snap used to cut the
+        whole segment on its own, which joined each point to the junctions but
+        not to each other: the route walked to a junction and back, 200 m for
+        an 80 m walk, and paid twice for any crossing it was on.
+        """
+        nodes: list[str] = []
+        cuts: dict[str, list[tuple[float, int]]] = {}
+        for index, (snap, label) in enumerate(snaps):
+            if snap.is_on_node and snap.node_id is not None:
+                nodes.append(snap.node_id)
+            # Landing on an endpoint needs no cut — the junction is already there.
+            elif snap.fraction <= 1e-9:
+                nodes.append(snap.edge.source_u)
+            elif snap.fraction >= 1.0 - 1e-9:
+                nodes.append(snap.edge.source_v)
+            else:
+                node = virtual_node_id(label)
+                self._positions[node] = (snap.longitude, snap.latitude)
+                nodes.append(node)
+                cuts.setdefault(snap.edge.identity, []).append((snap.fraction, index))
 
-        node = virtual_node_id(label)
-        self._positions[node] = (snap.longitude, snap.latitude)
+        for points in cuts.values():
+            points.sort()
+            edge = snaps[points[0][1]][0].edge
+            pieces = split_at(edge.geometry, [fraction for fraction, _ in points])
+            chain = [edge.source_u, *(nodes[index] for _, index in points), edge.source_v]
+            forward = DirectedEdge(edge=edge, features=edge.features, reversed=False)
+            backward = DirectedEdge(edge=edge, features=edge.features.reversed(), reversed=True)
+            for (near, far), piece in zip(pairwise(chain), pieces, strict=True):
+                # Direction survives the cut: a piece of a one-way segment is
+                # still one-way, and no piece runs against the permitted
+                # direction.
+                if edge.foot_forward:
+                    self._link(near, far, prorate(forward, piece))
+                if edge.foot_backward:
+                    # Pieces stay in `source_u -> source_v` order, exactly as a
+                    # whole segment's geometry is, because a DirectedEdge marked
+                    # `reversed` flips its own geometry when asked for
+                    # travel-oriented coordinates. Reversing here as well
+                    # flipped it twice and drew the piece backwards — which put
+                    # a gap of up to 93 m in a route's polyline and made it end
+                    # somewhere the user never chose.
+                    self._link(far, near, prorate(backward, piece))
 
-        head_geometry, tail_geometry = split_geometry(snap.edge.geometry, snap.fraction)
-        edge = snap.edge
-
-        forward_head = DirectedEdge(edge=edge, features=edge.features, reversed=False)
-        forward_tail = DirectedEdge(edge=edge, features=edge.features, reversed=False)
-        backward_head = DirectedEdge(edge=edge, features=edge.features.reversed(), reversed=True)
-        backward_tail = DirectedEdge(edge=edge, features=edge.features.reversed(), reversed=True)
-
-        # Direction survives the split: half of a one-way segment is still
-        # one-way, and the half running against the permitted direction must
-        # never appear.
-        if edge.foot_forward:
-            # u -> node -> v
-            self._link(edge.source_u, node, prorate(forward_head, head_geometry))
-            self._link(node, edge.source_v, prorate(forward_tail, tail_geometry))
-        if edge.foot_backward:
-            # v -> node -> u. The halves are stored in `source_u -> source_v`
-            # order, exactly as a whole segment's geometry is, because a
-            # DirectedEdge marked `reversed` flips its own geometry when asked
-            # for travel-oriented coordinates. Reversing here as well flipped it
-            # twice and drew the piece backwards — which put a gap of up to 93 m
-            # in a route's polyline and made it end somewhere the user never
-            # chose.
-            self._link(edge.source_v, node, prorate(backward_tail, tail_geometry))
-            self._link(node, edge.source_u, prorate(backward_head, head_geometry))
-
-        return node
+        return nodes
 
     def _link(self, source: str, target: str, edge: DirectedEdge) -> None:
         self._adjacency.setdefault(source, []).append((target, edge))
