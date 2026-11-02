@@ -55,8 +55,13 @@ describe('the recorded journey', () => {
   });
 
   it('marks exactly the stairways the API counted, and none on the profile route', () => {
-    const stairs = segmentEvidence('standard').filter((segment) => segment.stairs);
-    expect(stairs).toHaveLength(ROUTE.standard.stairways);
+    // A stairway drawn as two segments is one stairway (routing policy 3).
+    const stairways = new Set(
+      ROUTE.standard.segments
+        .map((segment, index) => (segment.steps === 'yes' ? (segment.stairway ?? -1 - index) : null))
+        .filter((unit) => unit !== null),
+    );
+    expect(stairways.size).toBe(ROUTE.standard.stairways);
     expect(segmentEvidence('accessible').some((segment) => segment.stairs)).toBe(false);
   });
 
@@ -122,7 +127,7 @@ describe('the journey as the stage draws it', () => {
 
 describe('wording', () => {
   it('quotes the figures the claims ledger quotes for this journey', () => {
-    // Ledger 3.1: 287.4 m with 4 stairways against 354.1 m, 66.67 m and 23% longer.
+    // Ledger 3.1: 287.4 m with 3 stairways against 354.1 m, 66.67 m and 23% longer.
     expect(FIGURES.standardDistance).toBe('287.4 m');
     expect(FIGURES.accessibleDistance).toBe('354.1 m');
     expect(FIGURES.extra).toBe('66.7 m');

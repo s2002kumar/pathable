@@ -29,6 +29,8 @@ export type RecordedSegment = {
   readonly highway: string | null;
   readonly steps: 'yes' | 'no' | 'unknown';
   readonly stepCount: number | null;
+  /** Which of the route's stairways this piece is part of; null when it is none. */
+  readonly stairway?: number | null;
   readonly surface: string | null;
   readonly smoothnessClass: string;
   readonly widthM: number | null;
@@ -129,12 +131,17 @@ export function stairGroups(): readonly StairGroup[] {
       toStage(points[index] as LngLat),
       toStage(points[index + 1] as LngLat),
     ]);
-    const counts = indexes
-      .map((index) => (segments[index] as RecordedSegment).stepCount)
-      .filter((count): count is number => count !== null);
+    // One stairway drawn as several segments is one stairway, and its step
+    // count is the whole stairway's: counted once per stairway, not per piece.
+    const byStairway = new Map<number, number | null>();
+    for (const index of indexes) {
+      const segment = segments[index] as RecordedSegment;
+      byStairway.set(segment.stairway ?? -1 - index, segment.stepCount);
+    }
+    const counts = [...byStairway.values()].filter((count): count is number => count !== null);
     return {
       at: centroid(ends),
-      stairways: indexes.length,
+      stairways: byStairway.size,
       steps: counts.length === 0 ? null : counts.reduce((sum, count) => sum + count, 0),
     };
   });
