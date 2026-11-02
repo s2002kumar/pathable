@@ -72,6 +72,30 @@ describe('stairs', () => {
     expect(uncountedStairways(shortest)).toBe(0);
   });
 
+  it('counts a stairway drawn in two pieces as one stairway missing its count', () => {
+    // Regression: the Davis Centre journey's phone card said "2 counts
+    // missing" about one stairway drawn as two segments.
+    const pieces = [
+      segment({ steps: 'yes', step_count: null }),
+      segment({ steps: 'yes', step_count: null }),
+    ];
+    const split = route(pieces, {
+      profile: 'standard',
+      units: [
+        {
+          kind: 'stairway',
+          segment_indexes: [0, 1],
+          kerb: null,
+          kerb_recorded_ends: null,
+          crossing_type: null,
+          step_count: null,
+        },
+      ],
+    });
+
+    expect(uncountedStairways(split)).toBe(1);
+  });
+
   it('names the share of the route whose step state nobody recorded', () => {
     const partly = route([segment({ length_m: 25, steps: 'unknown' }), segment({ length_m: 75 })]);
     const fact = stairsFact(partly, null, NO_RULES);
@@ -232,6 +256,19 @@ describe('surface', () => {
     ]);
     expect(dominantSurface(mixed)).toEqual({ name: 'paved', share: 0.4 });
     expect(surfaceFact(mixed).footer?.text).toBe('Mixed surfaces where recorded');
+  });
+
+  it('does not call a route with no surface record anywhere partly recorded', () => {
+    // Regression: Modern Languages to South Campus Hall read "Recorded · OSM"
+    // and "Some route segments have no surface tag (0% recorded)".
+    const fact = surfaceFact({
+      ...accessible,
+      evidence_coverage: { ...accessible.evidence_coverage, surface: 1 },
+    } as Route);
+
+    expect(fact.tags).toEqual(['not_recorded']);
+    expect(fact.value).toBe('0%');
+    expect(fact.detail?.lead).toBe('Surface recorded on none of this route.');
   });
 });
 

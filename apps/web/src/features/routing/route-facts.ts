@@ -86,8 +86,15 @@ function stairsPhrase(count: number): string {
   return `${count} recorded ${plural(count, 'stairway', 'stairways')}`;
 }
 
-/** Stairways on a route whose step count nobody recorded. */
+/**
+ * Stairways on a route whose step count nobody recorded: one per stairway,
+ * however many segments draw it. Counted by segment, the Davis Centre journey
+ * said "2 counts missing" about one stairway drawn in two pieces.
+ */
 export function uncountedStairways(route: Route): number {
+  if (route.units) {
+    return route.units.filter((unit) => unit.kind === 'stairway' && unit.step_count == null).length;
+  }
   return route.segments.filter((segment) => segment.steps === 'yes' && segment.step_count == null)
     .length;
 }
@@ -342,15 +349,19 @@ export function surfaceFact(route: Route): CategoryFact {
   return {
     key: 'surface',
     label: 'Surface',
-    tags: gap > 0 ? ['recorded', 'not_recorded'] : ['recorded'],
+    // Nothing recorded is not "recorded and not recorded": a route with no
+    // surface tag anywhere was labelled both, and "some segments" lack one.
+    tags: recorded <= 0 ? ['not_recorded'] : gap > 0 ? ['recorded', 'not_recorded'] : ['recorded'],
     value: formatShare(recorded),
     valueTone: 'neutral',
     unit: 'Recorded',
     detail: {
       lead:
-        gap > 0
-          ? `Surface recorded on ${formatShare(recorded)} of this route; ${formatShare(gap)} not recorded.`
-          : 'Surface recorded along the whole route.',
+        recorded <= 0
+          ? 'Surface recorded on none of this route.'
+          : gap > 0
+            ? `Surface recorded on ${formatShare(recorded)} of this route; ${formatShare(gap)} not recorded.`
+            : 'Surface recorded along the whole route.',
       emphasis: '',
       emphasisTone: 'neutral',
       tail: '',
