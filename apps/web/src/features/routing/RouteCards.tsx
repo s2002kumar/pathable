@@ -10,8 +10,10 @@ import {
   exclusionLabel,
   exclusionsOf,
   formatDurationRange,
+  formatDurationShort,
   formatShare,
   gradeBasis,
+  paceLabel,
   paceNote,
   routeDuration,
   verdictOf,
@@ -120,9 +122,16 @@ function Duration({
   readonly testId: string;
 }) {
   return (
-    <span className={styles.time} data-kind="estimate" data-testid={testId}>
-      {formatDurationRange(duration)}
-      <span className={styles.paceNote}> {paceNote(duration)}</span>
+    <span
+      className={styles.time}
+      data-kind="estimate"
+      data-testid={testId}
+      // The card has room for one line; the full sentence is the accessible
+      // description and the tooltip.
+      title={`${formatDurationRange(duration)} ${paceNote(duration)}`}
+    >
+      {formatDurationShort(duration)}
+      <span className={styles.paceNote}> · {paceLabel(duration)}</span>
     </span>
   );
 }

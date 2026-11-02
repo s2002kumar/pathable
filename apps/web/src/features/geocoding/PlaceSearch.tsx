@@ -343,7 +343,9 @@ export function PlaceSearch({
         className={styles.matchList}
         role="listbox"
         id={listboxId}
-        aria-label={`${label} suggestions`}
+        // Not named after the field: a name containing "Start location" made
+        // every query for the field's label find two elements.
+        aria-label="Suggested places"
         hidden={!expanded}
         data-testid={`${testId}-suggestions`}
       >

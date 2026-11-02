@@ -175,6 +175,18 @@ export function formatDurationRange(duration: RouteDuration): string {
     : `About ${duration.lowMinutes}–${duration.highMinutes} min`;
 }
 
+/** "11–16 min": the range alone, for a card with room for one line. */
+export function formatDurationShort(duration: RouteDuration): string {
+  return duration.lowMinutes === duration.highMinutes
+    ? `${duration.lowMinutes} min`
+    : `${duration.lowMinutes}–${duration.highMinutes} min`;
+}
+
+/** "walking pace", "assumed wheelchair pace": whose pace, in as few words. */
+export function paceLabel(duration: RouteDuration): string {
+  return duration.pace === 'walking pace' ? 'walking pace' : `assumed ${duration.pace}`;
+}
+
 /** "at walking pace", "at an assumed wheelchair pace": whose assumption a time is. */
 export function paceNote(duration: RouteDuration): string {
   return duration.pace === 'walking pace' ? 'at walking pace' : `at an assumed ${duration.pace}`;

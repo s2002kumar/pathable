@@ -100,10 +100,10 @@ test.describe('route comparison', () => {
     await expect(shortest).not.toContainText(/Est\. \d+ min/);
     if (!isPhone(page)) {
       await expect(page.getByTestId('difference-shortest-time')).toHaveText(
-        /^About \d+(–\d+)? min at walking pace$/,
+        /^\d+(–\d+)? min · walking pace$/,
       );
       await expect(page.getByTestId('difference-accessible-time')).toHaveText(
-        /^About \d+(–\d+)? min at an assumed wheelchair pace$/,
+        /^\d+(–\d+)? min · assumed wheelchair pace$/,
       );
       await expect(page.getByText(/min faster/)).toHaveCount(0);
     } else {

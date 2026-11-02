@@ -290,11 +290,14 @@ describe('RoutePlanner', () => {
     // A range over an assumed pace, labelled with whose pace it is: the
     // profile's for its route, walking pace for the shortest. Neither is a
     // measurement, and the two are never subtracted.
-    expect(screen.getByTestId('difference-accessible-time')).toHaveTextContent(
-      /^About \d+–\d+ min at an assumed wheelchair pace$/,
-    );
-    expect(screen.getByTestId('difference-shortest-time')).toHaveTextContent(
-      /^About \d+–\d+ min at walking pace$/,
+    const accessible = screen.getByTestId('difference-accessible-time');
+    const shortest = screen.getByTestId('difference-shortest-time');
+    expect(accessible).toHaveTextContent(/^\d+–\d+ min · assumed wheelchair pace$/);
+    expect(shortest).toHaveTextContent(/^\d+–\d+ min · walking pace$/);
+    // The full sentence travels with the short form.
+    expect(accessible).toHaveAttribute(
+      'title',
+      expect.stringMatching(/^About \d+–\d+ min at an assumed wheelchair pace$/),
     );
     expect(screen.queryByText(/min faster/)).not.toBeInTheDocument();
   });
