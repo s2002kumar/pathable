@@ -267,9 +267,10 @@ Sixteen checks: the certificate, the HTTP redirect, that 5432, 8000 and 3000
 do not answer, both pages and their security headers, the reported revision,
 readiness, the profiles, search for both ends of the journey recorded in
 [`waterloo-place-search.json`](../evidence/waterloo-place-search.json), and
-that journey's recorded answer — 406.4 m with 4 stairways, against 490.2 m
+that journey's recorded answer — 406.4 m with 3 stairways, against 503.4 m
 with none for a wheelchair, from dataset `51585450`, with no model
-predictions. Then sequential and parallel route latency, and last, that the
+predictions. Those are routing policy 3's figures; a host still running policy 2
+answers 4 stairways and 490.2 m, and fails this check until it is redeployed. Then sequential and parallel route latency, and last, that the
 rate limit refuses this client with a standard 429. It exits non-zero if
 anything failed.
 

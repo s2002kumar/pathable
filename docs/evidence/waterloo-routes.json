@@ -17,9 +17,9 @@
         "routed": true,
         "distance_m": 287.4,
         "effective_distance_m": 287.4,
-        "duration_seconds": 302.9,
+        "duration_seconds": 233.3,
         "segments": 43,
-        "computation_ms": 14.9,
+        "computation_ms": 74.0,
         "expanded_nodes": 85,
         "origin_snap_m": 3.2,
         "destination_snap_m": 15.3,
@@ -41,9 +41,9 @@
         "routed": true,
         "distance_m": 354.1,
         "effective_distance_m": 601.0,
-        "duration_seconds": 372.7,
+        "duration_seconds": 368.8,
         "segments": 47,
-        "computation_ms": 36.82,
+        "computation_ms": 78.63,
         "expanded_nodes": 353,
         "origin_snap_m": 3.2,
         "destination_snap_m": 15.3,
@@ -62,18 +62,18 @@
       "case": "campus-to-laurier",
       "description": "Between the two universities, across University Avenue",
       "route_changed": true,
-      "detour_m": 151.9,
-      "detour_fraction": 0.1037,
-      "reason": "avoids 11 segments with unknown gradient; avoids 14 crossings; avoids 2 step segments; avoids 22 segments with unknown surface; avoids 23 segments with unknown smoothness; avoids 28 segments with unknown width; avoids 9 segments with unknown kerb information",
+      "detour_m": 51.5,
+      "detour_fraction": 0.0352,
+      "reason": "avoids 13 crossings; avoids 17 segments with unknown gradient; avoids 19 segments with unknown smoothness; avoids 2 step segments; avoids 22 segments with unknown width; avoids 24 segments with unknown surface; avoids 5 segments with unknown kerb information",
       "baseline": {
         "case": "campus-to-laurier",
         "profile": "standard",
         "routed": true,
         "distance_m": 1464.5,
         "effective_distance_m": 1464.5,
-        "duration_seconds": 1454.8,
+        "duration_seconds": 1188.7,
         "segments": 106,
-        "computation_ms": 148.23,
+        "computation_ms": 379.89,
         "expanded_nodes": 1771,
         "origin_snap_m": 3.2,
         "destination_snap_m": 2.3,
@@ -88,31 +88,32 @@
           "smoothness": 95,
           "gradient": 106,
           "width": 104,
-          "kerb information": 9
+          "kerb information": 7
         }
       },
       "subject": {
         "case": "campus-to-laurier",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 1616.4,
-        "effective_distance_m": 2498.3,
-        "duration_seconds": 1741.4,
-        "segments": 95,
-        "computation_ms": 461.3,
-        "expanded_nodes": 4251,
+        "distance_m": 1516.0,
+        "effective_distance_m": 2466.6,
+        "duration_seconds": 1579.1,
+        "segments": 89,
+        "computation_ms": 679.33,
+        "expanded_nodes": 4336,
         "origin_snap_m": 3.2,
         "destination_snap_m": 2.3,
         "failure": null,
         "failure_kind": null,
         "barriers": {
-          "crossings": 2
+          "crossings": 3
         },
         "unknown": {
-          "surface": 11,
-          "smoothness": 72,
-          "gradient": 95,
-          "width": 76
+          "surface": 9,
+          "smoothness": 76,
+          "gradient": 89,
+          "width": 82,
+          "kerb information": 2
         }
       }
     },
@@ -129,9 +130,9 @@
         "routed": true,
         "distance_m": 1316.1,
         "effective_distance_m": 1316.1,
-        "duration_seconds": 1394.9,
+        "duration_seconds": 1068.3,
         "segments": 92,
-        "computation_ms": 100.54,
+        "computation_ms": 130.8,
         "expanded_nodes": 807,
         "origin_snap_m": 2.3,
         "destination_snap_m": 0.8,
@@ -144,7 +145,7 @@
           "smoothness": 86,
           "gradient": 92,
           "width": 74,
-          "kerb information": 8,
+          "kerb information": 7,
           "surface": 6
         }
       },
@@ -153,11 +154,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 1341.4,
-        "effective_distance_m": 2147.2,
-        "duration_seconds": 1592.0,
+        "effective_distance_m": 2001.3,
+        "duration_seconds": 1397.3,
         "segments": 90,
-        "computation_ms": 318.55,
-        "expanded_nodes": 2383,
+        "computation_ms": 279.64,
+        "expanded_nodes": 1894,
         "origin_snap_m": 2.3,
         "destination_snap_m": 0.8,
         "failure": null,
@@ -168,8 +169,7 @@
         "unknown": {
           "smoothness": 66,
           "gradient": 90,
-          "width": 90,
-          "kerb information": 1
+          "width": 90
         }
       }
     },
@@ -186,9 +186,9 @@
         "routed": true,
         "distance_m": 1066.6,
         "effective_distance_m": 1066.6,
-        "duration_seconds": 990.1,
+        "duration_seconds": 865.7,
         "segments": 78,
-        "computation_ms": 63.4,
+        "computation_ms": 88.93,
         "expanded_nodes": 623,
         "origin_snap_m": 0.8,
         "destination_snap_m": 17.0,
@@ -200,8 +200,7 @@
         "unknown": {
           "gradient": 78,
           "width": 78,
-          "smoothness": 37,
-          "kerb information": 1
+          "smoothness": 37
         }
       },
       "subject": {
@@ -209,11 +208,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 1066.6,
-        "effective_distance_m": 1563.3,
-        "duration_seconds": 1322.7,
+        "effective_distance_m": 1395.8,
+        "duration_seconds": 1111.0,
         "segments": 78,
-        "computation_ms": 162.93,
-        "expanded_nodes": 1246,
+        "computation_ms": 197.85,
+        "expanded_nodes": 1099,
         "origin_snap_m": 0.8,
         "destination_snap_m": 17.0,
         "failure": null,
@@ -224,8 +223,7 @@
         "unknown": {
           "gradient": 78,
           "width": 78,
-          "smoothness": 37,
-          "kerb information": 1
+          "smoothness": 37
         }
       }
     },
@@ -233,18 +231,18 @@
       "case": "park-to-campus",
       "description": "Waterloo Park through to campus",
       "route_changed": true,
-      "detour_m": 102.9,
-      "detour_fraction": 0.1009,
-      "reason": "avoids 1 segments with unknown smoothness; avoids 11 segments with unknown width; avoids 3 crossings; avoids 3 segments with unknown kerb information",
+      "detour_m": 2.5,
+      "detour_fraction": 0.0025,
+      "reason": "avoids 1 segments with unknown kerb information; avoids 2 crossings; avoids 5 segments with unknown gradient; avoids 5 segments with unknown width",
       "baseline": {
         "case": "park-to-campus",
         "profile": "standard",
         "routed": true,
         "distance_m": 1020.3,
         "effective_distance_m": 1020.3,
-        "duration_seconds": 1035.8,
+        "duration_seconds": 828.2,
         "segments": 90,
-        "computation_ms": 47.91,
+        "computation_ms": 72.18,
         "expanded_nodes": 472,
         "origin_snap_m": 17.0,
         "destination_snap_m": 3.2,
@@ -256,7 +254,7 @@
         "unknown": {
           "gradient": 90,
           "width": 70,
-          "kerb information": 5,
+          "kerb information": 4,
           "smoothness": 19,
           "surface": 8
         }
@@ -265,25 +263,25 @@
         "case": "park-to-campus",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 1123.2,
-        "effective_distance_m": 1728.5,
-        "duration_seconds": 1402.3,
-        "segments": 91,
-        "computation_ms": 219.17,
-        "expanded_nodes": 1788,
+        "distance_m": 1022.8,
+        "effective_distance_m": 1543.2,
+        "duration_seconds": 1065.4,
+        "segments": 85,
+        "computation_ms": 220.47,
+        "expanded_nodes": 1360,
         "origin_snap_m": 17.0,
         "destination_snap_m": 3.2,
         "failure": null,
         "failure_kind": null,
         "barriers": {
-          "crossings": 11
+          "crossings": 12
         },
         "unknown": {
-          "gradient": 91,
-          "width": 59,
-          "kerb information": 2,
-          "smoothness": 18,
-          "surface": 11
+          "gradient": 85,
+          "width": 65,
+          "kerb information": 3,
+          "smoothness": 22,
+          "surface": 9
         }
       }
     },
@@ -291,18 +289,18 @@
       "case": "uptown-to-transit-hub",
       "description": "Two blocks in Uptown to the transit hub",
       "route_changed": true,
-      "detour_m": 96.6,
-      "detour_fraction": 0.5299,
-      "reason": "avoids 2 crossings; avoids 2 segments with unknown kerb information",
+      "detour_m": 0.7,
+      "detour_fraction": 0.0038,
+      "reason": "avoids 1 crossings; avoids 2 segments with unknown gradient; avoids 2 segments with unknown width; avoids 3 segments with unknown smoothness",
       "baseline": {
         "case": "uptown-to-transit-hub",
         "profile": "standard",
         "routed": true,
         "distance_m": 182.3,
         "effective_distance_m": 182.3,
-        "duration_seconds": 335.0,
+        "duration_seconds": 147.9,
         "segments": 21,
-        "computation_ms": 5.53,
+        "computation_ms": 11.87,
         "expanded_nodes": 61,
         "origin_snap_m": 0.8,
         "destination_snap_m": 0.7,
@@ -315,30 +313,30 @@
           "gradient": 21,
           "width": 21,
           "smoothness": 10,
-          "kerb information": 4
+          "kerb information": 2
         }
       },
       "subject": {
         "case": "uptown-to-transit-hub",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 278.9,
-        "effective_distance_m": 667.0,
-        "duration_seconds": 453.6,
-        "segments": 25,
-        "computation_ms": 53.57,
-        "expanded_nodes": 498,
+        "distance_m": 183.0,
+        "effective_distance_m": 375.0,
+        "duration_seconds": 190.6,
+        "segments": 19,
+        "computation_ms": 25.61,
+        "expanded_nodes": 157,
         "origin_snap_m": 0.8,
         "destination_snap_m": 0.7,
         "failure": null,
         "failure_kind": null,
         "barriers": {
-          "crossings": 8
+          "crossings": 9
         },
         "unknown": {
-          "gradient": 25,
-          "width": 24,
-          "smoothness": 19,
+          "gradient": 19,
+          "width": 19,
+          "smoothness": 7,
           "kerb information": 2
         }
       }
@@ -356,9 +354,9 @@
         "routed": true,
         "distance_m": 1290.3,
         "effective_distance_m": 1290.3,
-        "duration_seconds": 1015.8,
+        "duration_seconds": 1047.3,
         "segments": 77,
-        "computation_ms": 129.72,
+        "computation_ms": 161.6,
         "expanded_nodes": 918,
         "origin_snap_m": 41.6,
         "destination_snap_m": 15.3,
@@ -380,11 +378,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 1359.4,
-        "effective_distance_m": 2064.2,
-        "duration_seconds": 1491.0,
+        "effective_distance_m": 2026.9,
+        "duration_seconds": 1416.1,
         "segments": 78,
-        "computation_ms": 153.25,
-        "expanded_nodes": 1866,
+        "computation_ms": 292.22,
+        "expanded_nodes": 1792,
         "origin_snap_m": 41.6,
         "destination_snap_m": 15.3,
         "failure": null,
@@ -413,9 +411,9 @@
         "routed": true,
         "distance_m": 1175.0,
         "effective_distance_m": 1175.0,
-        "duration_seconds": 990.4,
+        "duration_seconds": 953.7,
         "segments": 66,
-        "computation_ms": 68.96,
+        "computation_ms": 133.85,
         "expanded_nodes": 685,
         "origin_snap_m": 6.9,
         "destination_snap_m": 2.1,
@@ -437,11 +435,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 1333.5,
-        "effective_distance_m": 2113.6,
-        "duration_seconds": 1463.7,
+        "effective_distance_m": 1952.3,
+        "duration_seconds": 1389.1,
         "segments": 90,
-        "computation_ms": 136.82,
-        "expanded_nodes": 1152,
+        "computation_ms": 226.52,
+        "expanded_nodes": 1324,
         "origin_snap_m": 6.9,
         "destination_snap_m": 2.1,
         "failure": null,
@@ -464,7 +462,7 @@
       "route_changed": false,
       "detour_m": null,
       "detour_fraction": null,
-      "reason": "No route satisfies the wheelchair profile between these points.",
+      "reason": "These two points are on parts of the mapped path network that no step-free path joins, so the map data has no step-free route between them.",
       "baseline": {
         "case": "conestoga-to-rim-park",
         "profile": "standard",
@@ -477,8 +475,8 @@
         "expanded_nodes": null,
         "origin_snap_m": null,
         "destination_snap_m": null,
-        "failure": "No route satisfies the standard walking profile between these points.",
-        "failure_kind": "NoRouteFoundError",
+        "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller.",
+        "failure_kind": "DisconnectedEndpointsError",
         "barriers": {},
         "unknown": {}
       },
@@ -494,8 +492,8 @@
         "expanded_nodes": null,
         "origin_snap_m": null,
         "destination_snap_m": null,
-        "failure": "No route satisfies the wheelchair profile between these points.",
-        "failure_kind": "NoRouteFoundError",
+        "failure": "These two points are on parts of the mapped path network that no step-free path joins, so the map data has no step-free route between them.",
+        "failure_kind": "DisconnectedEndpointsError",
         "barriers": {},
         "unknown": {}
       }
@@ -513,9 +511,9 @@
         "routed": true,
         "distance_m": 2439.8,
         "effective_distance_m": 2439.8,
-        "duration_seconds": 2067.3,
+        "duration_seconds": 1980.4,
         "segments": 195,
-        "computation_ms": 211.64,
+        "computation_ms": 396.69,
         "expanded_nodes": 2344,
         "origin_snap_m": 11.8,
         "destination_snap_m": 0.8,
@@ -528,8 +526,7 @@
           "surface": 20,
           "smoothness": 166,
           "gradient": 195,
-          "width": 195,
-          "kerb information": 1
+          "width": 195
         }
       },
       "subject": {
@@ -537,11 +534,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 2494.3,
-        "effective_distance_m": 4099.5,
-        "duration_seconds": 2825.5,
+        "effective_distance_m": 3932.1,
+        "duration_seconds": 2598.2,
         "segments": 156,
-        "computation_ms": 589.46,
-        "expanded_nodes": 5957,
+        "computation_ms": 9543.8,
+        "expanded_nodes": 4820,
         "origin_snap_m": 11.8,
         "destination_snap_m": 0.8,
         "failure": null,
@@ -553,8 +550,7 @@
           "surface": 12,
           "smoothness": 127,
           "gradient": 156,
-          "width": 156,
-          "kerb information": 1
+          "width": 156
         }
       }
     },
@@ -562,18 +558,18 @@
       "case": "uptown-to-belmont",
       "description": "Uptown Waterloo south to Belmont Village",
       "route_changed": true,
-      "detour_m": 182.8,
-      "detour_fraction": 0.0685,
-      "reason": "avoids 14 crossings; avoids 3 segments with unknown kerb information; avoids 47 segments with unknown width; avoids 52 segments with unknown gradient; avoids 53 segments with unknown smoothness",
+      "detour_m": 161.1,
+      "detour_fraction": 0.0604,
+      "reason": "avoids 12 crossings; avoids 2 segments with unknown kerb information; avoids 50 segments with unknown width; avoids 52 segments with unknown gradient; avoids 53 segments with unknown smoothness",
       "baseline": {
         "case": "uptown-to-belmont",
         "profile": "standard",
         "routed": true,
         "distance_m": 2668.1,
         "effective_distance_m": 2668.1,
-        "duration_seconds": 2396.4,
+        "duration_seconds": 2165.7,
         "segments": 169,
-        "computation_ms": 301.39,
+        "computation_ms": 722.86,
         "expanded_nodes": 3889,
         "origin_snap_m": 0.8,
         "destination_snap_m": 1.8,
@@ -586,29 +582,29 @@
           "gradient": 169,
           "width": 126,
           "smoothness": 150,
-          "kerb information": 3
+          "kerb information": 2
         }
       },
       "subject": {
         "case": "uptown-to-belmont",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 2850.9,
-        "effective_distance_m": 4109.8,
-        "duration_seconds": 3141.0,
+        "distance_m": 2829.2,
+        "effective_distance_m": 4041.9,
+        "duration_seconds": 2947.1,
         "segments": 117,
-        "computation_ms": 859.36,
-        "expanded_nodes": 8302,
+        "computation_ms": 2023.92,
+        "expanded_nodes": 8334,
         "origin_snap_m": 0.8,
         "destination_snap_m": 1.8,
         "failure": null,
         "failure_kind": null,
         "barriers": {
-          "crossings": 7
+          "crossings": 9
         },
         "unknown": {
           "gradient": 117,
-          "width": 79,
+          "width": 76,
           "smoothness": 97,
           "surface": 2
         }
@@ -620,16 +616,16 @@
       "route_changed": true,
       "detour_m": 116.9,
       "detour_fraction": 0.0615,
-      "reason": "avoids 13 crossings; avoids 15 segments with unknown smoothness; avoids 16 segments with unknown width; avoids 17 segments with unknown gradient; avoids 2 step segments; avoids 4 segments with unknown kerb information",
+      "reason": "avoids 1 segments with unknown kerb information; avoids 13 crossings; avoids 15 segments with unknown smoothness; avoids 16 segments with unknown width; avoids 17 segments with unknown gradient; avoids 2 step segments",
       "baseline": {
         "case": "belmont-to-hospital",
         "profile": "standard",
         "routed": true,
         "distance_m": 1902.0,
         "effective_distance_m": 1902.0,
-        "duration_seconds": 1738.9,
+        "duration_seconds": 1543.9,
         "segments": 103,
-        "computation_ms": 158.91,
+        "computation_ms": 298.86,
         "expanded_nodes": 1401,
         "origin_snap_m": 1.8,
         "destination_snap_m": 1.1,
@@ -643,7 +639,7 @@
           "smoothness": 98,
           "gradient": 103,
           "width": 102,
-          "kerb information": 4
+          "kerb information": 1
         }
       },
       "subject": {
@@ -652,10 +648,10 @@
         "routed": true,
         "distance_m": 2018.9,
         "effective_distance_m": 3300.1,
-        "duration_seconds": 2125.1,
+        "duration_seconds": 2103.0,
         "segments": 86,
-        "computation_ms": 424.35,
-        "expanded_nodes": 4377,
+        "computation_ms": 2056.04,
+        "expanded_nodes": 4523,
         "origin_snap_m": 1.8,
         "destination_snap_m": 1.1,
         "failure": null,
@@ -672,18 +668,18 @@
       "case": "hospital-to-city-hall",
       "description": "Hospital across to Kitchener City Hall",
       "route_changed": true,
-      "detour_m": 88.3,
-      "detour_fraction": 0.0565,
-      "reason": "avoids 1 segments with unknown kerb information; avoids 15 segments with unknown smoothness; avoids 20 segments with unknown gradient; avoids 20 segments with unknown width; avoids 9 crossings",
+      "detour_m": 54.2,
+      "detour_fraction": 0.0347,
+      "reason": "avoids 1 segments with unknown gradient; avoids 2 segments with unknown smoothness; avoids 3 crossings",
       "baseline": {
         "case": "hospital-to-city-hall",
         "profile": "standard",
         "routed": true,
         "distance_m": 1564.0,
         "effective_distance_m": 1564.0,
-        "duration_seconds": 1398.5,
+        "duration_seconds": 1269.5,
         "segments": 80,
-        "computation_ms": 72.4,
+        "computation_ms": 632.99,
         "expanded_nodes": 712,
         "origin_snap_m": 1.1,
         "destination_snap_m": 0.8,
@@ -695,31 +691,30 @@
         "unknown": {
           "smoothness": 56,
           "gradient": 80,
-          "width": 77,
-          "kerb information": 1
+          "width": 77
         }
       },
       "subject": {
         "case": "hospital-to-city-hall",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 1652.3,
-        "effective_distance_m": 2355.6,
-        "duration_seconds": 1799.3,
-        "segments": 60,
-        "computation_ms": 217.8,
-        "expanded_nodes": 1970,
+        "distance_m": 1618.2,
+        "effective_distance_m": 2313.5,
+        "duration_seconds": 1685.6,
+        "segments": 79,
+        "computation_ms": 846.98,
+        "expanded_nodes": 1886,
         "origin_snap_m": 1.1,
         "destination_snap_m": 0.8,
         "failure": null,
         "failure_kind": null,
         "barriers": {
-          "crossings": 3
+          "crossings": 9
         },
         "unknown": {
-          "smoothness": 41,
-          "gradient": 60,
-          "width": 57
+          "smoothness": 54,
+          "gradient": 79,
+          "width": 79
         }
       }
     },
@@ -727,18 +722,18 @@
       "case": "city-hall-to-victoria-park",
       "description": "City Hall to Victoria Park, downtown Kitchener",
       "route_changed": true,
-      "detour_m": 69.7,
-      "detour_fraction": 0.0774,
-      "reason": "avoids 3 segments with unknown kerb information; avoids 7 crossings",
+      "detour_m": 25.9,
+      "detour_fraction": 0.0287,
+      "reason": "avoids 1 segments with unknown smoothness; avoids 2 segments with unknown gradient; avoids 3 segments with unknown width; avoids 7 crossings",
       "baseline": {
         "case": "city-hall-to-victoria-park",
         "profile": "standard",
         "routed": true,
         "distance_m": 900.9,
         "effective_distance_m": 900.9,
-        "duration_seconds": 867.4,
+        "duration_seconds": 731.3,
         "segments": 69,
-        "computation_ms": 94.23,
+        "computation_ms": 143.35,
         "expanded_nodes": 717,
         "origin_snap_m": 0.8,
         "destination_snap_m": 21.0,
@@ -751,19 +746,19 @@
           "smoothness": 50,
           "gradient": 69,
           "width": 69,
-          "kerb information": 3
+          "kerb information": 1
         }
       },
       "subject": {
         "case": "city-hall-to-victoria-park",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 970.6,
-        "effective_distance_m": 1513.8,
-        "duration_seconds": 1081.7,
-        "segments": 81,
-        "computation_ms": 198.08,
-        "expanded_nodes": 1772,
+        "distance_m": 926.8,
+        "effective_distance_m": 1486.2,
+        "duration_seconds": 965.4,
+        "segments": 67,
+        "computation_ms": 320.33,
+        "expanded_nodes": 1765,
         "origin_snap_m": 0.8,
         "destination_snap_m": 21.0,
         "failure": null,
@@ -772,9 +767,10 @@
           "crossings": 3
         },
         "unknown": {
-          "smoothness": 63,
-          "gradient": 81,
-          "width": 80
+          "smoothness": 49,
+          "gradient": 67,
+          "width": 66,
+          "kerb information": 1
         }
       }
     },
@@ -784,16 +780,16 @@
       "route_changed": true,
       "detour_m": 33.3,
       "detour_fraction": 0.0414,
-      "reason": "avoids 1 segments with unknown kerb information; avoids 17 segments with unknown gradient; avoids 17 segments with unknown width; avoids 23 segments with unknown smoothness; avoids 5 crossings",
+      "reason": "avoids 17 segments with unknown gradient; avoids 17 segments with unknown width; avoids 23 segments with unknown smoothness; avoids 5 crossings",
       "baseline": {
         "case": "city-hall-to-market",
         "profile": "standard",
         "routed": true,
         "distance_m": 804.9,
         "effective_distance_m": 804.9,
-        "duration_seconds": 796.2,
+        "duration_seconds": 653.3,
         "segments": 54,
-        "computation_ms": 41.07,
+        "computation_ms": 96.58,
         "expanded_nodes": 527,
         "origin_snap_m": 0.8,
         "destination_snap_m": 33.1,
@@ -805,8 +801,7 @@
         "unknown": {
           "smoothness": 37,
           "gradient": 54,
-          "width": 53,
-          "kerb information": 1
+          "width": 53
         }
       },
       "subject": {
@@ -814,11 +809,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 838.2,
-        "effective_distance_m": 1128.0,
-        "duration_seconds": 982.3,
+        "effective_distance_m": 1103.2,
+        "duration_seconds": 873.1,
         "segments": 37,
-        "computation_ms": 99.18,
-        "expanded_nodes": 794,
+        "computation_ms": 176.58,
+        "expanded_nodes": 776,
         "origin_snap_m": 0.8,
         "destination_snap_m": 33.1,
         "failure": null,
@@ -837,18 +832,18 @@
       "case": "victoria-park-to-market",
       "description": "Across downtown Kitchener, park to market",
       "route_changed": true,
-      "detour_m": 83.8,
-      "detour_fraction": 0.0615,
-      "reason": "avoids 4 segments with unknown kerb information; avoids 5 segments with unknown smoothness; avoids 7 crossings",
+      "detour_m": 26.5,
+      "detour_fraction": 0.0195,
+      "reason": "avoids 1 segments with unknown kerb information; avoids 14 segments with unknown gradient; avoids 14 segments with unknown width; avoids 21 segments with unknown smoothness; avoids 7 crossings",
       "baseline": {
         "case": "victoria-park-to-market",
         "profile": "standard",
         "routed": true,
         "distance_m": 1362.2,
         "effective_distance_m": 1362.2,
-        "duration_seconds": 1269.0,
+        "duration_seconds": 1105.7,
         "segments": 92,
-        "computation_ms": 113.84,
+        "computation_ms": 248.86,
         "expanded_nodes": 1414,
         "origin_snap_m": 21.0,
         "destination_snap_m": 33.1,
@@ -861,19 +856,19 @@
           "smoothness": 79,
           "gradient": 92,
           "width": 87,
-          "kerb information": 4
+          "kerb information": 2
         }
       },
       "subject": {
         "case": "victoria-park-to-market",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 1446.0,
-        "effective_distance_m": 2206.9,
-        "duration_seconds": 1642.1,
-        "segments": 94,
-        "computation_ms": 280.02,
-        "expanded_nodes": 2282,
+        "distance_m": 1388.7,
+        "effective_distance_m": 2147.4,
+        "duration_seconds": 1446.6,
+        "segments": 78,
+        "computation_ms": 549.25,
+        "expanded_nodes": 2242,
         "origin_snap_m": 21.0,
         "destination_snap_m": 33.1,
         "failure": null,
@@ -882,28 +877,29 @@
           "crossings": 6
         },
         "unknown": {
-          "smoothness": 74,
-          "gradient": 94,
-          "width": 89
+          "smoothness": 58,
+          "gradient": 78,
+          "width": 73,
+          "kerb information": 1
         }
       }
     },
     {
       "case": "boardwalk-to-uptown",
       "description": "The Boardwalk to Uptown Waterloo \u2014 a long suburban walk",
-      "route_changed": true,
-      "detour_m": 227.7,
-      "detour_fraction": 0.0415,
-      "reason": "avoids 2 segments with unknown kerb information; avoids 4 crossings; avoids 8 segments with unknown smoothness",
+      "route_changed": false,
+      "detour_m": 0.0,
+      "detour_fraction": 0.0,
+      "reason": "identical route \u2014 nothing on the direct path costs this profile anything",
       "baseline": {
         "case": "boardwalk-to-uptown",
         "profile": "standard",
         "routed": true,
         "distance_m": 5491.8,
         "effective_distance_m": 5491.8,
-        "duration_seconds": 4188.0,
+        "duration_seconds": 4457.6,
         "segments": 191,
-        "computation_ms": 119.52,
+        "computation_ms": 410.24,
         "expanded_nodes": 1267,
         "origin_snap_m": 6.5,
         "destination_snap_m": 0.8,
@@ -916,32 +912,31 @@
           "surface": 11,
           "smoothness": 184,
           "gradient": 191,
-          "width": 191,
-          "kerb information": 2
+          "width": 191
         }
       },
       "subject": {
         "case": "boardwalk-to-uptown",
         "profile": "wheelchair",
         "routed": true,
-        "distance_m": 5719.5,
-        "effective_distance_m": 8899.1,
-        "duration_seconds": 6060.5,
-        "segments": 199,
-        "computation_ms": 1768.57,
-        "expanded_nodes": 17249,
+        "distance_m": 5491.8,
+        "effective_distance_m": 8723.3,
+        "duration_seconds": 5720.7,
+        "segments": 191,
+        "computation_ms": 3995.9,
+        "expanded_nodes": 15508,
         "origin_snap_m": 6.5,
         "destination_snap_m": 0.8,
         "failure": null,
         "failure_kind": null,
         "barriers": {
-          "crossings": 2
+          "crossings": 6
         },
         "unknown": {
           "surface": 11,
-          "smoothness": 176,
-          "gradient": 199,
-          "width": 199
+          "smoothness": 181,
+          "gradient": 191,
+          "width": 191
         }
       }
     },
@@ -958,9 +953,9 @@
         "routed": true,
         "distance_m": 2370.6,
         "effective_distance_m": 2370.6,
-        "duration_seconds": 2036.0,
+        "duration_seconds": 1924.2,
         "segments": 140,
-        "computation_ms": 224.19,
+        "computation_ms": 511.93,
         "expanded_nodes": 2425,
         "origin_snap_m": 1.7,
         "destination_snap_m": 3.2,
@@ -982,11 +977,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 2400.7,
-        "effective_distance_m": 3375.2,
-        "duration_seconds": 2647.0,
+        "effective_distance_m": 3298.4,
+        "duration_seconds": 2500.7,
         "segments": 124,
-        "computation_ms": 503.26,
-        "expanded_nodes": 4844,
+        "computation_ms": 775.65,
+        "expanded_nodes": 4406,
         "origin_snap_m": 1.7,
         "destination_snap_m": 3.2,
         "failure": null,
@@ -1015,9 +1010,9 @@
         "routed": true,
         "distance_m": 1196.1,
         "effective_distance_m": 1196.1,
-        "duration_seconds": 1086.0,
+        "duration_seconds": 970.9,
         "segments": 63,
-        "computation_ms": 44.76,
+        "computation_ms": 96.94,
         "expanded_nodes": 421,
         "origin_snap_m": 2.8,
         "destination_snap_m": 2.4,
@@ -1038,11 +1033,11 @@
         "profile": "wheelchair",
         "routed": true,
         "distance_m": 1212.2,
-        "effective_distance_m": 1742.1,
-        "duration_seconds": 1296.0,
+        "effective_distance_m": 1728.1,
+        "duration_seconds": 1262.7,
         "segments": 59,
-        "computation_ms": 110.13,
-        "expanded_nodes": 899,
+        "computation_ms": 180.29,
+        "expanded_nodes": 891,
         "origin_snap_m": 2.8,
         "destination_snap_m": 2.4,
         "failure": null,
@@ -1070,9 +1065,9 @@
         "routed": true,
         "distance_m": 1792.4,
         "effective_distance_m": 1792.4,
-        "duration_seconds": 1367.7,
+        "duration_seconds": 1454.9,
         "segments": 132,
-        "computation_ms": 175.9,
+        "computation_ms": 347.94,
         "expanded_nodes": 1882,
         "origin_snap_m": 2.4,
         "destination_snap_m": 41.6,
@@ -1095,10 +1090,10 @@
         "routed": true,
         "distance_m": 1956.5,
         "effective_distance_m": 3109.1,
-        "duration_seconds": 2059.4,
+        "duration_seconds": 2038.0,
         "segments": 96,
-        "computation_ms": 494.6,
-        "expanded_nodes": 4985,
+        "computation_ms": 978.57,
+        "expanded_nodes": 5011,
         "origin_snap_m": 2.4,
         "destination_snap_m": 41.6,
         "failure": null,
@@ -1117,9 +1112,9 @@
     {
       "case": "campus-library-to-student-life",
       "profile": "wheelchair",
-      "dijkstra_ms": 17.7,
-      "astar_ms": 47.06,
-      "dijkstra_expanded": 689,
+      "dijkstra_ms": 35.69,
+      "astar_ms": 60.06,
+      "dijkstra_expanded": 718,
       "astar_expanded": 353,
       "dijkstra_cost": 601.003,
       "astar_cost": 601.003
@@ -1127,180 +1122,180 @@
     {
       "case": "campus-to-laurier",
       "profile": "wheelchair",
-      "dijkstra_ms": 286.15,
-      "astar_ms": 448.57,
-      "dijkstra_expanded": 10816,
-      "astar_expanded": 4251,
-      "dijkstra_cost": 2498.326,
-      "astar_cost": 2498.326
+      "dijkstra_ms": 462.5,
+      "astar_ms": 759.67,
+      "dijkstra_expanded": 11236,
+      "astar_expanded": 4336,
+      "dijkstra_cost": 2466.566,
+      "astar_cost": 2466.566
     },
     {
       "case": "laurier-to-uptown",
       "profile": "wheelchair",
-      "dijkstra_ms": 220.02,
-      "astar_ms": 216.94,
-      "dijkstra_expanded": 7665,
-      "astar_expanded": 2383,
-      "dijkstra_cost": 2147.186,
-      "astar_cost": 2147.186
+      "dijkstra_ms": 345.55,
+      "astar_ms": 490.29,
+      "dijkstra_expanded": 6640,
+      "astar_expanded": 1894,
+      "dijkstra_cost": 2001.337,
+      "astar_cost": 2001.337
     },
     {
       "case": "uptown-to-waterloo-park",
       "profile": "wheelchair",
-      "dijkstra_ms": 170.6,
-      "astar_ms": 153.33,
-      "dijkstra_expanded": 5258,
-      "astar_expanded": 1246,
-      "dijkstra_cost": 1563.256,
-      "astar_cost": 1563.256
+      "dijkstra_ms": 312.18,
+      "astar_ms": 273.23,
+      "dijkstra_expanded": 4788,
+      "astar_expanded": 1099,
+      "dijkstra_cost": 1395.825,
+      "astar_cost": 1395.825
     },
     {
       "case": "park-to-campus",
       "profile": "wheelchair",
-      "dijkstra_ms": 201.43,
-      "astar_ms": 194.36,
-      "dijkstra_expanded": 7446,
-      "astar_expanded": 1788,
-      "dijkstra_cost": 1728.492,
-      "astar_cost": 1728.492
+      "dijkstra_ms": 325.07,
+      "astar_ms": 311.15,
+      "dijkstra_expanded": 6175,
+      "astar_expanded": 1360,
+      "dijkstra_cost": 1543.249,
+      "astar_cost": 1543.249
     },
     {
       "case": "uptown-to-transit-hub",
       "profile": "wheelchair",
-      "dijkstra_ms": 31.47,
-      "astar_ms": 46.92,
-      "dijkstra_expanded": 1282,
-      "astar_expanded": 498,
-      "dijkstra_cost": 667.041,
-      "astar_cost": 667.041
+      "dijkstra_ms": 40.54,
+      "astar_ms": 42.28,
+      "dijkstra_expanded": 531,
+      "astar_expanded": 157,
+      "dijkstra_cost": 375.006,
+      "astar_cost": 375.006
     },
     {
       "case": "rec-complex-to-campus",
       "profile": "wheelchair",
-      "dijkstra_ms": 174.89,
-      "astar_ms": 184.57,
-      "dijkstra_expanded": 6140,
-      "astar_expanded": 1866,
-      "dijkstra_cost": 2064.16,
-      "astar_cost": 2064.16
+      "dijkstra_ms": 379.44,
+      "astar_ms": 483.59,
+      "dijkstra_expanded": 6010,
+      "astar_expanded": 1792,
+      "dijkstra_cost": 2026.927,
+      "astar_cost": 2026.927
     },
     {
       "case": "northfield-to-conestoga",
       "profile": "wheelchair",
-      "dijkstra_ms": 82.97,
-      "astar_ms": 88.21,
-      "dijkstra_expanded": 3691,
-      "astar_expanded": 1152,
-      "dijkstra_cost": 2113.636,
-      "astar_cost": 2113.636
+      "dijkstra_ms": 242.03,
+      "astar_ms": 442.09,
+      "dijkstra_expanded": 3928,
+      "astar_expanded": 1324,
+      "dijkstra_cost": 1952.251,
+      "astar_cost": 1952.251
     },
     {
       "case": "erb-westmount-to-uptown",
       "profile": "wheelchair",
-      "dijkstra_ms": 443.38,
-      "astar_ms": 524.36,
-      "dijkstra_expanded": 16483,
-      "astar_expanded": 5957,
-      "dijkstra_cost": 4099.5,
-      "astar_cost": 4099.5
+      "dijkstra_ms": 900.37,
+      "astar_ms": 1166.86,
+      "dijkstra_expanded": 15296,
+      "astar_expanded": 4820,
+      "dijkstra_cost": 3932.069,
+      "astar_cost": 3932.069
     },
     {
       "case": "uptown-to-belmont",
       "profile": "wheelchair",
-      "dijkstra_ms": 779.05,
-      "astar_ms": 773.1,
-      "dijkstra_expanded": 29301,
-      "astar_expanded": 8302,
-      "dijkstra_cost": 4109.823,
-      "astar_cost": 4109.823
+      "dijkstra_ms": 2036.22,
+      "astar_ms": 2454.81,
+      "dijkstra_expanded": 30179,
+      "astar_expanded": 8334,
+      "dijkstra_cost": 4041.878,
+      "astar_cost": 4041.878
     },
     {
       "case": "belmont-to-hospital",
       "profile": "wheelchair",
-      "dijkstra_ms": 373.65,
-      "astar_ms": 465.16,
-      "dijkstra_expanded": 14607,
-      "astar_expanded": 4377,
+      "dijkstra_ms": 791.6,
+      "astar_ms": 1558.76,
+      "dijkstra_expanded": 14864,
+      "astar_expanded": 4523,
       "dijkstra_cost": 3300.13,
       "astar_cost": 3300.13
     },
     {
       "case": "hospital-to-city-hall",
       "profile": "wheelchair",
-      "dijkstra_ms": 197.8,
-      "astar_ms": 177.85,
-      "dijkstra_expanded": 7409,
-      "astar_expanded": 1970,
-      "dijkstra_cost": 2355.554,
-      "astar_cost": 2355.554
+      "dijkstra_ms": 389.21,
+      "astar_ms": 460.2,
+      "dijkstra_expanded": 7190,
+      "astar_expanded": 1886,
+      "dijkstra_cost": 2313.463,
+      "astar_cost": 2313.463
     },
     {
       "case": "city-hall-to-victoria-park",
       "profile": "wheelchair",
-      "dijkstra_ms": 155.52,
-      "astar_ms": 141.48,
-      "dijkstra_expanded": 5108,
-      "astar_expanded": 1772,
-      "dijkstra_cost": 1513.784,
-      "astar_cost": 1513.784
+      "dijkstra_ms": 329.91,
+      "astar_ms": 2518.65,
+      "dijkstra_expanded": 5152,
+      "astar_expanded": 1765,
+      "dijkstra_cost": 1486.202,
+      "astar_cost": 1486.202
     },
     {
       "case": "city-hall-to-market",
       "profile": "wheelchair",
-      "dijkstra_ms": 76.74,
-      "astar_ms": 115.14,
-      "dijkstra_expanded": 3031,
-      "astar_expanded": 794,
-      "dijkstra_cost": 1128.02,
-      "astar_cost": 1128.02
+      "dijkstra_ms": 732.87,
+      "astar_ms": 601.59,
+      "dijkstra_expanded": 3042,
+      "astar_expanded": 776,
+      "dijkstra_cost": 1103.181,
+      "astar_cost": 1103.181
     },
     {
       "case": "victoria-park-to-market",
       "profile": "wheelchair",
-      "dijkstra_ms": 172.35,
-      "astar_ms": 226.31,
-      "dijkstra_expanded": 7230,
-      "astar_expanded": 2282,
-      "dijkstra_cost": 2206.923,
-      "astar_cost": 2206.923
+      "dijkstra_ms": 1435.1,
+      "astar_ms": 2069.21,
+      "dijkstra_expanded": 7167,
+      "astar_expanded": 2242,
+      "dijkstra_cost": 2147.427,
+      "astar_cost": 2147.427
     },
     {
       "case": "boardwalk-to-uptown",
       "profile": "wheelchair",
-      "dijkstra_ms": 1043.37,
-      "astar_ms": 1485.91,
-      "dijkstra_expanded": 40881,
-      "astar_expanded": 17249,
-      "dijkstra_cost": 8899.11,
-      "astar_cost": 8899.11
+      "dijkstra_ms": 11130.92,
+      "astar_ms": 3326.3,
+      "dijkstra_expanded": 39291,
+      "astar_expanded": 15508,
+      "dijkstra_cost": 8723.347,
+      "astar_cost": 8723.347
     },
     {
       "case": "laurel-creek-to-campus",
       "profile": "wheelchair",
-      "dijkstra_ms": 415.12,
-      "astar_ms": 462.51,
-      "dijkstra_expanded": 16743,
-      "astar_expanded": 4844,
-      "dijkstra_cost": 3375.205,
-      "astar_cost": 3375.205
+      "dijkstra_ms": 810.67,
+      "astar_ms": 765.42,
+      "dijkstra_expanded": 16275,
+      "astar_expanded": 4406,
+      "dijkstra_cost": 3298.416,
+      "astar_cost": 3298.416
     },
     {
       "case": "bridgeport-to-columbia",
       "profile": "wheelchair",
-      "dijkstra_ms": 91.56,
-      "astar_ms": 93.26,
-      "dijkstra_expanded": 3818,
-      "astar_expanded": 899,
-      "dijkstra_cost": 1742.054,
-      "astar_cost": 1742.054
+      "dijkstra_ms": 295.19,
+      "astar_ms": 1579.68,
+      "dijkstra_expanded": 3824,
+      "astar_expanded": 891,
+      "dijkstra_cost": 1728.102,
+      "astar_cost": 1728.102
     },
     {
       "case": "columbia-to-rec-complex",
       "profile": "wheelchair",
-      "dijkstra_ms": 359.16,
-      "astar_ms": 458.53,
-      "dijkstra_expanded": 14506,
-      "astar_expanded": 4985,
+      "dijkstra_ms": 3269.62,
+      "astar_ms": 5006.51,
+      "dijkstra_expanded": 14873,
+      "astar_expanded": 5011,
       "dijkstra_cost": 3109.107,
       "astar_cost": 3109.107
     }
@@ -1317,9 +1312,9 @@
     {
       "case": "campus-to-laurier",
       "distances": {
-        "current": 1616.4,
-        "no_gradient_unknown": 1616.4,
-        "no_unknown_penalty": 1616.4
+        "current": 1516.0,
+        "no_gradient_unknown": 1516.0,
+        "no_unknown_penalty": 1516.0
       }
     },
     {
@@ -1341,17 +1336,17 @@
     {
       "case": "park-to-campus",
       "distances": {
-        "current": 1123.2,
-        "no_gradient_unknown": 1123.2,
-        "no_unknown_penalty": 1123.2
+        "current": 1022.8,
+        "no_gradient_unknown": 1022.8,
+        "no_unknown_penalty": 1022.8
       }
     },
     {
       "case": "uptown-to-transit-hub",
       "distances": {
-        "current": 278.9,
-        "no_gradient_unknown": 278.9,
-        "no_unknown_penalty": 278.9
+        "current": 183.0,
+        "no_gradient_unknown": 183.0,
+        "no_unknown_penalty": 183.0
       }
     },
     {
@@ -1389,31 +1384,31 @@
     {
       "case": "uptown-to-belmont",
       "distances": {
-        "current": 2850.9,
-        "no_gradient_unknown": 2850.9,
-        "no_unknown_penalty": 2850.9
+        "current": 2829.2,
+        "no_gradient_unknown": 2742.2,
+        "no_unknown_penalty": 2742.2
       }
     },
     {
       "case": "belmont-to-hospital",
       "distances": {
         "current": 2018.9,
-        "no_gradient_unknown": 2018.9,
-        "no_unknown_penalty": 2018.9
+        "no_gradient_unknown": 2043.2,
+        "no_unknown_penalty": 2043.2
       }
     },
     {
       "case": "hospital-to-city-hall",
       "distances": {
-        "current": 1652.3,
-        "no_gradient_unknown": 1638.4,
-        "no_unknown_penalty": 1638.4
+        "current": 1618.2,
+        "no_gradient_unknown": 1602.8,
+        "no_unknown_penalty": 1602.8
       }
     },
     {
       "case": "city-hall-to-victoria-park",
       "distances": {
-        "current": 970.6,
+        "current": 926.8,
         "no_gradient_unknown": 970.6,
         "no_unknown_penalty": 970.6
       }
@@ -1422,32 +1417,32 @@
       "case": "city-hall-to-market",
       "distances": {
         "current": 838.2,
-        "no_gradient_unknown": 838.2,
-        "no_unknown_penalty": 838.2
+        "no_gradient_unknown": 821.7,
+        "no_unknown_penalty": 821.7
       }
     },
     {
       "case": "victoria-park-to-market",
       "distances": {
-        "current": 1446.0,
-        "no_gradient_unknown": 1446.0,
-        "no_unknown_penalty": 1446.0
+        "current": 1388.7,
+        "no_gradient_unknown": 1388.7,
+        "no_unknown_penalty": 1388.7
       }
     },
     {
       "case": "boardwalk-to-uptown",
       "distances": {
-        "current": 5719.5,
-        "no_gradient_unknown": 5719.5,
-        "no_unknown_penalty": 5719.5
+        "current": 5491.8,
+        "no_gradient_unknown": 5491.8,
+        "no_unknown_penalty": 5491.8
       }
     },
     {
       "case": "laurel-creek-to-campus",
       "distances": {
         "current": 2400.7,
-        "no_gradient_unknown": 2400.7,
-        "no_unknown_penalty": 2400.7
+        "no_gradient_unknown": 2400.8,
+        "no_unknown_penalty": 2408.3
       }
     },
     {

@@ -456,9 +456,9 @@ Dijkstra's 7,409, and returns identical cost on every routable journey — but
 wall-clock is 200.6 ms against 197.7 ms at p50. The heuristic's per-node cost
 cancels the saving at this scale in this implementation.
 
-**The unknown-data penalty is not saturated, but it is doing one job.** Removing
-it changes 3 of 20 routes; removing only the missing-gradient term changes the
-same 3. See ADR 0008.
+**The unknown-data penalty is not saturated, but one term does most of its
+work.** Under routing policy 3 removing it changes 8 of 20 routes and removing
+only the missing-gradient term changes 7 (3 and 3 under policy 2). See ADR 0008.
 
 **Inspecting geometry found a bug nothing else would have.** 12 of the 19
 routable journeys drew a discontinuous polyline — gaps of up to 93 m — and one

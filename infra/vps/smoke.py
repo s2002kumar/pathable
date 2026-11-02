@@ -20,8 +20,9 @@ What it checks, each recorded as passed or failed with the reason:
 * Place search finds both ends of the journey recorded in
   docs/evidence/waterloo-place-search.json, and routing that journey with the
   wheelchair profile reproduces the recorded answer exactly: 406.4 m with
-  4 stairways on the shortest route, 490.2 m with none on the accessible one,
-  from dataset 51585450 and with no model predictions.
+  3 stairways on the shortest route, 503.4 m with none on the accessible one,
+  from dataset 51585450 and with no model predictions. Those are routing
+  policy 3's figures (policy 2 answered 4 stairways and 490.2 m).
 
 Then latency: the route repeated sequentially, then the same with N clients in
 parallel, recording the client's round trip and the server's own
@@ -62,14 +63,15 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-#: The searched journey recorded by PA-SEARCH-01 against the same dataset.
+#: The searched journey recorded by PA-SEARCH-01 against the same dataset,
+#: as routing policy 3 answers it (Waterloo Core v2, 2026-11-02).
 JOURNEY_START_QUERY = "Davis Centre"
 JOURNEY_START_LABEL = "Davis Centre Library"
 JOURNEY_END_QUERY = "Student Life Centre"
 JOURNEY_END_LABEL = "Student Life Centre"
 EXPECTED_DATASET = "51585450-8ff5-409d-a02e-66d5a3c5e260"
-EXPECTED_STANDARD = (406.4, 4)
-EXPECTED_ACCESSIBLE = (490.2, 0)
+EXPECTED_STANDARD = (406.4, 3)
+EXPECTED_ACCESSIBLE = (503.4, 0)
 PRIVATE_PORTS = (5432, 8000, 3000)
 
 

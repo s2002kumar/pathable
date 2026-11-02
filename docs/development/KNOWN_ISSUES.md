@@ -256,9 +256,9 @@ because two routes missing completely different things produced the same number
 and are completely different journeys.
 
 The underlying penalty was ablated rather than assumed. Over the twenty-journey
-corpus it still changes 3 of 20 routes, so it is not saturated. But removing only
-the missing-gradient term has exactly the same effect as removing every term, so
-one term is currently doing all the work. Recorded in ADR 0008.
+corpus it changes 8 of 20 routes under routing policy 3 (3 under policy 2), so it
+is not saturated. Removing only the missing-gradient term changes 7 of them, so
+one term still does most of the work. Recorded in ADR 0008.
 
 ---
 
