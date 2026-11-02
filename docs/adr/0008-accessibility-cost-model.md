@@ -156,6 +156,17 @@ crossing happened to be drawn in. Counts are of units. Evidence and the
 before/after on twenty real journeys are in
 [`WATERLOO_CORE_V2.md`](../evidence/WATERLOO_CORE_V2.md).
 
+A route that starts or ends on a crossing or stairway walks part of one. The
+piece it walks carries the share of the unit that its length covers, so the
+pieces of a segment add up to the segment. Two ends on one segment are joined
+by the stretch between them. Before the acceptance pass, a piece kept its whole
+segment's share. Half a crossing then paid for all of it, and two ends on one
+crossing paid for it twice, after walking out to a kerb and back. Hard limits
+read what a piece is, never its share: a piece of a stairway is a stairway.
+These corrections move routes, but policy 3 had never been released, so the
+version stays 3 and every committed policy 3 figure was regenerated on the
+corrected code.
+
 ### The shortest route is the baseline, timed at walking pace _(2026-11-02)_
 
 The comparison is "shortest pedestrian route" against "your profile's route".
@@ -177,8 +188,17 @@ nearer the point it stands for than the other end is: moved to the foot of a
 stairway somebody asked to climb, the nearest step-free path was the start
 itself, a route of 0 m. When an end has moved, the summary leads with where the
 profile route ends, not with how much shorter it is, because two routes that end
-in different places are not one journey made two ways. Otherwise the request
-fails at once with that reason. This replaces a "no route" for a building whose
+in different places are not one journey made two ways. No length difference is
+reported for them anywhere: the response's `distance_comparable` is false and
+`extra_distance_m` null, and the route evaluation gives such a journey no
+detour. Otherwise the request fails at once with that reason.
+
+Candidates are ranked by geodesic metres. The spatial index works in degrees,
+and a degree east is about 73% of a degree north here, so it only gathers
+candidates. A window's best is trusted only within the window's own radius;
+otherwise the window widens, up to the 150 m limit. Stopping at the first
+window that held any segment let closed paths within 60 m hide an open one
+100 m away. This replaces a "no route" for a building whose
 nearest path is behind a private door or reachable only by stairs, and a search
 of the whole network for two points that cannot be joined.
 

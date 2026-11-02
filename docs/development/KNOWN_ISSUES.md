@@ -669,6 +669,13 @@ A route starts and ends at the nearest path to the point chosen. That is not a
 building's door, let alone its accessible door. For a step-free profile, the
 nearest step-free path can be some distance from the entrance that serves it.
 
+"Nearest" is also fragile at building scale. Two paths can lie within a metre
+of each other and lead to different routes. When the acceptance pass made
+snapping rank paths by metres instead of degrees, the shortest route to the
+Dana Porter Library's point moved to a path 24.5 m away instead of one 25.1 m
+away, on the other side of a stairway. The walker route's end is now 52 m from
+the shortest route's, not 25 m. Both answers follow the rule; neither is a door.
+
 There is no clean source for accessible-entrance coordinates on campus:
 
 - **OpenStreetMap** has 405 entrance nodes in the main campus area. 22 are
