@@ -95,9 +95,18 @@ class DisconnectedEndpointsError(NoRouteFoundError):
 
     def __init__(self, profile: MobilityProfile) -> None:
         super().__init__(profile)
+        # For a step-free traveller the parts are joined only by step-free
+        # paths; somebody who can use stairs may still have a route.
         self.args = (
-            "These two points are on parts of the mapped path network that do not connect, "
-            "so the map data has no route between them for any traveller.",
+            (
+                "These two points are on parts of the mapped path network that no step-free "
+                "path joins, so the map data has no step-free route between them."
+            )
+            if profile.hard_limits.exclude_steps
+            else (
+                "These two points are on parts of the mapped path network that do not "
+                "connect, so the map data has no route between them for any traveller."
+            ),
         )
 
 
@@ -632,21 +641,34 @@ def _snap_connected(
     if start_part is None or end_part is None or start_part == end_part:
         return start, end
 
-    def within(part: int, coordinate: tuple[float, float]) -> EdgeSnap | None:
-        return graph.snap_to_edge(
+    def within(
+        part: int, coordinate: tuple[float, float], other: tuple[float, float]
+    ) -> EdgeSnap | None:
+        moved = graph.snap_to_edge(
             coordinate[0],
             coordinate[1],
             accept=lambda edge: parts.get(edge.source_u) == part and _usable_for(edge, profile),
             max_distance_m=MAX_SNAP_DISTANCE_M,
         )
+        if moved is None or moved.distance_m > MAX_SNAP_DISTANCE_M:
+            return None
+        # A moved end must still be nearer the point it stands for than the
+        # other one. Moved to the foot of a stairway somebody asked to climb, the
+        # top's nearest step-free path was the start itself: a route of 0 m,
+        # "29 m shorter". There is no step-free route to that point, and that is
+        # the answer.
+        at = Point(moved.longitude, moved.latitude)
+        if geodesic_distance_m(at, Point(*coordinate)) >= geodesic_distance_m(at, Point(*other)):
+            return None
+        return moved
 
     # (part moved into, extra snapping distance, origin snap, destination snap)
     options: list[tuple[int, float, EdgeSnap, EdgeSnap]] = []
-    moved_end = within(start_part, destination)
-    if moved_end is not None and moved_end.distance_m <= MAX_SNAP_DISTANCE_M:
+    moved_end = within(start_part, destination, origin)
+    if moved_end is not None:
         options.append((start_part, moved_end.distance_m - end.distance_m, start, moved_end))
-    moved_start = within(end_part, origin)
-    if moved_start is not None and moved_start.distance_m <= MAX_SNAP_DISTANCE_M:
+    moved_start = within(end_part, origin, destination)
+    if moved_start is not None:
         options.append((end_part, moved_start.distance_m - start.distance_m, moved_start, end))
     if not options:
         raise DisconnectedEndpointsError(profile)

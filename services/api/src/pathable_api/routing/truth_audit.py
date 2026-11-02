@@ -238,6 +238,11 @@ def check_comparison(comparison: RouteComparison) -> list[Finding]:
         claims = [item.code for item in comparison.explanations if item.code != "same_distance"]
         if claims:
             defect("explanation", f"the same path, yet it claims {claims}")
+    elif _ends_moved(standard, accessible):
+        # Routes that start or end at different points are not compared by
+        # length; the headline must say where the profile route goes instead.
+        if "m away" not in summary.headline:
+            defect("explanation", f"the ends moved but the headline reads {summary.headline!r}")
     else:
         headline = summary.headline
         if round(extra) > 0 and not headline.startswith(f"+{round(extra):,} m"):
@@ -295,6 +300,17 @@ def check_comparison(comparison: RouteComparison) -> list[Finding]:
         if apart > _SNAP_MISMATCH_M:
             flag("snap_mismatch", f"the {end} snapped {apart:.1f} m from the shortest route's")
     return found
+
+
+def _ends_moved(standard: Route, accessible: Route) -> bool:
+    return any(
+        _metres_between((ours.longitude, ours.latitude), (theirs.longitude, theirs.latitude))
+        > _SNAP_MISMATCH_M
+        for ours, theirs in (
+            (accessible.origin, standard.origin),
+            (accessible.destination, standard.destination),
+        )
+    )
 
 
 def check_response(response: dict[str, Any], comparison: RouteComparison) -> list[Finding]:

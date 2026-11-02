@@ -208,3 +208,42 @@ class TestSnappingToConnectedPaths:
         moved = [c for c in comparison.cautions if c.code == "profile_route_moved_endpoint"]
         assert moved
         assert "starts" in moved[0].summary
+
+    def test_the_top_of_a_stairway_only_stairs_reach_has_no_step_free_route(self) -> None:
+        # Regression: asked for the top of a stairway the map reaches only by
+        # the stairs, the destination moved to the nearest step-free path —
+        # the foot of the stairway, where the route began — and the answer was
+        # a 0 m route "29 m shorter". There is no step-free route to that point.
+        n = Network()
+        bottom, top = n.node("b", 0, 0), n.node("t", 0, 29)
+        n.way("stairs", [bottom, top], {"highway": "steps"})
+        n.way("landing", [top, n.node("t2", 6, 29)], {"highway": "footway"})
+        n.way("street", [n.node("w", -60, 0), bottom, n.node("e", 60, 0)], {"highway": "footway"})
+        graph = n.graph()
+
+        comparison = compare_routes(
+            graph, origin=at(0, 0), destination=at(0, 29), profile=WHEELCHAIR
+        )
+        assert comparison.standard_route is not None
+        assert comparison.accessible_route is None
+        assert comparison.accessible_failure is not None
+        assert "no step-free" in comparison.accessible_failure
+        assert comparison.summary.kind == "no_profile_route"
+
+    def test_a_route_that_ends_elsewhere_says_where_rather_than_comparing_lengths(self) -> None:
+        n = Network()
+        terrace, foot = n.node("t", 0, 0), n.node("f", 0, -10)
+        west, east = n.node("w", -50, -30), n.node("e", 150, -30)
+        street_middle = n.node("s", 0, -30)
+        n.way("terrace", [terrace, n.node("t2", 15, 0)], {"highway": "footway"})
+        n.way("stairs", [terrace, foot], {"highway": "steps"})
+        n.way("street", [west, street_middle, east], {"highway": "footway"})
+        n.way("down", [foot, street_middle], {"highway": "footway"})
+
+        comparison = compare_routes(
+            n.graph(), origin=at(*n.nodes[east]), destination=at(5, 1), profile=WHEELCHAIR
+        )
+        headline = comparison.summary.headline
+        assert headline.startswith("Ends ")
+        assert "m away" in headline
+        assert "shorter" not in headline

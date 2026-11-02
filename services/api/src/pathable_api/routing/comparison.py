@@ -295,6 +295,18 @@ def _phrase(explanation: Explanation) -> str:
     return "for this profile's preferences"
 
 
+def _moved_ends(standard: Route, accessible: Route) -> dict[str, int]:
+    """How far the profile route starts and ends from the shortest route's, where it does."""
+    return {
+        verb: round(apart)
+        for verb, ours, theirs in (
+            ("starts", accessible.origin, standard.origin),
+            ("ends", accessible.destination, standard.destination),
+        )
+        if (apart := geodesic_distance_m(ours.point, theirs.point)) > _MOVED_ENDPOINT_M
+    }
+
+
 def summarise(
     standard: Route | None,
     accessible: Route | None,
@@ -324,7 +336,21 @@ def summarise(
         (item for item in explanations if item.basis != "profile_rule"),
         None,
     )
+    # Two routes that do not start and end at the same points are not one
+    # journey made two ways, so their lengths are not set against each other:
+    # where the profile route goes instead is the first thing to say.
+    moved = _moved_ends(standard, accessible)
+
     extra = accessible.distance_m - standard.distance_m
+    if moved:
+        where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
+        return DifferenceSummary(
+            "different_path",
+            f"{where.capitalize()}: the map has no path for this profile to where the "
+            f"shortest route {' and '.join('begins' if verb == 'starts' else 'ends' for verb in moved)}.",
+            primary_code=primary.code if primary is not None else None,
+            primary_basis=primary.basis if primary is not None else None,
+        )
     if round(extra) > 0:
         lead = f"+{_metres(extra)}"
     elif round(extra) < 0:
@@ -1295,16 +1321,9 @@ def _cautions(
     # door). Said in words, so a difference in where the routes begin is never
     # read as a difference in the way between.
     if standard is not None and accessible is not None:
-        moved = {
-            end: round(apart)
-            for end, ours, theirs in (
-                ("start", accessible.origin, standard.origin),
-                ("end", accessible.destination, standard.destination),
-            )
-            if (apart := geodesic_distance_m(ours.point, theirs.point)) > _MOVED_ENDPOINT_M
-        }
+        moved = _moved_ends(standard, accessible)
         if moved:
-            where = " and ".join(f"{end}s {metres} m away" for end, metres in moved.items())
+            where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
             cautions.append(
                 Caution(
                     code="profile_route_moved_endpoint",
@@ -1314,7 +1333,10 @@ def _cautions(
                         f"under this profile in the map data, so it uses the nearest one "
                         f"that can."
                     ),
-                    evidence={f"{end}_moved_m": metres for end, metres in moved.items()},
+                    evidence={
+                        f"{'start' if verb == 'starts' else 'end'}_moved_m": metres
+                        for verb, metres in moved.items()
+                    },
                 )
             )
 
