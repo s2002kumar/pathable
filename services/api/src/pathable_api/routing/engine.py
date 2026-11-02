@@ -13,6 +13,7 @@ number of edges the search may evaluate are capped.
 
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass
 from typing import Literal
@@ -74,8 +75,15 @@ class PointOffNetworkError(RoutingError):
     def __init__(self, label: str, distance_m: float) -> None:
         self.label = label
         self.distance_m = distance_m
+        # The snap search stops at the limit, so beyond it there is no distance
+        # to give: "inf m" reached people clicking open farmland.
+        how_far = (
+            f"{distance_m:.0f} m"
+            if math.isfinite(distance_m)
+            else f"more than {MAX_SNAP_DISTANCE_M:.0f} m"
+        )
         super().__init__(
-            f"The {label} is {distance_m:.0f} m from the nearest mapped path, which is "
+            f"The {label} is {how_far} from the nearest mapped path, which is "
             f"further than PathAble will guess. Choose a point closer to a street or footpath."
         )
 

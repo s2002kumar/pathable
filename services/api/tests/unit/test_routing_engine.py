@@ -21,6 +21,7 @@ from pathable_api.geo.network import NetworkEdge, NetworkNode, NetworkPayload
 from pathable_api.routing.comparison import compare_routes
 from pathable_api.routing.engine import (
     MAX_REQUEST_SPAN_M,
+    MAX_SNAP_DISTANCE_M,
     NoRouteFoundError,
     PointOffNetworkError,
     RequestTooLargeError,
@@ -402,6 +403,17 @@ class TestRequestLimits:
     def test_the_refusal_names_which_point_was_off_network(self, graph: RoutableGraph) -> None:
         with pytest.raises(PointOffNetworkError, match="destination"):
             compute_route(graph, origin=A, destination=(D[0] + 0.05, D[1]), profile=STANDARD)
+
+    def test_a_point_with_no_path_in_reach_is_not_said_to_be_inf_metres_away(
+        self, graph: RoutableGraph
+    ) -> None:
+        # Regression: open farmland in Waterloo answered "The origin is inf m
+        # from the nearest mapped path". The search stops at the snapping
+        # limit, so the honest distance is "more than" that limit.
+        with pytest.raises(PointOffNetworkError) as refused:
+            compute_route(graph, origin=(A[0] - 0.05, A[1]), destination=D, profile=STANDARD)
+        assert "inf" not in str(refused.value)
+        assert f"more than {MAX_SNAP_DISTANCE_M:.0f} m" in str(refused.value)
 
     def test_a_request_spanning_half_the_planet_is_refused_before_any_search(
         self, graph: RoutableGraph
