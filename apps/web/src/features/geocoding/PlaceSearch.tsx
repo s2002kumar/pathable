@@ -63,7 +63,10 @@ export type PlaceSearchProps = {
 function matchedOnNote(match: GeocodeMatch): string | null {
   switch (match.matched_on) {
     case 'code':
-      return 'building code';
+      // OpenStreetMap's ref or short_name: a campus building's code, but also
+      // a restaurant's short name. "building code" told people a restaurant
+      // was a building called DC.
+      return 'short code';
     case 'initialism':
       return 'initials';
     case 'fuzzy':

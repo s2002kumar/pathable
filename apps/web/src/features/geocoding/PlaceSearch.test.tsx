@@ -165,8 +165,9 @@ describe('PlaceSearch', () => {
     const building = await screen.findByRole('option', {
       name: 'William G. Davis Computer Research Centre, university building',
     });
-    // A recorded building code, said as one: not a guess at the name.
-    expect(building).toHaveTextContent('university building · building code');
+    // A short code recorded in OpenStreetMap, said as one: not a guess at the
+    // name, and not called a building code, because restaurants have them too.
+    expect(building).toHaveTextContent('university building · short code');
     // A match with no category is named by its label alone, with no dangling comma.
     expect(screen.getByRole('option', { name: 'Davis Street' })).toBeVisible();
     expect(screen.getByTestId('search-attribution')).toHaveTextContent('as of 2026-08-16');
