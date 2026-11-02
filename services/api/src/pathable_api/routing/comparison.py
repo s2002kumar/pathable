@@ -66,8 +66,9 @@ _MATERIAL_COST_M = 1.0
 _CITED_SEGMENTS = 10
 
 #: Two routes whose ends are further apart than this did not start or end at
-#: the same point, and the comparison says so.
-_MOVED_ENDPOINT_M = 5.0
+#: the same point, and the comparison says so. Their lengths are then lengths of
+#: different journeys, and no difference between them is reported.
+MOVED_ENDPOINT_M = 5.0
 
 #: What a statement rests on:
 #:
@@ -149,18 +150,36 @@ class RouteComparison:
         return routes_share_path(self.standard_route, self.accessible_route)
 
     @property
-    def extra_distance_m(self) -> float | None:
+    def distance_comparable(self) -> bool:
+        """Whether the two lengths are lengths of the same journey.
+
+        Only when both routes exist and start and end at the same points. A
+        profile route that ends 25 m away walked to somewhere else, and "43 m
+        shorter" beside it compared a different journey's length.
+        """
         if self.standard_route is None or self.accessible_route is None:
+            return False
+        return not moved_ends(self.standard_route, self.accessible_route)
+
+    @property
+    def extra_distance_m(self) -> float | None:
+        """How much further the profile route is, when the two can be compared.
+
+        None when either route is missing or the ends moved: a figure that is
+        absent cannot be read as a detour.
+        """
+        if not self.distance_comparable:
             return None
+        assert self.standard_route is not None  # noqa: S101 - distance_comparable
+        assert self.accessible_route is not None  # noqa: S101 - distance_comparable
         return self.accessible_route.distance_m - self.standard_route.distance_m
 
     @property
     def extra_distance_fraction(self) -> float | None:
-        if self.standard_route is None or self.accessible_route is None:
+        extra = self.extra_distance_m
+        if extra is None or self.standard_route is None or self.standard_route.distance_m <= 0:
             return None
-        if self.standard_route.distance_m <= 0:
-            return None
-        return self.extra_distance_m / self.standard_route.distance_m  # type: ignore[operator]
+        return extra / self.standard_route.distance_m
 
     @property
     def routes_are_equivalent(self) -> bool:
@@ -295,15 +314,19 @@ def _phrase(explanation: Explanation) -> str:
     return "for this profile's preferences"
 
 
-def _moved_ends(standard: Route, accessible: Route) -> dict[str, int]:
-    """How far the profile route starts and ends from the shortest route's, where it does."""
+def moved_ends(standard: Route, accessible: Route) -> dict[str, int]:
+    """How far the profile route starts and ends from the shortest route's, where it does.
+
+    Keyed "starts" and "ends", in whole metres; empty when both ends are within
+    `MOVED_ENDPOINT_M` of the shortest route's.
+    """
     return {
         verb: round(apart)
         for verb, ours, theirs in (
             ("starts", accessible.origin, standard.origin),
             ("ends", accessible.destination, standard.destination),
         )
-        if (apart := geodesic_distance_m(ours.point, theirs.point)) > _MOVED_ENDPOINT_M
+        if (apart := geodesic_distance_m(ours.point, theirs.point)) > MOVED_ENDPOINT_M
     }
 
 
@@ -339,7 +362,7 @@ def summarise(
     # Two routes that do not start and end at the same points are not one
     # journey made two ways, so their lengths are not set against each other:
     # where the profile route goes instead is the first thing to say.
-    moved = _moved_ends(standard, accessible)
+    moved = moved_ends(standard, accessible)
 
     extra = accessible.distance_m - standard.distance_m
     if moved:
@@ -1219,6 +1242,28 @@ _PENALTY_EXPLAINERS: tuple[
 
 
 def _explain_distance(standard: Route, accessible: Route) -> Explanation:
+    moved = moved_ends(standard, accessible)
+    if moved:
+        # Said instead of a difference, which would compare two journeys'
+        # lengths as if they were one journey's two ways.
+        where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
+        return Explanation(
+            code="distance_not_compared",
+            summary=(
+                f"This route {where} from the shortest route's, so the two lengths are of "
+                f"different journeys and are not compared."
+            ),
+            basis="profile_rule",
+            evidence={
+                "standard_distance_m": round(standard.distance_m),
+                "accessible_distance_m": round(accessible.distance_m),
+                **{
+                    f"{'start' if verb == 'starts' else 'end'}_moved_m": metres
+                    for verb, metres in moved.items()
+                },
+            },
+        )
+
     extra = accessible.distance_m - standard.distance_m
 
     if abs(extra) < _MATERIAL_DIFFERENCE_M:
@@ -1321,7 +1366,7 @@ def _cautions(
     # door). Said in words, so a difference in where the routes begin is never
     # read as a difference in the way between.
     if standard is not None and accessible is not None:
-        moved = _moved_ends(standard, accessible)
+        moved = moved_ends(standard, accessible)
         if moved:
             where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
             cautions.append(

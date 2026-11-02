@@ -21,7 +21,11 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING
 
+from shapely.geometry import Point
+
 from pathable_api.geo.enums import KerbType, SmoothnessClass, SurfaceClass, TriState
+from pathable_api.geo.geometry import geodesic_distance_m
+from pathable_api.routing.comparison import MOVED_ENDPOINT_M
 from pathable_api.routing.engine import (
     NoRouteFoundError,
     PointOffNetworkError,
@@ -65,6 +69,9 @@ class RouteOutcome:
     expanded_nodes: int | None = None
     origin_snap_m: float | None = None
     destination_snap_m: float | None = None
+    #: Where the route actually starts and ends, as (longitude, latitude).
+    origin_point: tuple[float, float] | None = None
+    destination_point: tuple[float, float] | None = None
     #: Why no route, when there is none. A real product outcome, not an error.
     failure: str | None = None
     failure_kind: str | None = None
@@ -100,8 +107,34 @@ class CaseComparison:
         return abs(self.subject.distance_m - self.baseline.distance_m) > 1.0
 
     @property
+    def ends_moved_m(self) -> dict[str, float]:
+        """How far the subject route starts and ends from the baseline's, where it does.
+
+        Empty when both ends are within `MOVED_ENDPOINT_M`, the comparison's own
+        threshold, or when either route is missing.
+        """
+        moved: dict[str, float] = {}
+        for end, ours, theirs in (
+            ("start", self.subject.origin_point, self.baseline.origin_point),
+            ("end", self.subject.destination_point, self.baseline.destination_point),
+        ):
+            if ours is None or theirs is None:
+                continue
+            apart = geodesic_distance_m(Point(*ours), Point(*theirs))
+            if apart > MOVED_ENDPOINT_M:
+                moved[end] = round(apart, 1)
+        return moved
+
+    @property
     def detour_m(self) -> float | None:
+        """How much further the subject route is, when both go to the same places.
+
+        None when the ends moved: the length of a route to somewhere else is not
+        a detour, and a median over it would mix two kinds of number.
+        """
         if self.baseline.distance_m is None or self.subject.distance_m is None:
+            return None
+        if self.ends_moved_m:
             return None
         return self.subject.distance_m - self.baseline.distance_m
 
@@ -230,6 +263,11 @@ def _describe(case: RouteCase, profile: MobilityProfile, route: Route) -> RouteO
         expanded_nodes=route.expanded_nodes,
         origin_snap_m=round(route.origin.distance_m, 1),
         destination_snap_m=round(route.destination.distance_m, 1),
+        origin_point=(round(route.origin.longitude, 7), round(route.origin.latitude, 7)),
+        destination_point=(
+            round(route.destination.longitude, 7),
+            round(route.destination.latitude, 7),
+        ),
         barriers=barriers,
         unknown=unknown,
     )
@@ -334,6 +372,7 @@ def as_records(comparisons: Sequence[CaseComparison]) -> list[dict[str, object]]
             "case": comparison.case,
             "description": comparison.description,
             "route_changed": comparison.route_changed,
+            "ends_moved_m": comparison.ends_moved_m,
             "detour_m": (None if comparison.detour_m is None else round(comparison.detour_m, 1)),
             "detour_fraction": (
                 None if comparison.detour_fraction is None else round(comparison.detour_fraction, 4)

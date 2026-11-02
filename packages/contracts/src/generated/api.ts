@@ -779,13 +779,22 @@ export interface components {
             /** Cautions */
             cautions: components["schemas"]["CautionModel"][];
             dataset: components["schemas"]["DatasetProvenance"];
+            /**
+             * Distance Comparable
+             * @description Whether the two routes start and end at the same points, so their lengths can be set against each other. False when either route is missing or when the profile route starts or ends elsewhere (see the profile_route_moved_endpoint caution).
+             * @default false
+             */
+            distance_comparable: boolean;
             /** Explanations */
             explanations: components["schemas"]["ExplanationModel"][];
-            /** Extra Distance Fraction */
+            /**
+             * Extra Distance Fraction
+             * @description extra_distance_m as a share of the shortest route's length.
+             */
             extra_distance_fraction?: number | null;
             /**
              * Extra Distance M
-             * @description How much further the accessible route is.
+             * @description How much further the accessible route is. Null unless distance_comparable: the length of a route to somewhere else is not a detour.
              */
             extra_distance_m?: number | null;
             /**

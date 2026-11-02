@@ -254,6 +254,7 @@ def comparison_response(
         accessible_route=_route_model(comparison.accessible_route),
         standard_failure=comparison.standard_failure,
         accessible_failure=comparison.accessible_failure,
+        distance_comparable=comparison.distance_comparable,
         extra_distance_m=comparison.extra_distance_m,
         extra_distance_fraction=comparison.extra_distance_fraction,
         summary=DifferenceSummaryModel(

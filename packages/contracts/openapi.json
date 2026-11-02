@@ -1154,6 +1154,12 @@
           "dataset": {
             "$ref": "#/components/schemas/DatasetProvenance"
           },
+          "distance_comparable": {
+            "default": false,
+            "description": "Whether the two routes start and end at the same points, so their lengths can be set against each other. False when either route is missing or when the profile route starts or ends elsewhere (see the profile_route_moved_endpoint caution).",
+            "title": "Distance Comparable",
+            "type": "boolean"
+          },
           "explanations": {
             "items": {
               "$ref": "#/components/schemas/ExplanationModel"
@@ -1170,6 +1176,7 @@
                 "type": "null"
               }
             ],
+            "description": "extra_distance_m as a share of the shortest route's length.",
             "title": "Extra Distance Fraction"
           },
           "extra_distance_m": {
@@ -1181,7 +1188,7 @@
                 "type": "null"
               }
             ],
-            "description": "How much further the accessible route is.",
+            "description": "How much further the accessible route is. Null unless distance_comparable: the length of a route to somewhere else is not a detour.",
             "title": "Extra Distance M"
           },
           "ml_predictions_used": {

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from pathable_api.api.v1.routes import comparison_response
 from pathable_api.routing.comparison import compare_routes, routes_share_path
 from pathable_api.routing.engine import DisconnectedEndpointsError, compute_route
 from pathable_api.routing.profiles import (
@@ -12,6 +13,7 @@ from pathable_api.routing.profiles import (
     WALKING_PACE,
     get_profile,
 )
+from pathable_api.schemas.routing import DatasetProvenance
 from tests.unit.test_routing_units import Network, at, journey, stair_network
 
 WHEELCHAIR = get_profile("wheelchair")
@@ -247,3 +249,97 @@ class TestSnappingToConnectedPaths:
         assert headline.startswith("Ends ")
         assert "m away" in headline
         assert "shorter" not in headline
+
+
+def terrace_network() -> Network:
+    """A terrace the map reaches only by stairs, above a street a ramp reaches."""
+    n = Network()
+    terrace, foot = n.node("t", 0, 0), n.node("f", 0, -10)
+    west, east = n.node("w", -50, -30), n.node("e", 150, -30)
+    street_middle = n.node("s", 0, -30)
+    n.way("terrace", [terrace, n.node("t2", 15, 0)], {"highway": "footway"})
+    n.way("stairs", [terrace, foot], {"highway": "steps"})
+    n.way("street", [west, street_middle, east], {"highway": "footway"})
+    n.way("down", [foot, street_middle], {"highway": "footway"})
+    return n
+
+
+class TestLengthsAreComparedOnlyForOneJourney:
+    def test_a_route_that_ends_elsewhere_reports_no_difference_at_all(self) -> None:
+        # Acceptance: the cards and the headline already said "Ends 25 m away",
+        # but the response still carried extra_distance_m = -43 and an
+        # explanation reading "43 m shorter than the shortest route". A figure
+        # that is there gets read as a detour, whatever sits beside it.
+        n = terrace_network()
+        comparison = compare_routes(
+            n.graph(), origin=at(*n.nodes["e"]), destination=at(5, 1), profile=WHEELCHAIR
+        )
+        assert comparison.standard_route is not None
+        assert comparison.accessible_route is not None
+
+        assert comparison.distance_comparable is False
+        assert comparison.extra_distance_m is None
+        assert comparison.extra_distance_fraction is None
+        codes = [item.code for item in comparison.explanations]
+        assert "distance_not_compared" in codes
+        assert "distance_difference" not in codes
+        assert "same_distance" not in codes
+        assert all("extra_distance_m" not in item.evidence for item in comparison.explanations)
+
+        # The explanation of where it ends instead is kept.
+        moved = next(c for c in comparison.cautions if c.code == "profile_route_moved_endpoint")
+        assert moved.evidence["end_moved_m"] > 5
+        assert comparison.summary.headline.startswith("Ends ")
+
+    def test_a_route_between_the_same_points_reports_its_difference(self) -> None:
+        n, ends = stair_network(step_count=12, pieces=2)
+        origin, destination = journey(n, ends)
+        comparison = compare_routes(
+            n.graph(), origin=origin, destination=destination, profile=WHEELCHAIR
+        )
+        standard, accessible = comparison.standard_route, comparison.accessible_route
+        assert standard is not None
+        assert accessible is not None
+
+        assert comparison.distance_comparable is True
+        assert comparison.extra_distance_m == pytest.approx(
+            accessible.distance_m - standard.distance_m
+        )
+        assert "distance_difference" in [item.code for item in comparison.explanations]
+
+    def test_no_profile_route_is_not_comparable_either(self) -> None:
+        n = Network()
+        bottom, top = n.node("b", 0, 0), n.node("t", 0, 29)
+        n.way("stairs", [bottom, top], {"highway": "steps"})
+        n.way("landing", [top, n.node("t2", 6, 29)], {"highway": "footway"})
+        n.way("street", [n.node("w", -60, 0), bottom, n.node("e", 60, 0)], {"highway": "footway"})
+        comparison = compare_routes(
+            n.graph(), origin=at(0, 0), destination=at(0, 29), profile=WHEELCHAIR
+        )
+
+        assert comparison.accessible_route is None
+        assert comparison.distance_comparable is False
+        assert comparison.extra_distance_m is None
+
+    def test_the_response_says_so(self) -> None:
+        n = terrace_network()
+        comparison = compare_routes(
+            n.graph(), origin=at(*n.nodes["e"]), destination=at(5, 1), profile=WHEELCHAIR
+        )
+        response = comparison_response(comparison, _provenance())
+
+        assert response.distance_comparable is False
+        assert response.extra_distance_m is None
+        assert response.extra_distance_fraction is None
+
+
+def _provenance() -> DatasetProvenance:
+    return DatasetProvenance(
+        dataset_id="00000000-0000-0000-0000-000000000000",
+        region="test",
+        checksum="0" * 64,
+        source_type="synthetic",
+        source_name="invented ways",
+        acquired_at="2026-11-02T00:00:00Z",
+        attribution="Synthetic test network",
+    )

@@ -336,6 +336,30 @@ describe('routes that end in different places are not set against each other (Co
     expect(document.body).not.toHaveTextContent(/43 m shorter/);
   });
 
+  it('shows where it ends when the API sends no difference, as it does', () => {
+    // The API sends no figure for routes that end in different places:
+    // distance_comparable is false and extra_distance_m is null.
+    render(
+      <RouteComparisonView
+        comparison={comparison({
+          distance_comparable: false,
+          extra_distance_m: null,
+          extra_distance_fraction: null,
+          cautions: [
+            {
+              code: 'profile_route_moved_endpoint',
+              summary: 'Your wheelchair route ends 25 m away from the shortest route’s.',
+              evidence: { end_moved_m: 25 },
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent('Ends 25 m away');
+    expect(screen.queryByText(/(distance|difference) not reported/i)).toBeNull();
+  });
+
   it('names both ends when both moved, as the API words it', () => {
     render(<RouteComparisonView comparison={moved({ start_moved_m: 12, end_moved_m: 25 }, 30)} />);
 

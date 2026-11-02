@@ -577,10 +577,25 @@ class RouteCompareResponse(BaseModel):
     accessible_failure: str | None = Field(
         default=None, description="Why no route satisfies the chosen profile."
     )
-    extra_distance_m: float | None = Field(
-        default=None, description="How much further the accessible route is."
+    distance_comparable: bool = Field(
+        default=False,
+        description=(
+            "Whether the two routes start and end at the same points, so their lengths "
+            "can be set against each other. False when either route is missing or when "
+            "the profile route starts or ends elsewhere (see the "
+            "profile_route_moved_endpoint caution)."
+        ),
     )
-    extra_distance_fraction: float | None = None
+    extra_distance_m: float | None = Field(
+        default=None,
+        description=(
+            "How much further the accessible route is. Null unless distance_comparable: "
+            "the length of a route to somewhere else is not a detour."
+        ),
+    )
+    extra_distance_fraction: float | None = Field(
+        default=None, description="extra_distance_m as a share of the shortest route's length."
+    )
     summary: DifferenceSummaryModel = Field(
         description="The comparison in one line, for reading before anything else."
     )

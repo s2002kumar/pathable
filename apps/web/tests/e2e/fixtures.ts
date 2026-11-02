@@ -326,6 +326,7 @@ function comparisonFor(origin: Point, destination: Point) {
     },
     standard_failure: null,
     accessible_failure: null,
+    distance_comparable: true,
     extra_distance_m: 226,
     extra_distance_fraction: 0.468,
     explanations: [
@@ -593,6 +594,7 @@ export const NO_ACCESSIBLE_ROUTE = {
   accessible_route: null,
   standard_failure: null,
   accessible_failure: 'No route satisfies the wheelchair profile between these points.',
+  distance_comparable: false,
   extra_distance_m: null,
   extra_distance_fraction: null,
   explanations: [],

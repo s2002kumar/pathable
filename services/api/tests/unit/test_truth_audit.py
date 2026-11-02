@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
+
+from pathable_api.routing import comparison as comparison_module
 from pathable_api.routing.engine import compute_route
 from pathable_api.routing.profiles import STANDARD, get_profile
 from pathable_api.routing.truth_audit import (
@@ -12,7 +15,8 @@ from pathable_api.routing.truth_audit import (
     totals,
 )
 from pathable_api.routing.truth_corpus import AuditCase
-from tests.unit.test_routing_units import journey, stair_network
+from tests.unit.test_routing_summary import terrace_network
+from tests.unit.test_routing_units import at, journey, stair_network
 
 WHEELCHAIR = get_profile("wheelchair")
 
@@ -70,3 +74,40 @@ class TestAuditCase:
             profile.key for profile in audit_profiles()
         }
         assert totals([outcome])["standard_invariant_cases"] == 1
+
+
+class TestEndsThatMoved:
+    @staticmethod
+    def _case() -> tuple[object, AuditCase]:
+        n = terrace_network()
+        case = AuditCase(
+            "terrace",
+            "to a terrace only stairs reach",
+            ("snapping",),
+            at(*n.nodes["e"]),
+            at(5, 1),
+        )
+        return n.graph(), case
+
+    def test_a_route_that_ends_elsewhere_audits_clean_with_no_length_flags(self) -> None:
+        graph, case = self._case()
+        outcome = audit_case(graph, case, [WHEELCHAIR])  # type: ignore[arg-type]
+
+        assert [item for item in outcome.findings if item.severity == "defect"] == []
+        checks = {item.check for item in outcome.findings}
+        # Different journeys: "shorter" or "detour" would compare their lengths.
+        assert "profile_route_shorter" not in checks
+        assert "large_detour" not in checks
+        assert "snap_mismatch" in checks
+
+    def test_a_difference_reported_for_ends_that_moved_is_a_defect(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # The audit measures the ends itself, so a comparison that stopped
+        # noticing them would be caught rather than trusted.
+        monkeypatch.setattr(comparison_module, "moved_ends", lambda standard, accessible: {})
+        graph, case = self._case()
+        outcome = audit_case(graph, case, [WHEELCHAIR])  # type: ignore[arg-type]
+
+        defects = {item.check for item in outcome.findings if item.severity == "defect"}
+        assert {"distance", "explanation"} <= defects

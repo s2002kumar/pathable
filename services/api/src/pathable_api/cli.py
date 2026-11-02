@@ -1631,7 +1631,13 @@ async def _evaluate(database: Database, args: argparse.Namespace) -> int:
             "no route" if not entry.subject.routed else "changed" if entry.route_changed else "same"
         )
         marker = f"{marker:<8}"
-        detour = "" if entry.detour_m is None else f"{entry.detour_m:+8.1f} m"
+        detour = (
+            "ends moved"
+            if entry.ends_moved_m
+            else ""
+            if entry.detour_m is None
+            else f"{entry.detour_m:+8.1f} m"
+        )
         print(f"  [{marker}] {entry.case:<32} {detour:>12}  {entry.reason()}")
 
     print(

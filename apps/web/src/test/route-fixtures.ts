@@ -293,6 +293,7 @@ export function comparison(overrides: Partial<RouteCompareResponse> = {}): Route
     accessible_route: accessible,
     standard_failure: null,
     accessible_failure: null,
+    distance_comparable: true,
     extra_distance_m: extra,
     extra_distance_fraction: extra / standard.distance_m,
     summary: {

@@ -233,13 +233,29 @@ def check_comparison(comparison: RouteComparison) -> list[Finding]:
 
     same = routes_share_path(standard, accessible)
     extra = accessible.distance_m - standard.distance_m
+    moved = _ends_moved(standard, accessible)
+    # Two routes that end in different places are different journeys: no
+    # figure, explanation or flag may set their lengths against each other.
+    if moved:
+        if comparison.distance_comparable or comparison.extra_distance_m is not None:
+            defect("distance", f"the ends moved but a difference of {extra:+.1f} m is reported")
+        compared = [
+            item.code
+            for item in comparison.explanations
+            if item.code in ("distance_difference", "same_distance")
+            or "extra_distance_m" in item.evidence
+        ]
+        if compared:
+            defect("explanation", f"the ends moved but {compared} compare the lengths")
+    elif comparison.extra_distance_m is None or abs(comparison.extra_distance_m - extra) > 0.01:
+        defect("distance", f"{extra:+.1f} m apart but {comparison.extra_distance_m} is reported")
     if same != (summary.kind == "same_path"):
         defect("explanation", f"same path is {same} but the summary is {summary.kind}")
     if same:
         claims = [item.code for item in comparison.explanations if item.code != "same_distance"]
         if claims:
             defect("explanation", f"the same path, yet it claims {claims}")
-    elif _ends_moved(standard, accessible):
+    elif moved:
         # Routes that start or end at different points are not compared by
         # length; the headline must say where the profile route goes instead.
         if "m away" not in summary.headline:
@@ -281,16 +297,17 @@ def check_comparison(comparison: RouteComparison) -> list[Finding]:
     if profile.hard_limits.exclude_steps and accessible.stairway_count:
         defect("hard_constraint", f"{accessible.stairway_count} stairways on a step-free route")
 
-    if extra < -1.0:
-        flag("profile_route_shorter", f"the profile route is {-extra:.1f} m shorter")
-    threshold = max(_WEAK_DETOUR_M, _WEAK_DETOUR_FRACTION * standard.distance_m)
-    if not same and summary.primary_basis == "not_recorded" and extra >= threshold:
-        flag(
-            "weak_evidence_detour",
-            f"+{extra:.0f} m ({extra / standard.distance_m:.0%}) led by {summary.primary_code}",
-        )
-    if extra >= max(_LARGE_DETOUR_M, _LARGE_DETOUR_FRACTION * standard.distance_m):
-        flag("large_detour", f"+{extra:.0f} m ({extra / standard.distance_m:.0%})")
+    if not moved:
+        if extra < -1.0:
+            flag("profile_route_shorter", f"the profile route is {-extra:.1f} m shorter")
+        threshold = max(_WEAK_DETOUR_M, _WEAK_DETOUR_FRACTION * standard.distance_m)
+        if not same and summary.primary_basis == "not_recorded" and extra >= threshold:
+            flag(
+                "weak_evidence_detour",
+                f"+{extra:.0f} m ({extra / standard.distance_m:.0%}) led by {summary.primary_code}",
+            )
+        if extra >= max(_LARGE_DETOUR_M, _LARGE_DETOUR_FRACTION * standard.distance_m):
+            flag("large_detour", f"+{extra:.0f} m ({extra / standard.distance_m:.0%})")
     for end, mine, theirs in (
         ("origin", accessible.origin, standard.origin),
         ("destination", accessible.destination, standard.destination),
@@ -325,6 +342,10 @@ def check_response(response: dict[str, Any], comparison: RouteComparison) -> lis
     summary = response["summary"]
     if summary["headline"] != comparison.summary.headline:
         defect("the headline sent differs from the one computed")
+    if response["distance_comparable"] != comparison.distance_comparable:
+        defect("distance_comparable sent differs from the one computed")
+    if not response["distance_comparable"] and response["extra_distance_m"] is not None:
+        defect("a distance difference is sent for routes that are not compared")
     for name, route in (
         ("standard_route", comparison.standard_route),
         ("accessible_route", comparison.accessible_route),
