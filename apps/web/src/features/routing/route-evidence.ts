@@ -230,6 +230,7 @@ export function summaryBasisLabel(comparison: RouteCompareResponse): string | nu
 
 export type Verdict =
   | { readonly kind: 'detour'; readonly extraM: number; readonly fraction: number | null }
+  | { readonly kind: 'ends_elsewhere'; readonly phrase: string }
   | { readonly kind: 'shorter'; readonly savedM: number }
   | { readonly kind: 'same_length' }
   | { readonly kind: 'same_route' }
@@ -237,12 +238,35 @@ export type Verdict =
   | { readonly kind: 'no_shortest_route' }
   | { readonly kind: 'difference_not_reported' };
 
+/**
+ * "Ends 25 m away": where the profile route starts or ends away from the
+ * shortest route's, read from the API's caution, or null when both share their
+ * ends. Worded as the API's summary words it.
+ */
+export function movedEnds(comparison: RouteCompareResponse): string | null {
+  const caution = comparison.cautions?.find((item) => item.code === 'profile_route_moved_endpoint');
+  if (!caution) return null;
+  const evidence = caution.evidence ?? {};
+  const parts = [
+    ['starts', evidence['start_moved_m']],
+    ['ends', evidence['end_moved_m']],
+  ].flatMap(([verb, metres]) => (typeof metres === 'number' ? [`${verb} ${metres} m away`] : []));
+  if (parts.length === 0) return null;
+  const phrase = parts.join(' and ');
+  return phrase.charAt(0).toUpperCase() + phrase.slice(1);
+}
+
 export function verdictOf(comparison: RouteCompareResponse): Verdict {
   const { standard_route: standard, accessible_route: accessible } = comparison;
   if (!accessible) {
     return { kind: 'no_accessible_route', failure: comparison.accessible_failure ?? null };
   }
   if (!standard) return { kind: 'no_shortest_route' };
+  // Two routes that end in different places are not one journey made two
+  // ways: "43 m shorter" beside "Ends 25 m away" set their lengths against
+  // each other all the same.
+  const moved = movedEnds(comparison);
+  if (moved !== null) return { kind: 'ends_elsewhere', phrase: moved };
   const extra = comparison.extra_distance_m;
   // Identity from segments or geometry, never from distance: two routes can
   // measure the same and be different paths. And identity only when the

@@ -309,6 +309,43 @@ describe('each route timed at its own pace, never subtracted (Core v2)', () => {
   });
 });
 
+describe('routes that end in different places are not set against each other (Core v2)', () => {
+  const moved = (evidence: Record<string, number>, extra: number) =>
+    comparison({
+      extra_distance_m: extra,
+      extra_distance_fraction: extra / 412,
+      cautions: [
+        {
+          code: 'profile_route_moved_endpoint',
+          summary: 'Your wheelchair route ends 25 m away from the shortest route’s.',
+          evidence,
+        },
+      ],
+    });
+
+  it('says where the profile route ends instead of how much shorter it is', () => {
+    // Regression: Physical Activities Complex to the Dana Porter Library,
+    // walker. The summary said "Ends 25 m away" and the card "43 m shorter".
+    render(<RouteComparisonView comparison={moved({ end_moved_m: 25 }, -43)} />);
+
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent('Ends 25 m away');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'route ends 25 m away from the shortest walking route’s',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Their lengths are not compared.');
+    expect(document.body).not.toHaveTextContent(/43 m shorter/);
+  });
+
+  it('names both ends when both moved, as the API words it', () => {
+    render(<RouteComparisonView comparison={moved({ start_moved_m: 12, end_moved_m: 25 }, 30)} />);
+
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent(
+      'Starts 12 m away and ends 25 m away',
+    );
+    expect(document.body).not.toHaveTextContent(/\+30 m longer/);
+  });
+});
+
 describe('a walking time beside a barrier says whose time it is', () => {
   it('labels the shortest route’s time as walking pace, beside what rules it out', () => {
     render(<RouteComparisonView comparison={fixtureComparison()} />);

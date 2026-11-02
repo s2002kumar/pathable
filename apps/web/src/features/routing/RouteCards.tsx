@@ -105,6 +105,8 @@ function difference(comparison: RouteCompareResponse): string {
       return `+${formatDistance(verdict.extraM)}`;
     case 'shorter':
       return `${formatDistance(verdict.savedM)} shorter`;
+    case 'ends_elsewhere':
+      return verdict.phrase;
     case 'same_length':
     case 'same_route':
       return 'Same length';

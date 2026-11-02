@@ -252,6 +252,14 @@ function RouteHeadline({ comparison }: { readonly comparison: RouteCompareRespon
           metre.
         </p>
       );
+    case 'ends_elsewhere':
+      return (
+        <p className={styles.headline} role="status">
+          The {profile} route {verdict.phrase.toLowerCase()} from the shortest walking route’s,
+          because the map has no path for this profile to that point. Their lengths are not
+          compared.
+        </p>
+      );
     case 'shorter':
       return (
         <p className={styles.headline} role="status">

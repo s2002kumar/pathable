@@ -12,6 +12,7 @@ import {
   formatShare,
   gradeBasis,
   formatDurationRange,
+  movedEnds,
   paceNote,
   rankedReasons,
   reasonGroups,
@@ -107,6 +108,7 @@ function RouteOption({ comparison, route, other, variant, testId, choice }: Opti
   const duration = routeDuration(route);
   const exclusions = variant === 'standard' ? exclusionsOf(route) : [];
   const extra = comparison.extra_distance_m;
+  const moved = movedEnds(comparison);
   // When every stairway on the route is one the profile rules out, the badge
   // says it all — count and recorded steps — and a separate stairs line would
   // repeat it. Otherwise the line stays: some stairs are costs, not walls.
@@ -134,13 +136,15 @@ function RouteOption({ comparison, route, other, variant, testId, choice }: Opti
         )}
         {variant === 'accessible' && other !== null ? (
           <span className={`${styles.optionExtra} tabular`} data-testid="difference-extra">
-            {typeof extra !== 'number'
-              ? 'Extra distance not reported'
-              : extra >= 0.5
-                ? `+${formatDistance(extra)} longer`
-                : extra <= -0.5
-                  ? `${formatDistance(-extra)} shorter`
-                  : 'Same length'}
+            {moved !== null
+              ? moved
+              : typeof extra !== 'number'
+                ? 'Extra distance not reported'
+                : extra >= 0.5
+                  ? `+${formatDistance(extra)} longer`
+                  : extra <= -0.5
+                    ? `${formatDistance(-extra)} shorter`
+                    : 'Same length'}
           </span>
         ) : null}
       </span>

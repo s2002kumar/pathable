@@ -28,6 +28,7 @@ import {
   segmentMidpoint,
   summaryBasisLabel,
   summaryEvidenceSegments,
+  movedEnds,
   verdictOf,
 } from './route-evidence';
 
@@ -200,6 +201,21 @@ describe('the one-line verdict', () => {
   it('keeps an equal length on different paths as equal length, not the same route', () => {
     const data = comparison({ extra_distance_m: 0.2, extra_distance_fraction: 0 });
     expect(verdictOf(data)).toEqual({ kind: 'same_length' });
+  });
+
+  it('gives routes that end in different places no length verdict', () => {
+    const data = comparison({
+      extra_distance_m: -43,
+      cautions: [
+        {
+          code: 'profile_route_moved_endpoint',
+          summary: 'Your walker or rollator route ends 25 m away from the shortest route’s.',
+          evidence: { end_moved_m: 25 },
+        },
+      ],
+    });
+    expect(verdictOf(data)).toEqual({ kind: 'ends_elsewhere', phrase: 'Ends 25 m away' });
+    expect(movedEnds(comparison())).toBeNull();
   });
 
   it('reports a missing difference as missing, not as zero', () => {
