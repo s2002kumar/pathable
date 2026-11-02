@@ -251,6 +251,14 @@ function comparisonFor(origin: Point, destination: Point) {
       distance_m: 483,
       effective_distance_m: 483,
       estimated_duration_seconds: 508,
+      duration_estimate: {
+        low_seconds: 432,
+        high_seconds: 635,
+        pace_low_mps: 1.1,
+        pace_high_mps: 1.4,
+        pace_label: 'walking pace',
+        basis: 'assumed_pace',
+      },
       // Both routes are timed at the traveller's pace, so the times compare.
       pace_profile: 'wheelchair',
       coordinates: straight,
@@ -283,6 +291,14 @@ function comparisonFor(origin: Point, destination: Point) {
       distance_m: 709,
       effective_distance_m: 980,
       estimated_duration_seconds: 746,
+      duration_estimate: {
+        low_seconds: 634,
+        high_seconds: 933,
+        pace_low_mps: 0.8,
+        pace_high_mps: 1.2,
+        pace_label: 'wheelchair pace',
+        basis: 'assumed_pace',
+      },
       pace_profile: 'wheelchair',
       coordinates: detour,
       segments: segments.accessible,
@@ -352,6 +368,12 @@ function comparisonFor(origin: Point, destination: Point) {
     dataset: DATASET,
     routing_policy_version: 2,
     ml_predictions_used: false,
+    summary: {
+      kind: 'different_path',
+      headline: '+226 m to avoid 1 recorded stairway.',
+      primary_code: 'avoids_stairs',
+      primary_basis: 'recorded',
+    },
   };
 }
 
@@ -517,6 +539,14 @@ export const NO_ACCESSIBLE_ROUTE = {
     distance_m: 120,
     effective_distance_m: 120,
     estimated_duration_seconds: 126,
+    duration_estimate: {
+      low_seconds: 107,
+      high_seconds: 158,
+      pace_low_mps: 1.1,
+      pace_high_mps: 1.4,
+      pace_label: 'walking pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     coordinates: [
       [-80.54, 43.47],
@@ -578,6 +608,12 @@ export const NO_ACCESSIBLE_ROUTE = {
   },
   routing_policy_version: 2,
   ml_predictions_used: false,
+  summary: {
+    kind: 'different_path',
+    headline: '+226 m to avoid 1 recorded stairway.',
+    primary_code: 'avoids_stairs',
+    primary_basis: 'recorded',
+  },
 };
 
 /** Answer every comparison with no route for the profile, as above. */

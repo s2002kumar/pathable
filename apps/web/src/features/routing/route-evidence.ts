@@ -23,6 +23,7 @@ import type {
   RouteCompareResponse,
   RouteExplanation,
   RouteSegment,
+  RouteUnit,
 } from '@pathable/contracts';
 import { differenceIsBelowDisplayPrecision, routesSharePath } from './route-identity';
 
@@ -37,7 +38,12 @@ export type RouteExclusion = {
   readonly reason: ExclusionReason;
   /** Segments of the route the chosen profile rules out for this reason. */
   readonly segmentIndexes: readonly number[];
-  /** Steps recorded on those segments; a floor, since some carry no count. */
+  /**
+   * How many things those segments are: stairways counted once each however
+   * many segments one spans (the response's `units`), anything else by segment.
+   */
+  readonly count: number;
+  /** Steps recorded on those stairways, each once; a floor, since some carry no count. */
   readonly recordedSteps: number;
 };
 
@@ -72,13 +78,54 @@ export function exclusionsOf(route: Route | null | undefined): RouteExclusion[] 
   });
   return EXCLUSION_ORDER.filter((reason) => byReason.has(reason)).map((reason) => {
     const entry = byReason.get(reason)!;
-    return { reason, segmentIndexes: entry.indexes, recordedSteps: entry.steps };
+    if (reason !== 'steps') {
+      return {
+        reason,
+        segmentIndexes: entry.indexes,
+        count: entry.indexes.length,
+        recordedSteps: 0,
+      };
+    }
+    const stairways = unitsCovering(route, 'stairway', entry.indexes);
+    return stairways === null
+      ? {
+          reason,
+          segmentIndexes: entry.indexes,
+          count: entry.indexes.length,
+          recordedSteps: entry.steps,
+        }
+      : {
+          reason,
+          segmentIndexes: entry.indexes,
+          count: stairways.length,
+          recordedSteps: stairways.reduce((total, unit) => total + (unit.step_count ?? 0), 0),
+        };
   });
+}
+
+/**
+ * The response's crossings or stairways that contain any of these segments, or
+ * null when the response lists none to read from.
+ *
+ * A stairway the network split into three segments is one stairway. Counting
+ * segments told people "4 stairways" about three.
+ */
+export function unitsCovering(
+  route: Route,
+  kind: RouteUnit['kind'],
+  segmentIndexes: readonly number[],
+): RouteUnit[] | null {
+  const units = route.units;
+  if (!units || units.length === 0) return null;
+  const wanted = new Set(segmentIndexes);
+  return units.filter(
+    (unit) => unit.kind === kind && unit.segment_indexes.some((index) => wanted.has(index)),
+  );
 }
 
 /** How one group of excluded segments reads, singular or plural. */
 export function exclusionLabel(exclusion: RouteExclusion): string {
-  const count = exclusion.segmentIndexes.length;
+  const count = exclusion.count;
   switch (exclusion.reason) {
     case 'steps':
       return `${count} ${count === 1 ? 'stairway' : 'stairways'}`;
@@ -99,27 +146,70 @@ export function exclusionLabel(exclusion: RouteExclusion): string {
 // Time
 // ---------------------------------------------------------------------------
 
-export type RouteTime =
-  | { readonly kind: 'estimate'; readonly seconds: number }
-  /** The chosen profile cannot use this route, so it has no time for them. */
-  | { readonly kind: 'unavailable' }
-  /** Timed at a different assumed pace from the route beside it. */
-  | { readonly kind: 'not_comparable' };
+export type RouteDuration = {
+  readonly lowMinutes: number;
+  readonly highMinutes: number;
+  /** Whose pace, as the response names it: "walking pace", "wheelchair pace". */
+  readonly pace: string;
+};
 
 /**
- * Whether a route gets a travel time, for the traveller who chose the profile.
+ * A route's time as the response states it: a range, at an assumed pace.
  *
- * A route the profile cannot use gets none: "16 min" beside a flight of stairs
- * reads as a trip a wheelchair user could take. And two estimates only sit side
- * by side when they share an assumed pace, since otherwise part of the gap
- * between them is a difference in assumption, not in route.
+ * Whole minutes, never fewer than one. The shortest route is timed at walking
+ * pace and the profile route at the profile's, so the two are never subtracted
+ * from one another: part of any gap would be a difference in assumption, not
+ * in route.
  */
-export function routeTime(route: Route, variant: RouteVariant, other: Route | null): RouteTime {
-  if (variant === 'standard' && exclusionsOf(route).length > 0) return { kind: 'unavailable' };
-  if (variant === 'standard' && other !== null && other.pace_profile !== route.pace_profile) {
-    return { kind: 'not_comparable' };
+export function routeDuration(route: Route): RouteDuration {
+  const estimate = route.duration_estimate;
+  const low = Math.max(1, Math.round(estimate.low_seconds / 60));
+  const high = Math.max(low, Math.round(estimate.high_seconds / 60));
+  return { lowMinutes: low, highMinutes: high, pace: estimate.pace_label };
+}
+
+/** "About 6–8 min", or "About 6 min" when the range rounds to one figure. */
+export function formatDurationRange(duration: RouteDuration): string {
+  return duration.lowMinutes === duration.highMinutes
+    ? `About ${duration.lowMinutes} min`
+    : `About ${duration.lowMinutes}–${duration.highMinutes} min`;
+}
+
+/** "at walking pace", "at an assumed wheelchair pace": whose assumption a time is. */
+export function paceNote(duration: RouteDuration): string {
+  return duration.pace === 'walking pace' ? 'at walking pace' : `at an assumed ${duration.pace}`;
+}
+
+// ---------------------------------------------------------------------------
+// The comparison in one line
+// ---------------------------------------------------------------------------
+
+/**
+ * The shortest-route segments the summary's reason is about: what "show on the
+ * map" points at. Empty when the routes are the same path, or the reason names
+ * nothing on the shortest route.
+ */
+export function summaryEvidenceSegments(comparison: RouteCompareResponse): number[] {
+  const code = comparison.summary?.primary_code;
+  if (!code) return [];
+  const explanation = comparison.explanations.find((item) => item.code === code);
+  return [...(explanation?.shortest_route_segments ?? [])];
+}
+
+/** What a summary's reason rests on, in words, or null when it states no reason. */
+export function summaryBasisLabel(comparison: RouteCompareResponse): string | null {
+  switch (comparison.summary?.primary_basis) {
+    case 'recorded':
+      return 'Recorded in OpenStreetMap';
+    case 'estimated':
+      return 'Estimated from elevation data';
+    case 'mixed':
+      return 'Recorded and estimated gradients';
+    case 'not_recorded':
+      return 'Avoids missing records, not a recorded barrier';
+    default:
+      return null;
   }
-  return { kind: 'estimate', seconds: route.estimated_duration_seconds };
 }
 
 // ---------------------------------------------------------------------------

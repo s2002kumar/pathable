@@ -10,6 +10,7 @@ import {
   type RouteFocus,
   evidenceGaps,
   gapsToGeoJson,
+  highlightToGeoJson,
   prefersReducedMotion,
   stairsOnRoutes,
 } from '@/features/map/route-layers';
@@ -23,7 +24,7 @@ import { type DetailsSection, RouteDetails } from './RouteDetails';
 import { type PlannerLayout, RoutePlanner } from './RoutePlanner';
 import { barrierPins, comparePins, endpointLabels, gapCallouts, phonePins } from './map-pins';
 import { useMobilityProfiles } from './mobility-profiles';
-import type { RouteVariant } from './route-evidence';
+import { type RouteVariant, summaryEvidenceSegments } from './route-evidence';
 import type { ProfileRules } from './route-facts';
 import { routesSharePath } from './route-identity';
 import { useRouteComparison } from './useRouteComparison';
@@ -179,6 +180,9 @@ export function RouteWorkspace({
   const [details, setDetails] = useState<DetailsSection | null>(null);
   const [layers, setLayers] = useState<MapLayers>(ALL_LAYERS);
   const [phoneEditorOpen, setPhoneEditorOpen] = useState(false);
+  // The answer whose reason the viewer asked to see on the map. Stored as the
+  // answer itself, so a new answer never inherits a highlight it did not ask for.
+  const [highlightFor, setHighlightFor] = useState<RouteCompareResponse | null>(null);
   // Where focus goes once the layout the viewer asked for has rendered: a
   // one-shot instruction, so a ref read after the next commit, not state.
   const pendingFocus = useRef<'profile' | 'destination' | null>(null);
@@ -439,6 +443,19 @@ export function RouteWorkspace({
     [layout, shownRoute],
   );
 
+  const highlighted = comparison !== null && highlightFor === comparison && layout === 'compare';
+  const highlight = useMemo(
+    () =>
+      highlighted && comparison
+        ? highlightToGeoJson(comparison.standard_route, summaryEvidenceSegments(comparison))
+        : null,
+    [highlighted, comparison],
+  );
+  const toggleHighlight = useCallback(
+    () => setHighlightFor((current) => (current === comparison ? null : comparison)),
+    [comparison],
+  );
+
   const markers = useMemo<MapMarker[]>(() => {
     const evidence = layers.evidence;
     switch (layout) {
@@ -531,6 +548,7 @@ export function RouteWorkspace({
           fitPadding={fit.measurePadding}
           stairs={stairs}
           gaps={gaps}
+          highlight={highlight}
           markers={markers}
           fitRequest={fitRequest}
           fitScope={layout}
@@ -602,6 +620,8 @@ export function RouteWorkspace({
           onEditorToggle={setPhoneEditorOpen}
           onShowLayout={setLayoutChoice}
           onEditJourney={handleEditJourney}
+          evidenceHighlighted={highlighted}
+          onToggleEvidenceHighlight={toggleHighlight}
           {...(fetchImpl ? { fetchImpl } : {})}
         />
       </aside>

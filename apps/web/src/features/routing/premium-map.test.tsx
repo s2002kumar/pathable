@@ -50,6 +50,14 @@ function buildRoute(overrides: Record<string, unknown> = {}) {
     distance_m: 354.1,
     effective_distance_m: 601,
     estimated_duration_seconds: 373,
+    duration_estimate: {
+      low_seconds: 317,
+      high_seconds: 466,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     gradient: {
       steepest_uphill: {
@@ -137,6 +145,12 @@ const CAMPUS_COMPARISON = {
   },
   routing_policy_version: 'test',
   ml_predictions_used: false,
+  summary: {
+    kind: 'different_path',
+    headline: '+226 m to avoid 1 recorded stairway.',
+    primary_code: 'avoids_stairs',
+    primary_basis: 'recorded',
+  },
 } as unknown as RouteCompareResponse;
 
 function coincident(): RouteCompareResponse {

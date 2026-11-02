@@ -26,7 +26,7 @@ export interface paths {
         put?: never;
         /**
          * Find coordinates for a place name
-         * @description Searches for a place, address or street within a pilot region's extent, and returns at most five. Submit-only: there is no as-you-type endpoint, so the same client works against any provider, including a donated one whose usage policy forbids per-keystroke queries. Nothing about the request is stored.
+         * @description Searches for a place, building code, address or street within a pilot region's extent, and returns at most five. With `autocomplete: true` the local index is searched as somebody types; a provider whose usage policy forbids that reports that it did not search. Nothing about the request is stored.
          */
         post: operations["searchPlaces"];
         delete?: never;
@@ -315,6 +315,74 @@ export interface components {
             status: "ok" | "unavailable";
         };
         /**
+         * DifferenceSummaryModel
+         * @description The comparison in one line.
+         */
+        DifferenceSummaryModel: {
+            /**
+             * Headline
+             * @example Same path as shortest route.
+             * @example +67 m to avoid 2 recorded stairways.
+             */
+            headline: string;
+            /**
+             * Kind
+             * @description 'same_path' only when both routes travel the same segments and draw the same line — never inferred from distance.
+             * @enum {string}
+             */
+            kind: "same_path" | "different_path" | "no_profile_route" | "no_shortest_route";
+            /**
+             * Primary Basis
+             * @description What the headline's reason rests on. 'not_recorded' means the route avoids missing data, not a recorded barrier.
+             */
+            primary_basis?: ("recorded" | "estimated" | "mixed" | "not_recorded" | "profile_rule") | null;
+            /**
+             * Primary Code
+             * @description The explanation the headline leads with: the first hard limit, otherwise the penalty that differed most.
+             */
+            primary_code?: string | null;
+        };
+        /**
+         * DurationEstimateModel
+         * @description How long a route might take: distance over an assumed pace range.
+         */
+        DurationEstimateModel: {
+            /**
+             * Basis
+             * @description Always 'assumed_pace': distance divided by a planning assumption. No delay is added for crossings, signals or stairs, and nobody's pace was measured.
+             * @default assumed_pace
+             * @constant
+             */
+            basis: "assumed_pace";
+            /**
+             * High Seconds
+             * @description At the slow end of the assumed pace range.
+             */
+            high_seconds: number;
+            /**
+             * Low Seconds
+             * @description At the fast end of the assumed pace range.
+             */
+            low_seconds: number;
+            /**
+             * Pace High Mps
+             * @description Fastest assumed pace, metres per second.
+             */
+            pace_high_mps: number;
+            /**
+             * Pace Label
+             * @description Whose pace, in words to show beside the time: 'walking pace'.
+             * @example walking pace
+             * @example wheelchair pace
+             */
+            pace_label: string;
+            /**
+             * Pace Low Mps
+             * @description Slowest assumed pace, metres per second.
+             */
+            pace_low_mps: number;
+        };
+        /**
          * ErrorDetail
          * @description A single field-level problem, used for request-validation failures.
          */
@@ -357,6 +425,11 @@ export interface components {
             evidence?: {
                 [key: string]: unknown;
             };
+            /**
+             * Shortest Route Segments
+             * @description Positions in the shortest route's `segments` that this statement is about and the chosen route does not use: every one, for pointing at on a map.
+             */
+            shortest_route_segments?: number[];
             /** Summary */
             summary: string;
         };
@@ -368,6 +441,11 @@ export interface components {
              */
             category?: string | null;
             /**
+             * Kind
+             * @description The local index only: what kind of entry this is.
+             */
+            kind?: ("place" | "address" | "street") | null;
+            /**
              * Label
              * @description Human-readable description, as the provider wrote it.
              */
@@ -376,6 +454,11 @@ export interface components {
             latitude: number;
             /** Longitude */
             longitude: number;
+            /**
+             * Matched On
+             * @description The local index only: how the query matched. 'code' — a short code recorded in OpenStreetMap, such as DC or E5; 'initialism' — initials PathAble generated from the name; 'name' — the name or address; 'fuzzy' — the typo-tolerant pass.
+             */
+            matched_on?: ("code" | "initialism" | "name" | "fuzzy") | null;
         };
         /**
          * GeocodeRequest
@@ -387,13 +470,19 @@ export interface components {
          */
         GeocodeRequest: {
             /**
+             * Autocomplete
+             * @description True when the query is still being typed. Only a provider that permits as-you-type searching answers; any other reports that it did not search.
+             * @default false
+             */
+            autocomplete: boolean;
+            /**
              * Limit
              * @default 5
              */
             limit: number;
             /**
              * Query
-             * @description Place name or address to look for.
+             * @description Place name, building code or address to look for.
              */
             query: string;
             /**
@@ -412,7 +501,7 @@ export interface components {
             attribution?: string | null;
             /**
              * Enabled
-             * @description False when nothing was searched: no geocoder is configured, or the region has no place index yet. An empty `matches` with `enabled: false` means nothing was searched, not that nothing was found.
+             * @description False when nothing was searched: no geocoder is configured, the region has no place index yet, or the provider does not allow as-you-type search. An empty `matches` with `enabled: false` means nothing was searched, not that nothing was found.
              */
             enabled: boolean;
             /** Matches */
@@ -724,6 +813,8 @@ export interface components {
             standard_failure?: string | null;
             /** @description Shortest walking route. Null when none exists. */
             standard_route?: components["schemas"]["RouteModel"] | null;
+            /** @description The comparison in one line, for reading before anything else. */
+            summary: components["schemas"]["DifferenceSummaryModel"];
         };
         /**
          * RouteModel
@@ -740,7 +831,10 @@ export interface components {
                 number,
                 number
             ][];
-            /** Crossing Count */
+            /**
+             * Crossing Count
+             * @description Mapped road crossings, each counted once however many segments it spans.
+             */
             crossing_count: number;
             destination: components["schemas"]["SnappedPointModel"];
             /**
@@ -748,6 +842,8 @@ export interface components {
              * @description Real ground distance.
              */
             distance_m: number;
+            /** @description Time as a range, at the assumed pace of the profile this route was computed for. The shortest route is always timed at walking pace; the profile route at that profile's assumed pace. The two are different paces, so subtracting one from the other does not say how much time a route saves. */
+            duration_estimate: components["schemas"]["DurationEstimateModel"];
             /**
              * Effective Distance M
              * @description Distance weighted by this profile's cost model. Not a physical distance.
@@ -755,7 +851,7 @@ export interface components {
             effective_distance_m: number;
             /**
              * Estimated Duration Seconds
-             * @description Rough planning estimate from distance and obstacle counts, at the assumed pace of `pace_profile`. Not measured, and not specific to any individual.
+             * @description The middle of `duration_estimate`, for clients that need one figure. A rough planning figure at the assumed pace of `pace_profile`; prefer the range.
              */
             estimated_duration_seconds: number;
             /**
@@ -775,7 +871,7 @@ export interface components {
             origin: components["schemas"]["SnappedPointModel"];
             /**
              * Pace Profile
-             * @description Profile whose assumed walking pace produced `estimated_duration_seconds`. In a comparison both routes use the chosen profile's pace — its base preset's, for a custom profile — so the two estimates can be compared directly.
+             * @description Profile whose assumed pace produced the estimate: 'standard' for the shortest route, the chosen profile — its base preset, for a custom one — for the other.
              */
             pace_profile: string;
             /**
@@ -787,7 +883,10 @@ export interface components {
             profile_display_name: string;
             /** Segments */
             segments: components["schemas"]["RouteSegmentModel"][];
-            /** Stairway Count */
+            /**
+             * Stairway Count
+             * @description Stairways on this route, each counted once however many segments it spans.
+             */
             stairway_count: number;
             /**
              * Steepest Incline Percent
@@ -796,15 +895,23 @@ export interface components {
             steepest_incline_percent: number | null;
             /**
              * Step Count
-             * @description Recorded steps across all stairways on this route.
+             * @description Recorded steps across this route's stairways, each stairway counted once. A stairway with no recorded count adds nothing, so this is a floor.
              */
             step_count: number;
+            /**
+             * Units
+             * @description Every crossing and stairway on this route, in order of travel.
+             */
+            units?: components["schemas"]["RouteUnitModel"][];
             /**
              * Unknown Data Fraction
              * @description Share of this route's length whose accessibility attributes are unrecorded.
              */
             unknown_data_fraction: number;
-            /** Unknown Kerb Crossing Count */
+            /**
+             * Unknown Kerb Crossing Count
+             * @description Crossings without a recorded kerb at both ends.
+             */
             unknown_kerb_crossing_count: number;
         };
         /**
@@ -880,6 +987,42 @@ export interface components {
              * @description Recorded width. Null means unrecorded, not narrow.
              */
             width_m?: number | null;
+        };
+        /**
+         * RouteUnitModel
+         * @description One road crossing or stairway, as the route passes through it.
+         *
+         *     OpenStreetMap draws each as one way, which the network splits into several
+         *     segments; this is the one crossing or stairway those segments make up.
+         */
+        RouteUnitModel: {
+            /**
+             * Crossing Type
+             * @description Crossings only: OSM `crossing` value, if recorded.
+             */
+            crossing_type?: string | null;
+            /** @description Crossings only: the crossing's kerb, from every kerb recorded along it. `unknown` when either end has no record. */
+            kerb?: components["schemas"]["KerbType"] | null;
+            /**
+             * Kerb Recorded Ends
+             * @description Crossings only: how many ends have a recorded kerb (2 means both).
+             */
+            kerb_recorded_ends?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "crossing" | "stairway";
+            /**
+             * Segment Indexes
+             * @description Positions in this route's `segments`.
+             */
+            segment_indexes: number[];
+            /**
+             * Step Count
+             * @description Stairways only: recorded steps, or null when unrecorded.
+             */
+            step_count?: number | null;
         };
         /**
          * SmoothnessClass

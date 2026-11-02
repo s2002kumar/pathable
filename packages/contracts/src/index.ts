@@ -81,6 +81,15 @@ export type GradeExtreme = ApiSchemas['GradeExtremeModel'];
 /** Something to weigh before relying on a route. */
 export type RouteCaution = ApiSchemas['CautionModel'];
 
+/** The comparison in one line: the same path, or how far and why. */
+export type DifferenceSummary = ApiSchemas['DifferenceSummaryModel'];
+
+/** A route's time as a range, at an assumed pace named in words. */
+export type DurationEstimate = ApiSchemas['DurationEstimateModel'];
+
+/** One road crossing or stairway, however many segments it spans. */
+export type RouteUnit = ApiSchemas['RouteUnitModel'];
+
 /** Which dataset answered a request, and the attribution it requires. */
 export type DatasetProvenance = ApiSchemas['DatasetProvenance'];
 

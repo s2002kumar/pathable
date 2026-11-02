@@ -211,7 +211,10 @@ export function gradeFact(route: Route, other: Route | null, rules: ProfileRules
 // Crossings
 // ---------------------------------------------------------------------------
 
+/** Crossings with a recorded raised kerb, each crossing once however it is drawn. */
 function raisedKerbs(route: Route): number {
+  const crossings = (route.units ?? []).filter((unit) => unit.kind === 'crossing');
+  if (crossings.length > 0) return crossings.filter((unit) => unit.kerb === 'raised').length;
   return route.segments.filter((segment) => segment.is_crossing && segment.kerb === 'raised')
     .length;
 }

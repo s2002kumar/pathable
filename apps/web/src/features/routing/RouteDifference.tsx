@@ -11,13 +11,15 @@ import {
   exclusionsOf,
   formatShare,
   gradeBasis,
+  formatDurationRange,
+  paceNote,
   rankedReasons,
   reasonGroups,
-  routeTime,
+  routeDuration,
   CATEGORY_LABELS,
 } from './route-evidence';
 import { routesSharePath } from './route-identity';
-import { formatDistance, formatDuration } from './types';
+import { formatDistance } from './types';
 import styles from './RoutePlanner.module.css';
 
 /**
@@ -34,15 +36,11 @@ export const EVIDENCE_TAGS: Readonly<Record<EvidenceBasis, { kind: string; label
   profile_rule: { kind: 'profile', label: 'Your profile rule' },
 };
 
-/** Whose assumed pace a time estimate uses, as a sentence names it. */
-const PACE_NAMES: Readonly<Record<string, string>> = {
-  standard: 'standard walking',
-  wheelchair: 'wheelchair',
-  walker: 'walker or rollator',
-  crutches: 'crutches or cane',
-  stroller: 'stroller or pram',
-  reduced_mobility: 'reduced-mobility',
-};
+/** "1.1–1.4 m/s": an assumed pace range, as the response states it. */
+function paceRange(route: Route): string {
+  const { pace_low_mps: low, pace_high_mps: high } = route.duration_estimate;
+  return `${low.toFixed(1)}–${high.toFixed(1)} m/s`;
+}
 
 function EvidenceTag({ basis }: { readonly basis: EvidenceBasis }) {
   const tag = EVIDENCE_TAGS[basis];
@@ -97,15 +95,16 @@ type OptionProps = {
  * One route's card: distance first, then time, stairs, and — on the shortest
  * route — what the chosen profile cannot use on it.
  *
- * Time is withheld from a route the profile cannot use. "16 min" printed
- * beside a flight of stairs reads as a trip a wheelchair user could take, and
- * the one error this product must not make is calling a blocked path passable.
+ * Each route's time is its own, at the pace it was timed at and labelled with
+ * it: the shortest route at walking pace, the other at the profile's assumed
+ * pace. The labels are what keep a walking time beside a flight of stairs from
+ * reading as a trip a wheelchair user could take.
  */
 function RouteOption({ comparison, route, other, variant, testId, choice }: OptionProps) {
   const titleId = useId();
   const valueId = useId();
   const detailId = useId();
-  const time = routeTime(route, variant, other);
+  const duration = routeDuration(route);
   const exclusions = variant === 'standard' ? exclusionsOf(route) : [];
   const extra = comparison.extra_distance_m;
   // When every stairway on the route is one the profile rules out, the badge
@@ -113,7 +112,7 @@ function RouteOption({ comparison, route, other, variant, testId, choice }: Opti
   // repeat it. Otherwise the line stays: some stairs are costs, not walls.
   const stairsRuledOut = exclusions.find((exclusion) => exclusion.reason === 'steps');
   const stairsSaidByBadge =
-    stairsRuledOut !== undefined && stairsRuledOut.segmentIndexes.length === route.stairway_count;
+    stairsRuledOut !== undefined && stairsRuledOut.count === route.stairway_count;
 
   const body = (
     <>
@@ -127,12 +126,8 @@ function RouteOption({ comparison, route, other, variant, testId, choice }: Opti
         </span>
       </span>
       <span className={styles.optionDetail} id={detailId}>
-        <span className={styles.optionTime} data-kind={time.kind} data-testid={`${testId}-time`}>
-          {time.kind === 'estimate'
-            ? `Est. ${formatDuration(time.seconds)}`
-            : time.kind === 'unavailable'
-              ? 'Time unavailable for this profile'
-              : 'Time not comparable'}
+        <span className={styles.optionTime} data-kind="estimate" data-testid={`${testId}-time`}>
+          {formatDurationRange(duration)} {paceNote(duration)}
         </span>
         {stairsSaidByBadge ? null : (
           <span className={styles.optionNote}>{stairwayNote(route)}</span>
@@ -417,8 +412,6 @@ export function ReasonGroups({ comparison }: { readonly comparison: RouteCompare
 
   const groups = reasonGroups(comparison);
   const distance = comparison.explanations.find((item) => item.code === 'distance_difference');
-  const sharedPace =
-    standard.pace_profile === accessible.pace_profile ? accessible.pace_profile : null;
 
   return (
     <section className={styles.section} aria-labelledby="route-reasons-heading">
@@ -467,19 +460,20 @@ export function ReasonGroups({ comparison }: { readonly comparison: RouteCompare
                 </span>
               </li>
             ) : null}
-            {sharedPace !== null ? (
-              <li
-                className={styles.evidenceItem}
-                data-basis="profile_rule"
-                data-testid="difference-pace"
-              >
-                <EvidenceTag basis="profile_rule" />
-                <span>
-                  Times use the same assumed {PACE_NAMES[sharedPace] ?? sharedPace} pace, with fixed
-                  allowances for steps and crossings. Neither is measured.
-                </span>
-              </li>
-            ) : null}
+            <li
+              className={styles.evidenceItem}
+              data-basis="profile_rule"
+              data-testid="difference-pace"
+            >
+              <EvidenceTag basis="profile_rule" />
+              <span>
+                Times are distance over an assumed pace: the shortest route at{' '}
+                {standard.duration_estimate.pace_label} ({paceRange(standard)}), this route at an
+                assumed {accessible.duration_estimate.pace_label} ({paceRange(accessible)}). Neither
+                is measured, waiting at crossings is not included, and the two paces differ, so the
+                times are not subtracted.
+              </span>
+            </li>
           </ul>
         </div>
       </div>

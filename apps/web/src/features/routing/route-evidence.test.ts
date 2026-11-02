@@ -20,10 +20,14 @@ import {
   exclusionLabel,
   exclusionsOf,
   formatShare,
+  formatDurationRange,
+  paceNote,
   reasonGroups,
   rankedReasons,
-  routeTime,
+  routeDuration,
   segmentMidpoint,
+  summaryBasisLabel,
+  summaryEvidenceSegments,
   verdictOf,
 } from './route-evidence';
 
@@ -31,20 +35,49 @@ describe('hard incompatibility is read from the segments', () => {
   it('groups the segments the profile rules out, with the steps they record', () => {
     const shortest = route(shortestSegments());
     expect(exclusionsOf(shortest)).toEqual([
-      { reason: 'steps', segmentIndexes: [1], recordedSteps: 14 },
+      { reason: 'steps', segmentIndexes: [1], count: 1, recordedSteps: 14 },
     ]);
   });
 
-  it('counts two segments of one stairway as two, as the API’s stairway_count does', () => {
+  it('counts two separate stairways as two', () => {
     const twoFlights = route([
       segment({ steps: 'yes', step_count: 8, excluded_by_profile: 'steps' }),
       segment({ steps: 'yes', step_count: null, excluded_by_profile: 'steps' }),
     ]);
     const [stairs] = exclusionsOf(twoFlights);
-    expect(stairs?.segmentIndexes).toHaveLength(twoFlights.stairway_count);
+    expect(stairs?.count).toBe(twoFlights.stairway_count);
     expect(exclusionLabel(stairs!)).toBe('2 stairways');
     // A floor, not a total: the second flight has no recorded count.
     expect(stairs?.recordedSteps).toBe(8);
+  });
+
+  it('counts one stairway the network split into pieces once, with its steps once', () => {
+    // Regression: "4 stairways" on the Davis Centre journey was three
+    // stairways, one of them drawn as two segments; its step count was the
+    // whole stairway's and was added once per piece.
+    const pieces = [
+      segment({ steps: 'yes', step_count: 12, excluded_by_profile: 'steps' }),
+      segment({ steps: 'yes', step_count: 12, excluded_by_profile: 'steps' }),
+    ];
+    const oneStairway = route(pieces, {
+      stairway_count: 1,
+      step_count: 12,
+      units: [
+        {
+          kind: 'stairway',
+          segment_indexes: [0, 1],
+          kerb: null,
+          kerb_recorded_ends: null,
+          crossing_type: null,
+          step_count: 12,
+        },
+      ],
+    });
+    const [stairs] = exclusionsOf(oneStairway);
+    expect(stairs?.segmentIndexes).toEqual([0, 1]);
+    expect(stairs?.count).toBe(1);
+    expect(exclusionLabel(stairs!)).toBe('1 stairway');
+    expect(stairs?.recordedSteps).toBe(12);
   });
 
   it('does not treat a stairway as a barrier when the profile allows stairs', () => {
@@ -71,37 +104,71 @@ describe('hard incompatibility is read from the segments', () => {
   });
 });
 
-describe('a route the profile cannot use gets no travel time', () => {
-  it('shows “unavailable” for a shortest route with a ruled-out stairway', () => {
+describe('time is a range, at a named pace, and never compared across paces', () => {
+  it('reads each route’s own range in whole minutes', () => {
     const data = comparison();
-    expect(routeTime(data.standard_route!, 'standard', data.accessible_route!)).toEqual({
-      kind: 'unavailable',
+    const shortest = routeDuration(data.standard_route!);
+    expect(shortest.pace).toBe('walking pace');
+    expect(shortest.lowMinutes).toBe(
+      Math.round(data.standard_route!.duration_estimate.low_seconds / 60),
+    );
+    expect(shortest.highMinutes).toBeGreaterThanOrEqual(shortest.lowMinutes);
+    expect(routeDuration(data.accessible_route!).pace).toBe('wheelchair pace');
+  });
+
+  it('never says less than a minute', () => {
+    const short = route([segment({ length_m: 20 })]);
+    expect(routeDuration(short).lowMinutes).toBe(1);
+  });
+
+  it('writes a range, or one figure when it rounds to one', () => {
+    expect(formatDurationRange({ lowMinutes: 6, highMinutes: 8, pace: 'walking pace' })).toBe(
+      'About 6–8 min',
+    );
+    expect(formatDurationRange({ lowMinutes: 4, highMinutes: 4, pace: 'walking pace' })).toBe(
+      'About 4 min',
+    );
+  });
+
+  it('says whose pace a time assumes', () => {
+    expect(paceNote({ lowMinutes: 1, highMinutes: 2, pace: 'walking pace' })).toBe(
+      'at walking pace',
+    );
+    expect(paceNote({ lowMinutes: 1, highMinutes: 2, pace: 'wheelchair pace' })).toBe(
+      'at an assumed wheelchair pace',
+    );
+  });
+});
+
+describe('the one-line summary', () => {
+  it('points at the shortest-route segments its reason is about', () => {
+    expect(summaryEvidenceSegments(comparison())).toEqual([1]);
+  });
+
+  it('points at nothing when the routes are the same path', () => {
+    const same = comparison({
+      summary: {
+        kind: 'same_path',
+        headline: 'Same path as shortest route.',
+        primary_code: null,
+        primary_basis: null,
+      },
     });
+    expect(summaryEvidenceSegments(same)).toEqual([]);
+    expect(summaryBasisLabel(same)).toBeNull();
   });
 
-  it('gives the profile’s own route its estimate', () => {
-    const data = comparison();
-    expect(routeTime(data.accessible_route!, 'accessible', data.standard_route!)).toEqual({
-      kind: 'estimate',
-      seconds: data.accessible_route!.estimated_duration_seconds,
+  it('labels a reason about missing data as exactly that', () => {
+    const missing = comparison({
+      summary: {
+        kind: 'different_path',
+        headline: '+90 m to avoid 2 crossings without a recorded kerb at both ends.',
+        primary_code: 'avoids_unrecorded_kerbs',
+        primary_basis: 'not_recorded',
+      },
     });
-  });
-
-  it('times a usable shortest route when it shares the traveller’s pace', () => {
-    const usable = route(accessibleSegments(), { profile: 'standard' });
-    const other = route(accessibleSegments());
-    expect(routeTime(usable, 'standard', other).kind).toBe('estimate');
-  });
-
-  it('withholds a time estimated at a different pace, rather than compare unlike figures', () => {
-    const usable = route(accessibleSegments(), { pace_profile: 'standard' });
-    const other = route(accessibleSegments());
-    expect(routeTime(usable, 'standard', other)).toEqual({ kind: 'not_comparable' });
-  });
-
-  it('prefers “unavailable” over “not comparable”: the route cannot be used at all', () => {
-    const shortest = route(shortestSegments(), { pace_profile: 'standard' });
-    expect(routeTime(shortest, 'standard', route(accessibleSegments())).kind).toBe('unavailable');
+    expect(summaryBasisLabel(missing)).toBe('Avoids missing records, not a recorded barrier');
+    expect(summaryBasisLabel(comparison())).toBe('Recorded in OpenStreetMap');
   });
 });
 

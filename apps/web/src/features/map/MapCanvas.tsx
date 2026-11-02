@@ -40,6 +40,8 @@ export type MapCanvasProps = {
   readonly stairs?: RecordedStairs | null;
   /** Unrecorded stretches of the shown route, for the evidence view. */
   readonly gaps?: LineFeatureCollection | null;
+  /** What the comparison's reason is about, when the viewer asked to see it. */
+  readonly highlight?: LineFeatureCollection | null;
   /** Labels pinned to the map: what the profile rules out, the steepest climb. */
   readonly markers?: readonly MapMarker[];
   /** Incremented to re-frame the routes on request. */
@@ -83,6 +85,7 @@ export function MapCanvas({
   fitPadding,
   stairs = null,
   gaps = null,
+  highlight = null,
   markers = NO_MARKERS,
   fitRequest = 0,
   fitScope,
@@ -114,6 +117,7 @@ export function MapCanvas({
     fitRequest,
     ...(fitScope !== undefined ? { fitScope } : {}),
     gaps,
+    highlight,
   });
   useMapClick(map, onSelectPoint ?? noop);
 

@@ -3,6 +3,7 @@
 import { type KeyboardEvent, type ReactNode, useId } from 'react';
 import type { ProfileKey, Route, RouteCompareResponse } from '@pathable/contracts';
 import { Icon } from '@/components/Icon';
+import { ComparisonSummary } from './ComparisonSummary';
 import { PROFILE_OPTIONS } from './ProfileChooser';
 import { limitText } from './UphillLimitControl';
 import { type RouteVariant, exclusionsOf, formatShare, gradeBasis } from './route-evidence';
@@ -55,6 +56,8 @@ export function MobileComparison({
   editor,
   editorOpen,
   onEditorToggle,
+  evidenceHighlighted = false,
+  onToggleEvidenceHighlight,
 }: {
   readonly comparison: RouteCompareResponse;
   /** The preset the answer was asked with, for its glyph. */
@@ -71,6 +74,8 @@ export function MobileComparison({
   readonly editor: ReactNode;
   readonly editorOpen: boolean;
   readonly onEditorToggle: (open: boolean) => void;
+  readonly evidenceHighlighted?: boolean;
+  readonly onToggleEvidenceHighlight?: () => void;
 }) {
   const { standard_route: standard, accessible_route: accessible } = comparison;
   if (!standard || !accessible) return null;
@@ -152,6 +157,12 @@ export function MobileComparison({
         <summary>Edit journey or profile</summary>
         <div className={styles.editorBody}>{editor}</div>
       </details>
+
+      <ComparisonSummary
+        comparison={comparison}
+        highlighted={evidenceHighlighted}
+        {...(onToggleEvidenceHighlight ? { onToggleHighlight: onToggleEvidenceHighlight } : {})}
+      />
 
       <div className={styles.optionsHead}>
         <h2 className={styles.optionsTitle}>Available options</h2>

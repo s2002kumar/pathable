@@ -152,6 +152,14 @@ const COMPARISON = {
     distance_m: 483,
     effective_distance_m: 483,
     estimated_duration_seconds: 380,
+    duration_estimate: {
+      low_seconds: 323,
+      high_seconds: 475,
+      pace_low_mps: 1.1,
+      pace_high_mps: 1.4,
+      pace_label: 'walking pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     coordinates: [
       [-80.54, 43.47],
@@ -217,6 +225,14 @@ const COMPARISON = {
     distance_m: 709,
     effective_distance_m: 980,
     estimated_duration_seconds: 746,
+    duration_estimate: {
+      low_seconds: 634,
+      high_seconds: 933,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     coordinates: [
       [-80.54, 43.47],
@@ -259,6 +275,12 @@ const COMPARISON = {
     attribution: '© OpenStreetMap contributors, ODbL 1.0',
   },
   ml_predictions_used: false,
+  summary: {
+    kind: 'different_path',
+    headline: '+226 m to avoid 1 recorded stairway.',
+    primary_code: 'avoids_stairs',
+    primary_basis: 'recorded',
+  },
 };
 
 const CONFIG = {

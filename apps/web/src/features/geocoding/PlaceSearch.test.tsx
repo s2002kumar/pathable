@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { PlaceSearch } from './PlaceSearch';
+import { PlaceSearch, SUGGEST_DELAY_MS } from './PlaceSearch';
 
 const MATCHES = [
   {
@@ -28,6 +28,12 @@ function jsonFetch(body: unknown, status = 200) {
   ) as unknown as typeof fetch;
 }
 
+function bodies(fetchImpl: typeof fetch): Array<Record<string, unknown>> {
+  return (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls.map(
+    ([, init]) => JSON.parse(String((init as RequestInit).body)) as Record<string, unknown>,
+  );
+}
+
 function renderSearch(fetchImpl: typeof fetch, onSelect = vi.fn()) {
   render(
     <PlaceSearch
@@ -40,29 +46,53 @@ function renderSearch(fetchImpl: typeof fetch, onSelect = vi.fn()) {
   return { onSelect };
 }
 
+/** Lets the pause in typing pass, so the suggestion request goes out. */
+async function pause() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, SUGGEST_DELAY_MS + 50));
+  });
+}
+
 describe('PlaceSearch', () => {
-  it('does not search while the user is typing', async () => {
-    // One request per search, so the client stays correct against a donated
-    // provider whose usage policy forbids per-keystroke queries.
+  it('suggests places once typing pauses, as one request, marked as a suggestion', async () => {
     const user = userEvent.setup();
-    const fetchImpl = jsonFetch({ provider: 'nominatim', enabled: true, matches: MATCHES });
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: MATCHES });
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Waterloo Park');
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
+    await pause();
+
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce());
+    expect(bodies(fetchImpl)[0]).toEqual({
+      region: 'waterloo',
+      query: 'Waterloo',
+      autocomplete: true,
+    });
+    expect(await screen.findByRole('option', { name: /Waterloo Park/ })).toBeVisible();
+    expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('asks for nothing until two characters are typed', async () => {
+    const user = userEvent.setup();
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: MATCHES });
+    renderSearch(fetchImpl);
+
+    await user.type(screen.getByRole('combobox'), 'W');
+    await pause();
 
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('searches when the form is submitted', async () => {
+  it('searches when the form is submitted, and keeps the query out of the URL', async () => {
     const user = userEvent.setup();
-    const fetchImpl = jsonFetch({ provider: 'nominatim', enabled: true, matches: MATCHES });
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: MATCHES });
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Waterloo Park');
+    await user.type(screen.getByRole('combobox'), 'Waterloo Park');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce());
-    const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalled());
+    const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls.at(-1) as [
       string,
       RequestInit,
     ];
@@ -72,16 +102,20 @@ describe('PlaceSearch', () => {
     expect(url).not.toContain('Waterloo');
   });
 
-  it('offers each match as a choosable button', async () => {
+  it('chooses a suggestion with the arrow keys and Enter', async () => {
     const user = userEvent.setup();
-    const fetchImpl = jsonFetch({ provider: 'nominatim', enabled: true, matches: MATCHES });
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: MATCHES });
     const { onSelect } = renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Waterloo');
-    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
+    await pause();
+    await screen.findByRole('option', { name: /Waterloo Park/ });
 
-    const match = await screen.findByRole('button', { name: /Waterloo Park/ });
-    await user.click(match);
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    const active = screen.getByRole('option', { name: /Waterloo Park/ });
+    expect(active).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('combobox')).toHaveAttribute('aria-activedescendant', active.id);
+    await user.keyboard('{Enter}');
 
     expect(onSelect).toHaveBeenCalledWith(
       { longitude: -80.533, latitude: 43.469 },
@@ -89,13 +123,35 @@ describe('PlaceSearch', () => {
     );
   });
 
-  it('shows what kind of place each match is, and says it to a screen reader', async () => {
+  it('chooses a suggestion with a click', async () => {
+    const user = userEvent.setup();
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: MATCHES });
+    const { onSelect } = renderSearch(fetchImpl);
+
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
+    await pause();
+    await user.click(await screen.findByRole('option', { name: /Waterloo Public Square/ }));
+
+    expect(onSelect).toHaveBeenCalledWith(
+      { longitude: -80.523, latitude: 43.4658 },
+      'Waterloo Public Square, King Street South, Waterloo, Ontario',
+    );
+  });
+
+  it('shows what kind of place each match is, and how it matched', async () => {
     const user = userEvent.setup();
     const fetchImpl = jsonFetch({
       provider: 'local',
       enabled: true,
       matches: [
-        { label: 'Davis Centre', longitude: -80.542, latitude: 43.4728, category: 'university' },
+        {
+          label: 'William G. Davis Computer Research Centre',
+          longitude: -80.542,
+          latitude: 43.4728,
+          category: 'university building',
+          kind: 'place',
+          matched_on: 'code',
+        },
         { label: 'Davis Street', longitude: -80.5, latitude: 43.45, category: null },
       ],
       attribution:
@@ -103,13 +159,35 @@ describe('PlaceSearch', () => {
     });
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Davis');
-    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.type(screen.getByRole('combobox'), 'DC');
+    await pause();
 
-    expect(await screen.findByRole('button', { name: 'Davis Centre, university' })).toBeVisible();
+    const building = await screen.findByRole('option', {
+      name: 'William G. Davis Computer Research Centre, university building',
+    });
+    // A recorded building code, said as one: not a guess at the name.
+    expect(building).toHaveTextContent('university building · building code');
     // A match with no category is named by its label alone, with no dangling comma.
-    expect(screen.getByRole('button', { name: 'Davis Street' })).toBeVisible();
+    expect(screen.getByRole('option', { name: 'Davis Street' })).toBeVisible();
     expect(screen.getByTestId('search-attribution')).toHaveTextContent('as of 2026-08-16');
+  });
+
+  it('falls back to searching on request when the provider will not suggest', async () => {
+    // A donated provider's policy forbids searching as somebody types; asked
+    // to, the API reports "not searched", and the field stops asking.
+    const user = userEvent.setup();
+    const fetchImpl = jsonFetch({ provider: 'nominatim', enabled: false, matches: [] });
+    renderSearch(fetchImpl);
+
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
+    await pause();
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce());
+    // Nothing is said about a suggestion that was not made.
+    expect(screen.queryByText(/not available here/i)).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole('combobox'), ' Park');
+    await pause();
+    expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
   it('distinguishes "search is off" from "nothing matched"', async () => {
@@ -119,7 +197,7 @@ describe('PlaceSearch', () => {
     const fetchImpl = jsonFetch({ provider: 'disabled', enabled: false, matches: [] });
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Waterloo');
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     expect(await screen.findByText(/place search is not available here/i)).toBeInTheDocument();
@@ -127,10 +205,10 @@ describe('PlaceSearch', () => {
 
   it('says so when nothing matched inside the region', async () => {
     const user = userEvent.setup();
-    const fetchImpl = jsonFetch({ provider: 'nominatim', enabled: true, matches: [] });
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: [] });
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Atlantis');
+    await user.type(screen.getByRole('combobox'), 'Atlantis');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     expect(await screen.findByText(/nothing matched that inside this area/i)).toBeInTheDocument();
@@ -144,7 +222,7 @@ describe('PlaceSearch', () => {
     );
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Waterloo');
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/rate-limiting/);
@@ -157,7 +235,7 @@ describe('PlaceSearch', () => {
     }) as unknown as typeof fetch;
     renderSearch(fetchImpl);
 
-    await user.type(screen.getByRole('searchbox'), 'Waterloo');
+    await user.type(screen.getByRole('combobox'), 'Waterloo');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/click the map instead/i);
@@ -165,20 +243,24 @@ describe('PlaceSearch', () => {
 
   it('will not submit an empty query', async () => {
     const user = userEvent.setup();
-    const fetchImpl = jsonFetch({ provider: 'nominatim', enabled: true, matches: [] });
+    const fetchImpl = jsonFetch({ provider: 'local', enabled: true, matches: [] });
     renderSearch(fetchImpl);
 
     // No submit control until there is something to search for, and Enter on
     // an empty field (or one holding only spaces) sends nothing.
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
-    await user.type(screen.getByRole('searchbox'), '   {Enter}');
+    await user.type(screen.getByRole('combobox'), '   {Enter}');
+    await pause();
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('labels its input for assistive technology', async () => {
+  it('labels its input and its suggestions for assistive technology', () => {
     renderSearch(jsonFetch({ provider: 'disabled', enabled: false, matches: [] }));
 
-    expect(screen.getByLabelText('Search for a place')).toBeInTheDocument();
+    const input = screen.getByLabelText('Search for a place');
+    expect(input).toHaveAttribute('role', 'combobox');
+    expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    expect(document.getElementById(input.getAttribute('aria-controls') ?? '')).not.toBeNull();
   });
 
   it('announces results politely', () => {
