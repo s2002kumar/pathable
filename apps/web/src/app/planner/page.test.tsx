@@ -184,14 +184,17 @@ describe('the planner page', () => {
     );
   });
 
-  it('notes that the development tile provider is not production-approved', async () => {
+  it('says who serves the basemap tiles, and that nobody guarantees them', async () => {
     setEnv(VALID_ENV);
 
     render(await plannerPage());
 
-    expect(screen.getByTestId('attribution')).toHaveTextContent(
-      /OpenFreeMap, which has not been approved for production/i,
+    const credit = screen.getByTestId('attribution');
+    expect(credit).toHaveTextContent(
+      'Basemap tiles served by OpenFreeMap, a third-party public service with no SLA.',
     );
+    // The pilot is public; the credit must not read as if it were not deployed.
+    expect(credit).not.toHaveTextContent(/development|not been approved/i);
   });
 
   it('renders the configuration error page instead of a broken shell', async () => {

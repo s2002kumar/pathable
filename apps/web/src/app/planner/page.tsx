@@ -11,12 +11,12 @@ export const metadata: Metadata = {
 
 /**
  * The OpenStreetMap credit MapLibre draws on the canvas, and the tile host's.
- * OpenFreeMap serves the development tiles; it has not been approved for
- * production use, and the credit says so where the tiles are.
+ * OpenFreeMap's public instance serves the basemap tiles; MapLibre adds the
+ * style's own "OpenFreeMap © OpenMapTiles Data from OpenStreetMap" beside this.
  */
 const MAP_ATTRIBUTION =
   '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · ' +
-  '<a href="https://openfreemap.org/" target="_blank" rel="noreferrer">OpenFreeMap</a> development tiles';
+  '<a href="https://openfreemap.org/" target="_blank" rel="noreferrer">OpenFreeMap</a> tiles';
 
 type PlannerPageProps = {
   /** Next 16 hands search parameters to a server component as a promise. */

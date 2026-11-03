@@ -74,7 +74,7 @@ Three obligations:
 
 ## 3. Tile provider
 
-### Currently configured (development only)
+### Currently configured
 
 `NEXT_PUBLIC_MAP_STYLE_URL=https://tiles.openfreemap.org/styles/liberty`
 
@@ -90,13 +90,13 @@ MapLibre's attribution control, so the string is rendered in every frame of
 every screenshot and of the recorded demo in
 [`docs/evidence/`](../evidence/README.md); the surrounding documents repeat it
 in text as OpenMapTiles asks. Checked against <https://openfreemap.org/>
-2026-09-13.
+2026-09-13 and again 2026-11-03.
 
-> **Not approved for production.** A free community service offers no
-> availability guarantee, no support relationship and no capacity commitment.
-> PathAble is intended to help people decide whether they can physically make a
-> journey; depending on an unguaranteed third party for that is a risk decision
-> the founder must take explicitly. See [ADR 0005](../adr/0005-map-and-geocoding-providers.md).
+> **No service guarantee.** The public pilot uses OpenFreeMap's public
+> instance, which its terms allow in websites and applications, commercial use
+> included, free of charge. It comes with no SLA and no personalised support,
+> and may be discontinued without notice. See
+> [ADR 0005](../adr/0005-map-and-geocoding-providers.md).
 
 ### Explicitly not used
 

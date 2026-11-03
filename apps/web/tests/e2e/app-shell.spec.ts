@@ -40,7 +40,10 @@ test.describe('planner shell', () => {
     await expect(credit).toBeVisible();
     await expect(credit).toContainText('OpenStreetMap');
     await expect(credit).toContainText('Open Government Licence – Canada');
-    await expect(credit).toContainText(/OpenFreeMap, which has not been approved for production/);
+    await expect(credit).toContainText(
+      'Basemap tiles served by OpenFreeMap, a third-party public service with no SLA.',
+    );
+    await expect(credit).not.toContainText(/development|not been approved/i);
   });
 
   test('draws the credit and its own controls on the map itself', async ({ page }) => {
