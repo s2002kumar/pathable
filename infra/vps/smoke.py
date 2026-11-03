@@ -216,6 +216,9 @@ def main() -> int:
             error.code in (301, 302, 307, 308) and location.startswith("https://"),
             f"{error.code} -> {location}",
         )
+    except (urllib.error.URLError, OSError) as error:
+        # Nothing on port 80 is a failed check, not a reason to stop checking.
+        report.record("http redirects to https", False, f"no answer on port 80: {error}")
     check_ports(report, host)
 
     status, headers, body, ms = request(f"{base}/")
