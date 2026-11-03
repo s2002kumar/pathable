@@ -141,7 +141,7 @@ describe('the landing page', () => {
     const missing = [...new Set(figures)].filter((figure) => !ledger.includes(figure));
     expect(missing).toEqual([]);
     expect(section).toHaveTextContent('one laptop');
-    expect(section).toHaveTextContent('A* is not faster here');
+    expect(section).toHaveTextContent('A* is not reliably faster');
   });
 
   it('records a response in which no model took part', () => {

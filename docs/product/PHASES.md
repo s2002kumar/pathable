@@ -770,9 +770,12 @@ routes 41 real journeys under every profile and checks each comparison against
 itself.
 
 **Evidence.** [`WATERLOO_CORE_V2.md`](../evidence/WATERLOO_CORE_V2.md): 0
-defects in 246 comparisons, 18 flags each inspected; 37 of 40 search queries
-found within the allowed rank; 17 of 20 corpus routes differ for a wheelchair,
-median detour 51.5 m.
+defects in 246 comparisons, 15 flags each inspected, rerun after an acceptance
+pass that fixed snapping, partial-segment and comparability faults; 37 of 40
+search queries found within the allowed rank; 17 of 20 corpus routes differ for
+a wheelchair, median detour 51.5 m; policy 3's latency, graph load and memory
+measured on one laptop. A field checklist for eight journeys exists and has not
+been performed.
 
 **Branch.** `feature/waterloo-core-v2`, from `main` at `e62b7e8`. Not merged,
 not deployed: the live pilot still runs policy 2, and `infra/vps/smoke.py`

@@ -142,11 +142,14 @@ specifically to show the route starting somewhere other than where the user clic
 Dijkstra is the correctness baseline. A\* runs alongside it with a geodesic-distance heuristic, and the two are
 proven to agree on optimal cost across the corpus.
 
-**A\* is not faster here, and the repository says so.** It expands 1,970 nodes at the median against Dijkstra's
-7,409 — a 3.8× reduction in work — and comes out at 195 ms against 213 ms at p50. The heuristic's per-node cost
-very nearly cancels the saving at this scale in this implementation. Reporting that as a performance win would
-have been the easy thing; the number is in
-[`waterloo-performance.json`](evidence/waterloo-performance.json) either way.
+**A\* is not reliably faster here, and the repository says so.** Under routing policy 3 it expands 1,398 nodes
+at the median against Dijkstra's 7,041 on the twenty-journey corpus — about a fifth of the work — and comes out at
+220 ms against 267 ms at p50. On the laptop that measured it, under memory pressure, repeats of one journey varied
+by 1.74× at the median, so the time difference is not established; the work saved is. Policy 2's script gave
+1,970 against 7,409 and 195 against 213 ms. Reporting either as a performance win would have been the easy thing;
+the numbers, the machine and the method are in
+[`waterloo-performance-policy3.json`](evidence/waterloo-performance-policy3.json) and
+[`WATERLOO_CORE_V2.md`](evidence/WATERLOO_CORE_V2.md) §10.
 
 That result is worth having: it says the bottleneck is not the search.
 
