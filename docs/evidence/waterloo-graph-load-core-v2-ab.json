@@ -1,0 +1,252 @@
+{
+  "what": "Graph load before and after Waterloo Core v2, on the same laptop in the same half hour, alternating: main, branch, main, branch. Each entry is the unedited report of `pathable benchmark load --region waterloo --runs 1 --heap-runs 0`.",
+  "main": {
+    "commit": "e62b7e83341d82c1415c3d2aeb31f5281a91cba7",
+    "how": "`git archive e62b7e8 services/api/src` into a scratch folder, run with that folder first on PYTHONPATH and the branch's virtual environment; its reports record git_commit null because the folder is not a repository."
+  },
+  "branch": {
+    "commit": "43574b89375380cae317f7cfb16a442033b45acb"
+  },
+  "runs": [
+    {
+      "label": "main-1",
+      "report": {
+        "load_benchmark_version": 1,
+        "region": "waterloo",
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "dataset_checksum": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+        "environment": {
+          "python": "3.13.2",
+          "platform": "Windows-11-10.0.26200-SP0",
+          "machine": "AMD64",
+          "git_commit": null
+        },
+        "machine_memory": {
+          "total_mb": 16498.0,
+          "method": "windows:GlobalMemoryStatusEx"
+        },
+        "process_memory_method": "windows:GetProcessMemoryInfo working set",
+        "graph": {
+          "nodes": 155714,
+          "segments": 180554,
+          "directed_edges": 361108,
+          "named_segments": 51003,
+          "segments_with_raw_tags_in_memory": 0,
+          "segment_sha256": "88f63bcaed9ce3ce920c8df4a1819b47e22850bceb9fb3aa091feb0158d81d83",
+          "node_sha256": "972e3e41d4728b3b19987b3679548a2c1e3b13f6c2e876a2325eb21b61108111"
+        },
+        "summary": {
+          "timing_runs": 1,
+          "median_seconds": 29.19,
+          "min_seconds": 29.19,
+          "max_seconds": 29.19,
+          "spread_ratio": 1.0,
+          "heap_runs": 0,
+          "median_peak_python_heap_mb": null,
+          "max_peak_rss_mb": 1072.9,
+          "median_rss_after_load_mb": 803.4,
+          "invalid_runs": 0,
+          "runs_under_memory_pressure": 1
+        },
+        "runs": [
+          {
+            "run": 1,
+            "tracemalloc": false,
+            "started_at": "2026-11-03T00:02:18+00:00",
+            "elapsed_seconds": 29.19,
+            "cpu_seconds": 25.95,
+            "load_seconds_reported": 29.02,
+            "peak_python_heap_mb": null,
+            "rss_mb": 803.4,
+            "peak_rss_mb": 1072.9,
+            "available_mb_before": 492.3,
+            "available_mb_after": 888.6,
+            "memory_pressure": true,
+            "valid": true,
+            "invalid_reason": null
+          }
+        ]
+      }
+    },
+    {
+      "label": "branch-1",
+      "report": {
+        "load_benchmark_version": 1,
+        "region": "waterloo",
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "dataset_checksum": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+        "environment": {
+          "python": "3.13.2",
+          "platform": "Windows-11-10.0.26200-SP0",
+          "machine": "AMD64",
+          "git_commit": "43574b89375380cae317f7cfb16a442033b45acb"
+        },
+        "machine_memory": {
+          "total_mb": 16498.0,
+          "method": "windows:GlobalMemoryStatusEx"
+        },
+        "process_memory_method": "windows:GetProcessMemoryInfo working set",
+        "graph": {
+          "nodes": 155714,
+          "segments": 180554,
+          "directed_edges": 361108,
+          "named_segments": 51003,
+          "segments_with_raw_tags_in_memory": 0,
+          "segment_sha256": "f407fafd239f76a2ef8261d9063ae121f1291c0381983ddea4504b3e4fc8b87b",
+          "node_sha256": "972e3e41d4728b3b19987b3679548a2c1e3b13f6c2e876a2325eb21b61108111"
+        },
+        "summary": {
+          "timing_runs": 1,
+          "median_seconds": 41.86,
+          "min_seconds": 41.86,
+          "max_seconds": 41.86,
+          "spread_ratio": 1.0,
+          "heap_runs": 0,
+          "median_peak_python_heap_mb": null,
+          "max_peak_rss_mb": 1128.3,
+          "median_rss_after_load_mb": 863.4,
+          "invalid_runs": 0,
+          "runs_under_memory_pressure": 0
+        },
+        "runs": [
+          {
+            "run": 1,
+            "tracemalloc": false,
+            "started_at": "2026-11-03T00:03:07+00:00",
+            "elapsed_seconds": 41.86,
+            "cpu_seconds": 40.84,
+            "load_seconds_reported": 32.84,
+            "peak_python_heap_mb": null,
+            "rss_mb": 863.4,
+            "peak_rss_mb": 1128.3,
+            "available_mb_before": 2048.3,
+            "available_mb_after": 784.8,
+            "memory_pressure": false,
+            "valid": true,
+            "invalid_reason": null
+          }
+        ]
+      }
+    },
+    {
+      "label": "main-2",
+      "report": {
+        "load_benchmark_version": 1,
+        "region": "waterloo",
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "dataset_checksum": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+        "environment": {
+          "python": "3.13.2",
+          "platform": "Windows-11-10.0.26200-SP0",
+          "machine": "AMD64",
+          "git_commit": null
+        },
+        "machine_memory": {
+          "total_mb": 16498.0,
+          "method": "windows:GlobalMemoryStatusEx"
+        },
+        "process_memory_method": "windows:GetProcessMemoryInfo working set",
+        "graph": {
+          "nodes": 155714,
+          "segments": 180554,
+          "directed_edges": 361108,
+          "named_segments": 51003,
+          "segments_with_raw_tags_in_memory": 0,
+          "segment_sha256": "88f63bcaed9ce3ce920c8df4a1819b47e22850bceb9fb3aa091feb0158d81d83",
+          "node_sha256": "972e3e41d4728b3b19987b3679548a2c1e3b13f6c2e876a2325eb21b61108111"
+        },
+        "summary": {
+          "timing_runs": 1,
+          "median_seconds": 31.29,
+          "min_seconds": 31.29,
+          "max_seconds": 31.29,
+          "spread_ratio": 1.0,
+          "heap_runs": 0,
+          "median_peak_python_heap_mb": null,
+          "max_peak_rss_mb": 1053.5,
+          "median_rss_after_load_mb": 816.2,
+          "invalid_runs": 0,
+          "runs_under_memory_pressure": 1
+        },
+        "runs": [
+          {
+            "run": 1,
+            "tracemalloc": false,
+            "started_at": "2026-11-03T00:04:11+00:00",
+            "elapsed_seconds": 31.29,
+            "cpu_seconds": 30.7,
+            "load_seconds_reported": 30.97,
+            "peak_python_heap_mb": null,
+            "rss_mb": 816.2,
+            "peak_rss_mb": 1053.5,
+            "available_mb_before": 1547.8,
+            "available_mb_after": 615.9,
+            "memory_pressure": true,
+            "valid": true,
+            "invalid_reason": null
+          }
+        ]
+      }
+    },
+    {
+      "label": "branch-2",
+      "report": {
+        "load_benchmark_version": 1,
+        "region": "waterloo",
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "dataset_checksum": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+        "environment": {
+          "python": "3.13.2",
+          "platform": "Windows-11-10.0.26200-SP0",
+          "machine": "AMD64",
+          "git_commit": "43574b89375380cae317f7cfb16a442033b45acb"
+        },
+        "machine_memory": {
+          "total_mb": 16498.0,
+          "method": "windows:GlobalMemoryStatusEx"
+        },
+        "process_memory_method": "windows:GetProcessMemoryInfo working set",
+        "graph": {
+          "nodes": 155714,
+          "segments": 180554,
+          "directed_edges": 361108,
+          "named_segments": 51003,
+          "segments_with_raw_tags_in_memory": 0,
+          "segment_sha256": "f407fafd239f76a2ef8261d9063ae121f1291c0381983ddea4504b3e4fc8b87b",
+          "node_sha256": "972e3e41d4728b3b19987b3679548a2c1e3b13f6c2e876a2325eb21b61108111"
+        },
+        "summary": {
+          "timing_runs": 1,
+          "median_seconds": 35.37,
+          "min_seconds": 35.37,
+          "max_seconds": 35.37,
+          "spread_ratio": 1.0,
+          "heap_runs": 0,
+          "median_peak_python_heap_mb": null,
+          "max_peak_rss_mb": 1199.0,
+          "median_rss_after_load_mb": 861.8,
+          "invalid_runs": 0,
+          "runs_under_memory_pressure": 1
+        },
+        "runs": [
+          {
+            "run": 1,
+            "tracemalloc": false,
+            "started_at": "2026-11-03T00:05:01+00:00",
+            "elapsed_seconds": 35.37,
+            "cpu_seconds": 33.09,
+            "load_seconds_reported": 28.36,
+            "peak_python_heap_mb": null,
+            "rss_mb": 861.8,
+            "peak_rss_mb": 1199.0,
+            "available_mb_before": 1329.6,
+            "available_mb_after": 853.3,
+            "memory_pressure": true,
+            "valid": true,
+            "invalid_reason": null
+          }
+        ]
+      }
+    }
+  ]
+}
