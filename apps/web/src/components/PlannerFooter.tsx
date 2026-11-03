@@ -32,8 +32,7 @@ export function PlannerFooter() {
           <span data-testid="elevation-licence">
             HRDEM: contains information licensed under the Open Government Licence – Canada.
           </span>{' '}
-          Development map tiles served by OpenFreeMap, which has not been approved for production
-          use.
+          Basemap tiles served by OpenFreeMap, a third-party public service with no SLA.
         </p>
       </div>
       <ul className={styles.links}>
