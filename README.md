@@ -660,7 +660,8 @@ See [What it is not](#what-it-is-not) above, and the
 
 Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors,
 licensed under the [Open Database License](https://opendatacommons.org/licenses/odbl/).
-Development tiles are served by [OpenFreeMap](https://openfreemap.org/).
+Basemap tiles are served by [OpenFreeMap](https://openfreemap.org/) (OpenFreeMap © OpenMapTiles Data
+from OpenStreetMap), a third-party public service with no SLA.
 
 Gradients derived from elevation use NRCan's High Resolution Digital Elevation
 Model (CanElevation): _Contains information licensed under the

@@ -1,6 +1,7 @@
 # ADR 0005 — Map tile and geocoding providers
 
-**Status:** Accepted · tiles: a development choice, production provider still open ·
+**Status:** Accepted · tiles: OpenFreeMap's public instance, serving the public pilot since
+2026-10-15 ·
 geocoding: decided 2026-10-07, a bounded local gazetteer · 2026-08-05 · Phase 0 (P0-A01)
 
 ## Context
@@ -29,7 +30,7 @@ that is easy to miss and important to get right:
 Open source (BSD-3), no account, no key, no telemetry, vector tiles, and a
 provider-agnostic style specification. Swapping tile providers is a URL change.
 
-### Development tiles: OpenFreeMap
+### Basemap tiles: OpenFreeMap
 
 `https://tiles.openfreemap.org/styles/liberty` — OSM-derived vector tiles, no
 account, no API key, no rate limit published for reasonable use, self-hostable.
@@ -37,11 +38,13 @@ account, no API key, no rate limit published for reasonable use, self-hostable.
 Configured via `NEXT_PUBLIC_MAP_STYLE_URL`, so it is a variable rather than a
 constant in the code.
 
-> **This is a development choice and has not been approved for production.**
-> A free community service carries no availability guarantee and no support
-> relationship. Depending on one for a product people use to plan whether they
-> can physically make a journey is a different risk decision, and it is the
-> founder's to make.
+> **The public pilot serves OpenFreeMap's public instance** (since 2026-10-15;
+> [ADR 0009](0009-deployment-architecture.md)). Its terms allow integrating it
+> into a website or application, it answers "yes" to commercial use, and the
+> public instance is free with no limit on views or requests. It is provided as
+> is: no SLA, no personalised support, and it may be discontinued without
+> notice (checked against <https://openfreemap.org/> and its terms, 2026-11-03).
+> That is a risk the pilot carries, and the interface says so beside the map.
 
 ### Tests: a local, source-less style
 
