@@ -960,6 +960,52 @@
         "title": "MobilityProfileModel",
         "type": "object"
       },
+      "PlaceIndexReport": {
+        "description": "Whether the stored place index is the one this release reads.\n\nInformational: it never changes ``status``. A stale index degrades search,\nnot routing, and taking routing offline over it would trade one failure for\na worse one. Deployment tooling and the smoke test read it instead.",
+        "properties": {
+          "detail": {
+            "description": "Which region, and which versions.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "expected_version": {
+            "description": "The gazetteer version this release reads.",
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "status": {
+            "description": "'current' when every region's index was built by the gazetteer version this release reads; 'stale' when one was built by an older one; 'absent' when local search has no index; 'not_used' when search is not local; 'unknown' when the database could not be asked.",
+            "enum": [
+              "current",
+              "stale",
+              "absent",
+              "not_used",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stored_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The oldest gazetteer version among the stored indexes.",
+            "title": "Stored Version"
+          }
+        },
+        "required": [
+          "status",
+          "detail",
+          "expected_version"
+        ],
+        "title": "PlaceIndexReport",
+        "type": "object"
+      },
       "ReadinessChecks": {
         "description": "Per-dependency readiness results.",
         "properties": {
@@ -1017,6 +1063,17 @@
           "checks": {
             "$ref": "#/components/schemas/ReadinessChecks",
             "description": "Individual dependency results."
+          },
+          "place_index": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceIndexReport"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the stored place index is the version this release reads. Does not affect `status`. Null only when this instance has no database configured."
           },
           "service": {
             "description": "Service identifier.",
@@ -1864,7 +1921,7 @@
     },
     "/api/v1/health/ready": {
       "get": {
-        "description": "Reports whether this instance should receive traffic. Probes PostgreSQL connectivity and PostGIS availability under a bounded timeout, and reports whether every preloaded routing graph is loaded. Returns 200 when ready and 503 when not; the body shape is identical in both cases.",
+        "description": "Reports whether this instance should receive traffic. Probes PostgreSQL connectivity and PostGIS availability under a bounded timeout, and reports whether every preloaded routing graph is loaded. Returns 200 when ready and 503 when not; the body shape is identical in both cases. Also reports, without letting it affect readiness, whether the stored place index is the version this release reads.",
         "operationId": "getReadiness",
         "responses": {
           "200": {

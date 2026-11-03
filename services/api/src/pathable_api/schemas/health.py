@@ -13,6 +13,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 DependencyState = Literal["ok", "unavailable"]
+PlaceIndexState = Literal["current", "stale", "absent", "not_used", "unknown"]
 
 
 class LivenessResponse(BaseModel):
@@ -70,6 +71,31 @@ class ReadinessChecks(BaseModel):
     )
 
 
+class PlaceIndexReport(BaseModel):
+    """Whether the stored place index is the one this release reads.
+
+    Informational: it never changes ``status``. A stale index degrades search,
+    not routing, and taking routing offline over it would trade one failure for
+    a worse one. Deployment tooling and the smoke test read it instead.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    status: PlaceIndexState = Field(
+        description=(
+            "'current' when every region's index was built by the gazetteer version this "
+            "release reads; 'stale' when one was built by an older one; 'absent' when "
+            "local search has no index; 'not_used' when search is not local; 'unknown' "
+            "when the database could not be asked."
+        )
+    )
+    detail: str = Field(description="Which region, and which versions.")
+    stored_version: int | None = Field(
+        default=None, description="The oldest gazetteer version among the stored indexes."
+    )
+    expected_version: int = Field(description="The gazetteer version this release reads.")
+
+
 class ReadinessResponse(BaseModel):
     """Aggregate readiness verdict.
 
@@ -113,3 +139,10 @@ class ReadinessResponse(BaseModel):
     service: str = Field(description="Service identifier.", examples=["pathable-api"])
     version: str = Field(description="Deployed application version.", examples=["0.1.0"])
     checks: ReadinessChecks = Field(description="Individual dependency results.")
+    place_index: PlaceIndexReport | None = Field(
+        default=None,
+        description=(
+            "Whether the stored place index is the version this release reads. Does not "
+            "affect `status`. Null only when this instance has no database configured."
+        ),
+    )

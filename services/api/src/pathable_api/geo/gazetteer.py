@@ -44,18 +44,15 @@ from shapely.ops import polygonize, unary_union
 from pathable_api.core.logging import get_logger
 from pathable_api.geo.enums import PlaceKind
 from pathable_api.geo.pbf import CLIP_MARGIN_DEGREES, EXCLUDED_HIGHWAYS, file_sha256
-from pathable_api.geo.place_text import category_tier, code_of, initialism, normalise_text
+from pathable_api.geo.place_text import (
+    GAZETTEER_VERSION,
+    category_tier,
+    code_of,
+    initialism,
+    normalise_text,
+)
 
 logger = get_logger(__name__)
-
-#: Bumped whenever extraction or normalisation changes what an extract becomes,
-#: so a stored index says which rules produced it.
-#:
-#: 2 — places carry the short codes OpenStreetMap records for them (`ref`,
-#:     `short_name`: DC, SLC, E5) and the initials of their names, kept apart
-#:     because one is recorded and the other generated; "center" and "centre"
-#:     are folded together.
-GAZETTEER_VERSION = 2
 
 # --- What counts as a place -----------------------------------------------------
 

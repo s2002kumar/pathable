@@ -64,7 +64,7 @@ export interface paths {
         };
         /**
          * Readiness probe
-         * @description Reports whether this instance should receive traffic. Probes PostgreSQL connectivity and PostGIS availability under a bounded timeout, and reports whether every preloaded routing graph is loaded. Returns 200 when ready and 503 when not; the body shape is identical in both cases.
+         * @description Reports whether this instance should receive traffic. Probes PostgreSQL connectivity and PostGIS availability under a bounded timeout, and reports whether every preloaded routing graph is loaded. Returns 200 when ready and 503 when not; the body shape is identical in both cases. Also reports, without letting it affect readiness, whether the stored place index is the version this release reads.
          */
         get: operations["getReadiness"];
         put?: never;
@@ -661,6 +661,37 @@ export interface components {
             prefers_width_over_m?: number | null;
         };
         /**
+         * PlaceIndexReport
+         * @description Whether the stored place index is the one this release reads.
+         *
+         *     Informational: it never changes ``status``. A stale index degrades search,
+         *     not routing, and taking routing offline over it would trade one failure for
+         *     a worse one. Deployment tooling and the smoke test read it instead.
+         */
+        PlaceIndexReport: {
+            /**
+             * Detail
+             * @description Which region, and which versions.
+             */
+            detail: string;
+            /**
+             * Expected Version
+             * @description The gazetteer version this release reads.
+             */
+            expected_version: number;
+            /**
+             * Status
+             * @description 'current' when every region's index was built by the gazetteer version this release reads; 'stale' when one was built by an older one; 'absent' when local search has no index; 'not_used' when search is not local; 'unknown' when the database could not be asked.
+             * @enum {string}
+             */
+            status: "current" | "stale" | "absent" | "not_used" | "unknown";
+            /**
+             * Stored Version
+             * @description The oldest gazetteer version among the stored indexes.
+             */
+            stored_version?: number | null;
+        };
+        /**
          * ReadinessChecks
          * @description Per-dependency readiness results.
          */
@@ -710,6 +741,8 @@ export interface components {
         ReadinessResponse: {
             /** @description Individual dependency results. */
             checks: components["schemas"]["ReadinessChecks"];
+            /** @description Whether the stored place index is the version this release reads. Does not affect `status`. Null only when this instance has no database configured. */
+            place_index?: components["schemas"]["PlaceIndexReport"] | null;
             /**
              * Service
              * @description Service identifier.

@@ -103,6 +103,32 @@ async def gazetteer_build(session: AsyncSession, region_slug: str) -> GazetteerB
     return result.scalar_one_or_none()
 
 
+def stored_version(build: GazetteerBuild) -> int | None:
+    """The gazetteer version that built a stored index, as its build recorded it."""
+    version = build.configuration.get("gazetteer_version")
+    return version if isinstance(version, int) else None
+
+
+async def place_index_versions(session: AsyncSession) -> list[tuple[str, int | None]]:
+    """Each region with a place index, and the gazetteer version that built it.
+
+    Reads the build records only, so it costs one small query and works on any
+    schema since 0007.
+    """
+    rows = await session.execute(
+        select(PilotRegion.slug, GazetteerBuild.configuration)
+        .join(PilotRegion, PilotRegion.id == GazetteerBuild.pilot_region_id)
+        .order_by(PilotRegion.slug)
+    )
+    return [
+        (
+            slug,
+            version if isinstance(version := configuration.get("gazetteer_version"), int) else None,
+        )
+        for slug, configuration in rows
+    ]
+
+
 #: How a result matched: a recorded code, generated initials, its name or
 #: address, or the typo-tolerant pass.
 MatchedOn = Literal["code", "initialism", "name", "fuzzy"]

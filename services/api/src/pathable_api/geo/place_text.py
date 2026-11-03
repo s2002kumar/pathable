@@ -15,6 +15,17 @@ import re
 import unicodedata
 from collections.abc import Mapping
 
+#: Bumped whenever extraction or normalisation changes what an extract becomes,
+#: so a stored index says which rules produced it, and an index built under
+#: older rules can be told apart from a current one. Defined here rather than in
+#: the extract reader so the API can compare versions without importing it.
+#:
+#: 2 — places carry the short codes OpenStreetMap records for them (`ref`,
+#:     `short_name`: DC, SLC, E5) and the initials of their names, kept apart
+#:     because one is recorded and the other generated; "center" and "centre"
+#:     are folded together.
+GAZETTEER_VERSION = 2
+
 #: Written forms that mean the same thing. The rule is symmetry, not accuracy:
 #: "St Jacobs" becomes "street jacobs" on both sides, which is ugly and still
 #: matches.

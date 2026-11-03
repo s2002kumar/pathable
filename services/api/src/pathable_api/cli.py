@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import String, cast, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pathable_api import __version__
@@ -68,6 +69,15 @@ from pathable_api.geo.gazetteer_store import (
     gazetteer_build,
     replace_gazetteer,
     search_gazetteer,
+)
+from pathable_api.geo.gazetteer_transfer import (
+    PlaceIndexArtifact,
+    PlaceIndexTransferError,
+    check_place_index,
+    export_place_index,
+    install_place_index,
+    place_index_status,
+    read_place_index,
 )
 from pathable_api.geo.kitchener.arcgis import (
     DEFAULT_CHUNK_SIZE,
@@ -621,6 +631,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gazetteer_search_command.add_argument("query", help="Place name, address or street.")
     gazetteer_search_command.add_argument("--limit", type=int, default=5, choices=range(1, 6))
+    gazetteer_status_command = gazetteer_actions.add_parser(
+        "status",
+        help=(
+            "Whether the stored place index is the version this release reads, read from "
+            "the active network's extract. Exits 1 when it is not. Reads only, and works "
+            "before this release's migrations have run."
+        ),
+    )
+    gazetteer_status_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_export_command = gazetteer_actions.add_parser(
+        "export",
+        help="Write the region's place index to an artifact another database can install.",
+    )
+    gazetteer_export_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_export_command.add_argument(
+        "--out", required=True, type=Path, help="Where to write the artifact (.jsonl.gz)."
+    )
+    gazetteer_import_command = gazetteer_actions.add_parser(
+        "import",
+        help=(
+            "Replace the region's place index with an artifact's, in one transaction, once "
+            "the artifact has proved its content and fits this release and the active network."
+        ),
+    )
+    gazetteer_import_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_import_command.add_argument(
+        "--file", required=True, help="The artifact, or '-' to read it from standard input."
+    )
+    gazetteer_import_command.add_argument(
+        "--check",
+        action="store_true",
+        help="Verify the artifact against this release and the database; write nothing.",
+    )
 
     overture = subcommands.add_parser(
         "overture",
@@ -1205,6 +1254,12 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 return await _gazetteer_build(database, args)
             case "gazetteer" if args.gazetteer_command == "evaluate":
                 return await _gazetteer_evaluate(database, args)
+            case "gazetteer" if args.gazetteer_command == "status":
+                return await _gazetteer_status(database, args)
+            case "gazetteer" if args.gazetteer_command == "export":
+                return await _gazetteer_export(database, args)
+            case "gazetteer" if args.gazetteer_command == "import":
+                return await _gazetteer_import(database, args)
             case "gazetteer":
                 return await _gazetteer_search(database, args)
             case "overture":
@@ -1382,6 +1437,90 @@ async def _gazetteer_build(database: Database, args: argparse.Namespace) -> int:
     else:
         print(f"  network    WARNING: the active network came from {network_sha[:16]}, not this")
     return EXIT_OK
+
+
+async def _gazetteer_status(database: Database, args: argparse.Namespace) -> int:
+    definition = region_definition(args.region)
+    async with database.session() as session:
+        try:
+            status = await place_index_status(session, definition.slug)
+        except DatasetLifecycleError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return EXIT_FAILED
+    print(f"Place index for {definition.display_name}:")
+    print(f"  present           {'yes' if status.present else 'no'}")
+    print(f"  stored version    {status.stored_version}")
+    print(f"  expected version  {status.expected_version}")
+    print(f"  entries           {status.entries}")
+    print(f"  extract sha256    {status.file_sha256}")
+    print(f"  network sha256    {status.network_sha256}")
+    for problem in status.problems:
+        print(f"  problem           {problem}")
+    print("  current" if status.current else "  NOT CURRENT")
+    return EXIT_OK if status.current else EXIT_FAILED
+
+
+async def _gazetteer_export(database: Database, args: argparse.Namespace) -> int:
+    definition = region_definition(args.region)
+    async with database.session() as session:
+        try:
+            data = await export_place_index(session, definition.slug)
+        except PlaceIndexTransferError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return EXIT_FAILED
+    # Read back before it is reported, so a file that does not verify is never
+    # announced as written.
+    artifact = read_place_index(data)
+    out = Path(args.out)
+    out.write_bytes(data)
+    print(f"Wrote {out} ({len(data):,} bytes).")
+    _describe_artifact(artifact)
+    return EXIT_OK
+
+
+async def _gazetteer_import(database: Database, args: argparse.Namespace) -> int:
+    definition = region_definition(args.region)
+    data = sys.stdin.buffer.read() if args.file == "-" else Path(args.file).read_bytes()
+    try:
+        artifact = read_place_index(data)
+    except PlaceIndexTransferError as error:
+        print(f"error: {error}. Nothing was written.", file=sys.stderr)
+        return EXIT_FAILED
+    _describe_artifact(artifact)
+
+    async with database.session() as session:
+        try:
+            if args.check:
+                await check_place_index(session, artifact, region_slug=definition.slug)
+                print("  fits this release and the active network; nothing was written")
+                return EXIT_OK
+            started = time.perf_counter()
+            build = await install_place_index(session, artifact, region_slug=definition.slug)
+            await session.commit()
+        except (PlaceIndexTransferError, DatasetLifecycleError, SQLAlchemyError) as error:
+            await session.rollback()
+            print(
+                f"error: {error}. Nothing was written; the previous place index is unchanged.",
+                file=sys.stderr,
+            )
+            return EXIT_FAILED
+    print(
+        f"Place index for {definition.display_name} replaced in one transaction "
+        f"({time.perf_counter() - started:.1f}s): {build.place_count} places, "
+        f"{build.address_count} addresses, {build.street_count} streets."
+    )
+    return EXIT_OK
+
+
+def _describe_artifact(artifact: PlaceIndexArtifact) -> None:
+    header = artifact.header
+    print(f"  artifact sha256   {artifact.sha256}")
+    print(f"  region            {artifact.region}")
+    print(f"  gazetteer version {artifact.gazetteer_version}")
+    print(f"  entries           {artifact.entry_count} {header['counts']}")
+    print(f"  extract           {header.get('file_name')} {artifact.file_sha256}")
+    print(f"  data as of        {header.get('source_timestamp')}")
+    print(f"  built             {header.get('built_at')}")
 
 
 async def _gazetteer_search(database: Database, args: argparse.Namespace) -> int:

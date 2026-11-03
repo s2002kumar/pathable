@@ -77,8 +77,11 @@ class TestReadinessWithoutDatabaseConfiguration:
         # One shape means the client parses readiness once, not twice.
         body = client.get(READY_URL).json()
 
-        assert set(body) == {"status", "service", "version", "checks"}
+        assert set(body) == {"status", "service", "version", "checks", "place_index"}
         assert set(body["checks"]) == {"database", "postgis", "graph"}
+
+    def test_the_place_index_is_not_asked_without_a_database(self, client: TestClient) -> None:
+        assert client.get(READY_URL).json()["place_index"] is None
 
 
 class TestReadinessWithUnreachableDatabase:
