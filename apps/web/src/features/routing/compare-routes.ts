@@ -28,19 +28,26 @@ export type CompareRoutesResult =
   | { readonly ok: false; readonly message: string; readonly code: string };
 
 /**
- * A route this version can render honestly: it says whose pace its time uses,
- * and it carries its gradients with their sources. An older backend without
- * either would have the page compare unlike times and guess at provenance.
+ * A route this version can render honestly: it says whose pace its time uses
+ * and gives that time as a range, and it carries its gradients with their
+ * sources. An older backend without them would have the page show a precise
+ * time it cannot defend and guess at provenance.
  */
 function isRenderableRoute(value: unknown): boolean {
   // An absent route is a real answer ("no route for this profile"), not skew.
   if (value === null || value === undefined) return true;
   if (typeof value !== 'object') return false;
-  const route = value as { pace_profile?: unknown; gradient?: unknown };
+  const route = value as {
+    pace_profile?: unknown;
+    gradient?: unknown;
+    duration_estimate?: unknown;
+  };
   return (
     typeof route.pace_profile === 'string' &&
     typeof route.gradient === 'object' &&
-    route.gradient !== null
+    route.gradient !== null &&
+    typeof route.duration_estimate === 'object' &&
+    route.duration_estimate !== null
   );
 }
 
@@ -61,6 +68,10 @@ function isRouteCompareResponse(value: unknown): value is RouteCompareResponse {
     typeof candidate.dataset === 'object' &&
     candidate.dataset !== null &&
     candidate.ml_predictions_used === false &&
+    // The one line read first; without it the page would have to invent one.
+    typeof candidate.summary === 'object' &&
+    candidate.summary !== null &&
+    typeof candidate.summary.headline === 'string' &&
     isRenderableRoute(candidate.standard_route) &&
     isRenderableRoute(candidate.accessible_route)
   );

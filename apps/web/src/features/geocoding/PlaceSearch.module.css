@@ -125,9 +125,14 @@
   list-style: none;
 }
 
-/* A full-width button, not a link: choosing a result performs an action on this
-   page rather than navigating anywhere. */
+.matchList[hidden] {
+  display: none;
+}
+
+/* An option in the suggestions listbox: chosen with a click, or with the arrow
+   keys and Enter while focus stays in the field. */
 .match {
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -143,8 +148,14 @@
   text-align: left;
 }
 
-.match:hover {
+.match:hover,
+.match[data-active='true'] {
   background: var(--color-surface-high);
+}
+
+.match[data-active='true'] {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 
 .matchCategory {

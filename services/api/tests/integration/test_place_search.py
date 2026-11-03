@@ -31,7 +31,7 @@ from pathable_api.geo.gazetteer_store import (
     search_gazetteer,
 )
 from pathable_api.geo.models import GazetteerBuild, GazetteerEntry
-from pathable_api.geo.place_text import normalise_text
+from pathable_api.geo.place_text import initialism, normalise_text
 from pathable_api.geo.regions import WATERLOO, seed_region
 from pathable_api.main import create_app
 from tests.unit.test_gazetteer import write_extract
@@ -228,6 +228,107 @@ class TestRanking:
         assert (davis.longitude, davis.latitude) == pytest.approx((-80.5420, 43.4728))
 
 
+def coded(
+    label: str,
+    category: str,
+    lon: float,
+    *,
+    codes: tuple[str, ...] = (),
+    kind: PlaceKind = PlaceKind.PLACE,
+) -> PlaceEntry:
+    """An entry with the codes and initials gazetteer version 2 gives it."""
+    return PlaceEntry(
+        kind=kind,
+        label=label,
+        category=category,
+        search_text=normalise_text(label),
+        longitude=lon,
+        latitude=43.47,
+        osm_type="way",
+        osm_id=zlib.crc32(label.encode()),
+        osm_version=None,
+        codes=codes,
+        initialisms=tuple(letters for letters in [initialism(label)] if letters),
+    )
+
+
+#: Campus buildings beside the things that share their letters.
+CODED_ENTRIES = [
+    coded(
+        "William G. Davis Computer Research Centre", "university building", -80.542, codes=("dc",)
+    ),
+    coded("DC Bytes", "fast food", -80.543),
+    coded("Davis Centre", "taxi", -80.541),
+    coded("Student Life Centre", "university building", -80.545, codes=("slc",)),
+    coded("Mathematics & Computer", "university building", -80.544, codes=("mc",)),
+    coded("McDonald's", "fast food", -80.530),
+    coded("Engineering 5", "university building", -80.540, codes=("e5",)),
+    coded("E5 Bridge", "path", -80.539, kind=PlaceKind.STREET),
+    # No recorded code: found by its generated initials.
+    coded("Physical Activities Complex", "sports centre", -80.546),
+    coded("Corbett Packaging", "company", -80.478),
+    coded("200 University Avenue West, Waterloo", "address", -80.545, kind=PlaceKind.ADDRESS),
+    coded("200 University Avenue West, Waterloo", "address", -80.543, kind=PlaceKind.ADDRESS),
+]
+
+
+@pytest_asyncio.fixture
+async def coded_index(db_session: AsyncSession) -> GazetteerBuild:
+    return await build_index(db_session, CODED_ENTRIES)
+
+
+class TestCodes:
+    """What people type for a campus building (gazetteer version 2)."""
+
+    @pytest.mark.parametrize(
+        ("query", "expected"),
+        [
+            ("DC", "William G. Davis Computer Research Centre"),
+            ("dc", "William G. Davis Computer Research Centre"),
+            ("SLC", "Student Life Centre"),
+            ("MC", "Mathematics & Computer"),
+            ("E5", "Engineering 5"),
+            ("PAC", "Physical Activities Complex"),
+            ("P.A.C.", "Physical Activities Complex"),
+            ("Davis Center", "William G. Davis Computer Research Centre"),
+        ],
+    )
+    async def test_the_building_comes_first(
+        self, db_session: AsyncSession, coded_index: GazetteerBuild, query: str, expected: str
+    ) -> None:
+        found = await labels(db_session, coded_index, query)
+
+        assert found[0] == expected
+
+    async def test_a_recorded_code_says_it_is_one(
+        self, db_session: AsyncSession, coded_index: GazetteerBuild
+    ) -> None:
+        [first, *_] = await search_gazetteer(db_session, coded_index.id, "DC", limit=5)
+        [pac, *_] = await search_gazetteer(db_session, coded_index.id, "PAC", limit=5)
+
+        assert first.matched_on == "code"
+        assert pac.matched_on == "initialism"
+
+    async def test_a_code_being_typed_is_offered(
+        self, db_session: AsyncSession, coded_index: GazetteerBuild
+    ) -> None:
+        assert "Student Life Centre" in await labels(db_session, coded_index, "sl")
+
+    async def test_what_shares_the_letters_is_still_found_after(
+        self, db_session: AsyncSession, coded_index: GazetteerBuild
+    ) -> None:
+        found = await labels(db_session, coded_index, "MC")
+
+        assert found.index("Mathematics & Computer") < found.index("McDonald's")
+
+    async def test_the_same_address_twice_is_one_result(
+        self, db_session: AsyncSession, coded_index: GazetteerBuild
+    ) -> None:
+        found = await labels(db_session, coded_index, "200 University Ave W")
+
+        assert found.count("200 University Avenue West, Waterloo") == 1
+
+
 class TestReplacement:
     async def test_a_rebuild_replaces_the_whole_index(
         self, db_session: AsyncSession, index: GazetteerBuild
@@ -317,6 +418,8 @@ class TestApi:
             "longitude": pytest.approx(-80.5420),
             "latitude": pytest.approx(43.4728),
             "category": "university",
+            "kind": "place",
+            "matched_on": "name",
         }
         assert "as of 2026-08-16" in body["attribution"]
         assert "OpenStreetMap contributors, ODbL" in body["attribution"]

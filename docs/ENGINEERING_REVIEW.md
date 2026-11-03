@@ -142,11 +142,14 @@ specifically to show the route starting somewhere other than where the user clic
 Dijkstra is the correctness baseline. A\* runs alongside it with a geodesic-distance heuristic, and the two are
 proven to agree on optimal cost across the corpus.
 
-**A\* is not faster here, and the repository says so.** It expands 1,970 nodes at the median against Dijkstra's
-7,409 — a 3.8× reduction in work — and comes out at 195 ms against 213 ms at p50. The heuristic's per-node cost
-very nearly cancels the saving at this scale in this implementation. Reporting that as a performance win would
-have been the easy thing; the number is in
-[`waterloo-performance.json`](evidence/waterloo-performance.json) either way.
+**A\* is not reliably faster here, and the repository says so.** Under routing policy 3 it expands 1,398 nodes
+at the median against Dijkstra's 7,041 on the twenty-journey corpus — about a fifth of the work — and comes out at
+220 ms against 267 ms at p50. On the laptop that measured it, under memory pressure, repeats of one journey varied
+by 1.74× at the median, so the time difference is not established; the work saved is. Policy 2's script gave
+1,970 against 7,409 and 195 against 213 ms. Reporting either as a performance win would have been the easy thing;
+the numbers, the machine and the method are in
+[`waterloo-performance-policy3.json`](evidence/waterloo-performance-policy3.json) and
+[`WATERLOO_CORE_V2.md`](evidence/WATERLOO_CORE_V2.md) §10.
 
 That result is worth having: it says the bottleneck is not the search.
 
@@ -160,14 +163,14 @@ Fully specified in [ADR 0008](adr/0008-accessibility-cost-model.md). Two mechani
 - **Penalties** inflate an edge's cost in _effective metres_, a unit chosen so the trade-off is legible: "this
   profile will walk 40 extra metres to avoid this" is a sentence a person can argue with.
 
-The campus journey shows both: the 4 stairways are a hard constraint, and the resulting route is 287.4 m of
+The campus journey shows both: the 3 stairways are a hard constraint, and the resulting route is 287.4 m of
 shortest path turned into 354.1 m of effective 601.0 m once penalties are counted.
 
 **Unknown data carries a penalty, not a pass.** An unrecorded surface is treated as a risk, which is the only
 setting consistent with the product's central claim. That penalty was **ablated** rather than assumed: removing
-it changes 3 of 20 corpus routes — so it is not saturated — but removing _only_ the missing-gradient term changes
-the same 3, meaning one term is currently doing all the work. That is recorded in the ADR as a known weakness,
-not smoothed over.
+it changes 8 of 20 corpus routes under routing policy 3 — so it is not saturated — and removing _only_ the
+missing-gradient term changes 7 of them, meaning one term does most of the work. That is recorded in the ADR as a
+known weakness, not smoothed over.
 
 **The weights are engineering judgement.** They have not been validated against how people using these mobility
 aids actually travel. Taking this beyond a pilot requires that validation, and no amount of testing substitutes
@@ -214,8 +217,9 @@ Twenty real Waterloo journeys, fixed **before** any route was computed, spanning
 a ravine footbridge, a rail corridor, and distances from two blocks to a few kilometres. Every one is reported
 whatever it did.
 
-Results: 18 of 20 route differently under a wheelchair profile, 1 has no route at all, median detour 86.1 m
-across the 18 that change (83.8 m across all 19 routable journeys). The
+Results under routing policy 3: 17 of 20 route differently under a wheelchair profile, 1 has no route at all,
+median detour 51.5 m across the 17 that change (33.3 m across all 19 routable journeys). Policy 2 gave 18 and
+86.1 m; what changed and why is in [`WATERLOO_CORE_V2.md`](evidence/WATERLOO_CORE_V2.md). The
 no-route case is real and correct — Rim Park sits in a separate 1,887-node component because its connection to
 the network leaves the pilot bounding box and was clipped.
 

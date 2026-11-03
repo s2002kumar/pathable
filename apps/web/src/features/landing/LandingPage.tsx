@@ -304,8 +304,8 @@ function Story() {
           Verified Waterloo example ({ROUTE.originLabel} → {ROUTE.destinationLabel}) recorded from
           the implemented routing API: {ROUTE.standard.distanceM} m shortest vs{' '}
           {ROUTE.accessible.distanceM} m wheelchair route. One journey, not typical of all. Across a
-          20-journey corpus fixed before any route was computed, 18 route differently (median detour
-          86.1 m) and one has no route at all.
+          20-journey corpus fixed before any route was computed, 17 route differently (median detour
+          51.5 m) and one has no route at all.
         </p>
       </div>
     </section>
@@ -391,14 +391,14 @@ const MEASURES: ReadonlyArray<{
     body: 'Just 0.03% — so grade comes from NRCan’s 1 m HRDEM, chosen by measuring that a 30 m model’s error exceeds the signal: RMSE 4.06 pp against a 1.78% median grade over 50 m.',
   },
   {
-    figure: '1,970 / 7,409',
+    figure: '1,398 / 7,041',
     label: 'nodes expanded at the median, A* / Dijkstra',
-    body: 'They agree on optimal cost on every routable journey of the corpus. A* is not faster here: 195 ms against 213 ms at p50, one laptop, warm graph.',
+    body: 'They agree on optimal cost on every routable journey of the corpus. A* is not reliably faster: 220 ms against 267 ms at p50 on one laptop, inside its run-to-run noise.',
   },
   {
-    figure: '18 of 20',
+    figure: '17 of 20',
     label: 'corpus journeys route differently',
-    body: 'Median detour 86.1 m across those 18. One journey has no route at all: its connection leaves the pilot area, and PathAble says so instead of inventing one.',
+    body: 'Median detour 51.5 m across those 17. One journey has no route at all: its connection leaves the pilot area, and PathAble says so instead of inventing one.',
   },
   {
     figure: '46.83 s → 22.14 s',

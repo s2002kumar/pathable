@@ -57,6 +57,7 @@ def _row(**overrides: Any) -> SimpleNamespace:
         "ambiguous_direction": False,
         "foot_forward": True,
         "foot_backward": True,
+        "source_way_id": None,
         "name": None,
         "geometry_wkb": _GEOMETRY.wkb,
     }

@@ -208,12 +208,20 @@ function gapCopy(fact: CategoryFact, route: Route): { title: string; body: strin
       // about the segments, so "some have no surface tag" would be invented.
       return fact.value === '—'
         ? { title: 'Surface not reported', body: 'The response carries no surface record.' }
-        : fact.tags.includes('not_recorded')
+        : !fact.tags.includes('recorded')
           ? {
-              title: 'Surface evidence is incomplete',
-              body: `Some route segments have no surface tag in OpenStreetMap (${fact.value} recorded).`,
+              title: 'Surface not recorded',
+              body: 'No segment of this route has a surface tag in OpenStreetMap.',
             }
-          : { title: 'Surface recorded along the route', body: 'Every segment has a surface tag.' };
+          : fact.tags.includes('not_recorded')
+            ? {
+                title: 'Surface evidence is incomplete',
+                body: `Some route segments have no surface tag in OpenStreetMap (${fact.value} recorded).`,
+              }
+            : {
+                title: 'Surface recorded along the route',
+                body: 'Every segment has a surface tag.',
+              };
   }
 }
 

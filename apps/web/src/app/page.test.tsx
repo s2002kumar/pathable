@@ -36,7 +36,7 @@ describe('the landing page', () => {
     render(await homePage());
 
     const readout = screen.getByTestId('hero-readout');
-    expect(readout).toHaveTextContent('Shortest walking route287.4 m4 recorded stairways');
+    expect(readout).toHaveTextContent('Shortest walking route287.4 m3 recorded stairways');
     expect(readout).toHaveTextContent('Wheelchair profile route354.1 m0 recorded stairways');
     expect(readout).toHaveTextContent(
       `The wheelchair route is ${VERIFIED_ROUTE.extraDistanceM.toFixed(1)} m longer`,
@@ -59,7 +59,7 @@ describe('the landing page', () => {
     render(await homePage());
 
     const stage = screen.getByRole('img', { name: /Drawing of the verified journey/ });
-    expect(stage).toHaveAccessibleName(/takes 4 recorded stairways/);
+    expect(stage).toHaveAccessibleName(/takes 3 recorded stairways/);
     expect(stage).toHaveAccessibleName(/66\.7 m longer/);
     expect(stage).toHaveAttribute('data-testid', 'hero-visual');
     // The backdrop is the generated network file, not a third-party tile, and
@@ -75,7 +75,7 @@ describe('the landing page', () => {
     const steps = within(story).getAllByRole('heading', { level: 3 });
     expect(steps.map((step) => step.textContent)).toEqual([
       'Both routes leave the library together.',
-      'The shortest route takes 4 recorded stairways.',
+      'The shortest route takes 3 recorded stairways.',
       'The wheelchair profile rules every one of them out.',
       'What nobody recorded stays unknown.',
     ]);
@@ -104,7 +104,7 @@ describe('the landing page', () => {
     const panel = (lens: string) =>
       document.querySelector<HTMLElement>(`[data-lens-panel="${lens}"]`) as HTMLElement;
     expect(panel('stairs')).toHaveTextContent(
-      '4 recorded stairways · 16 steps across 2, no step count on 2',
+      '3 recorded stairways · 16 steps across 2, no step count on 1',
     );
     expect(panel('gradient')).toHaveTextContent('Estimated on 61% · steepest 3.4% up · 4.6% down');
     expect(panel('gradient')).toHaveTextContent('never flat');
@@ -115,7 +115,10 @@ describe('the landing page', () => {
     // The strips draw one cell per recorded segment, coloured from the record.
     const cells = (route: string, attribute: string, value: string) =>
       document.querySelectorAll(`[data-route="${route}"] [data-${attribute}="${value}"]`).length;
-    expect(cells('standard', 'stairs', 'yes')).toBe(VERIFIED_ROUTE.standard.stairways);
+    // One cell per segment, so a stairway drawn in two pieces is two cells.
+    expect(cells('standard', 'stairs', 'yes')).toBe(
+      VERIFIED_ROUTE.standard.segments.filter((segment) => segment.steps === 'yes').length,
+    );
     expect(cells('accessible', 'stairs', 'yes')).toBe(0);
     expect(document.querySelectorAll('[data-route="accessible"] > span')).toHaveLength(
       VERIFIED_ROUTE.accessible.segments.length,
@@ -138,7 +141,7 @@ describe('the landing page', () => {
     const missing = [...new Set(figures)].filter((figure) => !ledger.includes(figure));
     expect(missing).toEqual([]);
     expect(section).toHaveTextContent('one laptop');
-    expect(section).toHaveTextContent('A* is not faster here');
+    expect(section).toHaveTextContent('A* is not reliably faster');
   });
 
   it('records a response in which no model took part', () => {

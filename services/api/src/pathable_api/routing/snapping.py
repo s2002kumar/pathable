@@ -15,25 +15,29 @@ Two things have to be got right for the split to be honest:
 * **Direction survives.** Half of a one-way segment is still one-way, and the
   half that runs against the permitted direction must not appear.
 * **Cost is prorated, not recomputed.** A 40 m piece of a 200 m gravel path is
-  a fifth of the gravel, not a fresh segment with the same fixed penalties. Flat
-  costs that describe a *place* rather than a length — a kerb at a crossing —
-  belong to whichever half contains that place.
+  a fifth of the gravel, not a fresh segment with the same fixed penalties. The
+  flat penalties of a crossing or a stairway are already spread over its length
+  (see `routing.units`), so a piece carries the share of them its length covers.
 """
 
 from __future__ import annotations
 
+import math
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from itertools import pairwise
 from typing import TYPE_CHECKING
 
 from shapely.geometry import LineString, Point
+from shapely.ops import substring
 from shapely.strtree import STRtree
 
 from pathable_api.geo.geometry import geodesic_distance_m, geodesic_length_m
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
+    from pathable_api.geo.features import EdgeFeatures
     from pathable_api.routing.graph import DirectedEdge, RoutableEdge
 
 #: Identifies the temporary node a snap introduces. Prefixed so it can never
@@ -88,7 +92,6 @@ class EdgeIndex:
         longitude: float,
         latitude: float,
         *,
-        candidates: int = 12,
         accept: Callable[[RoutableEdge], bool] | None = None,
         max_distance_m: float | None = None,
     ) -> EdgeSnap | None:
@@ -103,35 +106,42 @@ class EdgeIndex:
         "No route exists" and "the nearest line to your finger is a cycleway"
         are very different answers, and only one of them is true.
 
-        The index ranks by planar degree distance, which is not metres and is
-        mildly wrong at this latitude — a degree of longitude is about 73% of a
-        degree of latitude here. So it is used only to shortlist, and the winner
-        is chosen by a real geodesic measurement among the candidates.
+        The index works in degrees, which are not metres: a degree of longitude
+        is about 73% of a degree of latitude here. So it only gathers
+        candidates, inside a window wide enough to hold every segment within a
+        distance in metres, and the winner is chosen by geodesic measurement. A
+        winner further away than the window's distance is not trusted, because a
+        segment just outside the window can be nearer; the window widens instead.
+        Stopping at the first window that held any segment at all let closed
+        paths within 60 m hide an open one 100 m away, inside the snapping limit.
         """
         if self._tree is None:
             return None
 
         point = Point(longitude, latitude)
 
-        # The overwhelmingly common case: the nearest segments are usable. Try
-        # the tree's own nearest query first, which is about a hundred times
-        # cheaper than a radius sweep, and only widen the search when everything
-        # close by is closed to this traveller.
-        best = self._best_of(
-            point,
-            self._shortlist(point, candidates=candidates, filtered=False),
-            accept=accept,
-            max_distance_m=max_distance_m,
-        )
-        if best is not None or accept is None:
-            return best
+        # The nearest segment in degrees is rarely far from the nearest in
+        # metres, so a first window of its real distance almost always settles
+        # it: the common case costs one small query, not a sweep.
+        planar = self._tree.query_nearest(point, return_distance=False, all_matches=True)
+        first_m = min(_project_onto(self._edges[int(index)], point).distance_m for index in planar)
+        radii = (max(first_m, _SMALLEST_WINDOW_M), *(r for r in _SEARCH_RADII_M if r > first_m))
 
-        return self._best_of(
-            point,
-            self._shortlist(point, candidates=candidates, filtered=True),
-            accept=accept,
-            max_distance_m=max_distance_m,
-        )
+        best: EdgeSnap | None = None
+        for radius_m in radii:
+            best = self._best_of(
+                point,
+                self._within(point, radius_m),
+                accept=accept,
+                max_distance_m=max_distance_m,
+            )
+            if best is not None and best.distance_m <= radius_m:
+                return best
+            if max_distance_m is not None and radius_m >= max_distance_m:
+                # Anything usable within the limit was inside this window and
+                # would have been returned.
+                return None
+        return best
 
     def _best_of(
         self,
@@ -153,39 +163,34 @@ class EdgeIndex:
                 best = snap
         return best
 
-    def _shortlist(self, point: Point, *, candidates: int, filtered: bool) -> list[int]:
-        """Candidate segment indices, nearest first.
+    def _within(self, point: Point, radius_m: float) -> list[int]:
+        """Every segment that could be within `radius_m` metres, and some that are not.
 
-        Without a filter the tree's own nearest query is enough. With one, the
-        nearest few may all be unusable, so a radius search is needed to reach
-        past them — bounded, so a point genuinely off the network still fails
-        rather than dragging in the whole city.
+        The window is a circle in degrees whose radius is the distance in
+        degrees of longitude, the shorter axis, so it covers the distance north
+        and south with room to spare.
         """
-        if not filtered:
-            indices = self._tree.query_nearest(  # type: ignore[union-attr]
-                point, max_distance=None, return_distance=False, all_matches=True, exclusive=False
-            )
-            return [int(index) for index in indices][:candidates]
-
-        for radius_m in _SEARCH_RADII_M:
-            # Degrees, using the shorter of the two axes at this latitude so the
-            # window is never smaller than the distance asked for.
-            radius = radius_m / _METRES_PER_DEGREE_LONGITUDE
-            found = self._tree.query(point.buffer(radius))  # type: ignore[union-attr]
-            indices = [int(index) for index in found]
-            if indices:
-                return indices
-        return []
+        per_degree = _METRES_PER_DEGREE_LATITUDE * math.cos(math.radians(point.y))
+        radius = radius_m * _WINDOW_MARGIN / per_degree
+        found = self._tree.query(point.buffer(radius))  # type: ignore[union-attr]
+        return [int(index) for index in found]
 
 
-#: Widening windows for a filtered search. Most points resolve in the first, and
-#: the last is the point at which "there is nothing walkable near here" is the
-#: honest answer rather than a reason to keep looking.
+#: Widening windows. Most points resolve in the first, and the last is the point
+#: at which "there is nothing walkable near here" is the honest answer rather
+#: than a reason to keep looking.
 _SEARCH_RADII_M: tuple[float, ...] = (60.0, 200.0, 500.0)
 
-#: A degree of longitude at the pilot latitude, in metres. Deliberately the
-#: smaller of the two axes so a radius in degrees never under-covers.
-_METRES_PER_DEGREE_LONGITUDE = 80_000.0
+#: The first window is never smaller than this, so a point lying exactly on a
+#: segment still has a window to look in.
+_SMALLEST_WINDOW_M = 1.0
+
+#: A degree of latitude, in metres, on the sphere the window is sized on.
+_METRES_PER_DEGREE_LATITUDE = 111_320.0
+
+#: The sphere is not the ellipsoid geodesic distances are measured on; a 2%
+#: wider window absorbs the difference.
+_WINDOW_MARGIN = 1.02
 
 
 def _project_onto(edge: RoutableEdge, point: Point) -> EdgeSnap:
@@ -207,34 +212,29 @@ def _project_onto(edge: RoutableEdge, point: Point) -> EdgeSnap:
     )
 
 
-def split_geometry(geometry: LineString, fraction: float) -> tuple[LineString, LineString]:
-    """Cut a linestring at a normalised position, keeping every vertex.
+def split_at(geometry: LineString, fractions: Sequence[float]) -> list[LineString]:
+    """Cut a linestring at ascending normalised positions, keeping every vertex.
 
-    Truncating to the two endpoints would straighten the piece and understate
-    its length, which then understates every length-proportional cost on it.
+    Returns one more piece than positions, in the geometry's own order. Each cut
+    lands exactly where a snap at that position does, so pieces meet their snap
+    points. Truncating a piece to its two ends would straighten it and
+    understate its length, which then understates every length-proportional
+    cost on it. Two positions at one point give a zero-length piece between
+    them, which is what two ends at one point should walk.
     """
-    landing = geometry.interpolate(fraction, normalized=True)
-    cut = geometry.project(landing)
+    bounds = [0.0, *fractions, 1.0]
+    landings = [geometry.interpolate(fraction, normalized=True) for fraction in bounds]
+    pieces: list[LineString] = []
+    for (start, end), (first, last) in zip(pairwise(bounds), pairwise(landings), strict=True):
+        cut = substring(geometry, start, end, normalized=True)
+        inner = list(cut.coords)[1:-1] if isinstance(cut, LineString) else []
+        pieces.append(LineString([(first.x, first.y), *inner, (last.x, last.y)]))
+    return pieces
 
-    before: list[tuple[float, float]] = []
-    after: list[tuple[float, float]] = []
-    for x, y, *_ in geometry.coords:
-        position = geometry.project(Point(x, y))
-        if position < cut:
-            before.append((x, y))
-        elif position > cut:
-            after.append((x, y))
 
-    landing_xy = (float(landing.x), float(landing.y))
-    head = LineString([*before, landing_xy]) if before else LineString([landing_xy, landing_xy])
-    tail = LineString([landing_xy, *after]) if after else LineString([landing_xy, landing_xy])
-
-    # A snap at the very end produces a degenerate half. Fall back to the whole
-    # geometry rather than a zero-length line, which nothing downstream can use.
-    if len(before) == 0:
-        head = LineString([geometry.coords[0], landing_xy])
-    if len(after) == 0:
-        tail = LineString([landing_xy, geometry.coords[-1]])
+def split_geometry(geometry: LineString, fraction: float) -> tuple[LineString, LineString]:
+    """Cut a linestring in two at a normalised position. See `split_at`."""
+    head, tail = split_at(geometry, [fraction])
     return head, tail
 
 
@@ -246,19 +246,21 @@ def prorate(directed: DirectedEdge, geometry: LineString) -> DirectedEdge:
     gravel, at that gradient, with that missing data. Only the length changes,
     and every length-proportional cost follows from it.
 
-    Place-based facts — a stairway, a kerb at a crossing — are kept on **both**
-    halves rather than guessed onto one. Two reasons. The source does not record
-    *where* along the segment the feature sits, so choosing a half would be
-    invention. And a route traverses at most one half of any split segment: the
-    split only ever happens at an origin or a destination, so the route starts or
-    ends there and cannot pass through. Keeping the barrier on both is therefore
-    never double-charged in practice, and never silently dropped — which matters,
-    because failing to warn about a kerb is the error that strands somebody.
+    A crossing's or a stairway's flat penalties are spread over its length by
+    `unit_share`, so a piece takes the share its length covers: the pieces of a
+    segment add up to the segment, and a route walking part of a crossing pays
+    for that part. A piece used to keep the whole segment's share, which charged
+    a metre of a crossing for all of it and charged a crossing twice when both
+    ends of a route lay on it. What the piece *is* does not change: a piece of a
+    stairway is a stairway to every hard limit, and a piece of a crossing has
+    the crossing's kerb.
     """
     from pathable_api.routing.graph import DirectedEdge as _DirectedEdge
     from pathable_api.routing.graph import RoutableEdge as _RoutableEdge
 
     length_m = geodesic_length_m(geometry)
+    whole_m = geodesic_length_m(directed.edge.geometry)
+    share = min(1.0, length_m / whole_m) if whole_m > 0 else 1.0
     partial = _RoutableEdge(
         edge_id=directed.edge.edge_id,
         source_u=directed.edge.source_u,
@@ -268,12 +270,19 @@ def prorate(directed: DirectedEdge, geometry: LineString) -> DirectedEdge:
         # Zero would make every length-proportional cost vanish.
         length_m=max(length_m, 0.01),
         geometry=geometry,
-        features=directed.edge.features,
+        features=_part_of(directed.edge.features, share),
         name=directed.edge.name,
         foot_forward=directed.edge.foot_forward,
         foot_backward=directed.edge.foot_backward,
+        source_way_id=directed.edge.source_way_id,
     )
-    return _DirectedEdge(edge=partial, features=directed.features, reversed=directed.reversed)
+    return _DirectedEdge(
+        edge=partial, features=_part_of(directed.features, share), reversed=directed.reversed
+    )
+
+
+def _part_of(features: EdgeFeatures, share: float) -> EdgeFeatures:
+    return replace(features, unit_share=features.unit_share * share)
 
 
 def virtual_node_id(label: str) -> str:
@@ -286,6 +295,7 @@ __all__ = [
     "EdgeIndex",
     "EdgeSnap",
     "prorate",
+    "split_at",
     "split_geometry",
     "virtual_node_id",
 ]

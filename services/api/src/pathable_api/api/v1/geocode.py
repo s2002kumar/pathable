@@ -9,12 +9,16 @@ OpenStreetMap extract as the routing network (ADR 0005). When there is nothing t
 search — no provider configured, or no index built for the region — the endpoint
 says so plainly rather than returning an empty list, because "we found nothing"
 and "we did not look" lead a user to do different things.
+
+The local index may be searched as somebody types (`autocomplete: true`): it is
+a query against the application's own database. A third-party geocoder whose
+policy forbids that answers such a request with "not searched".
 """
 
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,9 +46,16 @@ class GeocodeRequest(BaseModel):
         default="waterloo", description="Pilot region slug; results are restricted to its extent."
     )
     query: Annotated[str, Field(min_length=1, max_length=MAX_QUERY_LENGTH)] = Field(
-        description="Place name or address to look for."
+        description="Place name, building code or address to look for."
     )
     limit: Annotated[int, Field(ge=1, le=MAX_RESULTS)] = MAX_RESULTS
+    autocomplete: bool = Field(
+        default=False,
+        description=(
+            "True when the query is still being typed. Only a provider that permits "
+            "as-you-type searching answers; any other reports that it did not search."
+        ),
+    )
 
 
 class GeocodeMatch(BaseModel):
@@ -56,6 +67,17 @@ class GeocodeMatch(BaseModel):
     category: str | None = Field(
         default=None, description="What the provider called this — a road, a building, a suburb."
     )
+    kind: Literal["place", "address", "street"] | None = Field(
+        default=None, description="The local index only: what kind of entry this is."
+    )
+    matched_on: Literal["code", "initialism", "name", "fuzzy"] | None = Field(
+        default=None,
+        description=(
+            "The local index only: how the query matched. 'code' — a short code recorded in "
+            "OpenStreetMap, such as DC or E5; 'initialism' — initials PathAble generated from "
+            "the name; 'name' — the name or address; 'fuzzy' — the typo-tolerant pass."
+        ),
+    )
 
 
 class GeocodeResponse(BaseModel):
@@ -66,9 +88,10 @@ class GeocodeResponse(BaseModel):
     )
     enabled: bool = Field(
         description=(
-            "False when nothing was searched: no geocoder is configured, or the region has "
-            "no place index yet. An empty `matches` with `enabled: false` means nothing was "
-            "searched, not that nothing was found."
+            "False when nothing was searched: no geocoder is configured, the region has "
+            "no place index yet, or the provider does not allow as-you-type search. An "
+            "empty `matches` with `enabled: false` means nothing was searched, not that "
+            "nothing was found."
         )
     )
     matches: list[GeocodeMatch]
@@ -86,10 +109,10 @@ class GeocodeResponse(BaseModel):
     response_model=GeocodeResponse,
     summary="Find coordinates for a place name",
     description=(
-        "Searches for a place, address or street within a pilot region's extent, and "
-        "returns at most five. Submit-only: there is no as-you-type endpoint, so the same "
-        "client works against any provider, including a donated one whose usage policy "
-        "forbids per-keystroke queries. Nothing about the request is stored."
+        "Searches for a place, building code, address or street within a pilot region's "
+        "extent, and returns at most five. With `autocomplete: true` the local index is "
+        "searched as somebody types; a provider whose usage policy forbids that reports "
+        "that it did not search. Nothing about the request is stored."
     ),
     operation_id="searchPlaces",
     responses={
@@ -117,7 +140,12 @@ async def search(payload: GeocodeRequest, request: Request) -> GeocodeResponse:
         ) from error
 
     try:
-        outcome = await provider.search(payload.query, region=definition, limit=payload.limit)
+        outcome = await provider.search(
+            payload.query,
+            region=definition,
+            limit=payload.limit,
+            autocomplete=payload.autocomplete,
+        )
     except GeocodingError as error:
         raise ApiError(
             status_code=HTTPStatus.SERVICE_UNAVAILABLE,
@@ -132,6 +160,7 @@ async def search(payload: GeocodeRequest, request: Request) -> GeocodeResponse:
             "region": payload.region,
             "provider": provider.name,
             "searched": outcome.searched,
+            "autocomplete": payload.autocomplete,
             "matches": len(outcome.matches),
         },
     )
@@ -145,6 +174,8 @@ async def search(payload: GeocodeRequest, request: Request) -> GeocodeResponse:
                 longitude=result.longitude,
                 latitude=result.latitude,
                 category=result.category,
+                kind=result.kind,
+                matched_on=result.matched_on,
             )
             for result in outcome.matches
         ],

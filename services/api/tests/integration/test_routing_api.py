@@ -178,14 +178,19 @@ class TestCompare:
         assert wheelchair["profile"] == "wheelchair"
         assert reduced["profile"] == "reduced_mobility"
 
-    def test_both_routes_are_timed_at_the_travellers_pace(self, client: TestClient) -> None:
-        # Regression (D5): the shortest route's estimate used a standard walking
-        # pace beside the accessible route's wheelchair pace, so the two times
-        # on screen were not comparable.
+    def test_each_route_is_timed_at_its_own_pace(self, client: TestClient) -> None:
+        # Regression (Core v2): the shortest route was re-timed at the chosen
+        # profile's pace, so switching profile changed the baseline's time. It
+        # is the shortest pedestrian route, timed at walking pace; the profile
+        # route is timed at the profile's, and each says which.
         body = compare(client, profile="walker")
 
-        assert body["standard_route"]["pace_profile"] == "walker"
+        assert body["standard_route"]["pace_profile"] == "standard"
+        assert body["standard_route"]["duration_estimate"]["pace_label"] == "walking pace"
         assert body["accessible_route"]["pace_profile"] == "walker"
+        assert body["accessible_route"]["duration_estimate"]["pace_label"] == (
+            "walker or rollator pace"
+        )
 
     def test_a_custom_profile_is_timed_at_its_base_pace(self, client: TestClient) -> None:
         # Regression (D3), through the API: "custom" used to mean wheelchair pace.
@@ -196,7 +201,7 @@ class TestCompare:
         )
 
         assert body["accessible_route"]["pace_profile"] == "stroller"
-        assert body["standard_route"]["pace_profile"] == "stroller"
+        assert body["standard_route"]["pace_profile"] == "standard"
 
     def test_every_explanation_names_what_it_rests_on(self, client: TestClient) -> None:
         body = compare(client)

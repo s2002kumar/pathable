@@ -256,9 +256,9 @@ because two routes missing completely different things produced the same number
 and are completely different journeys.
 
 The underlying penalty was ablated rather than assumed. Over the twenty-journey
-corpus it still changes 3 of 20 routes, so it is not saturated. But removing only
-the missing-gradient term has exactly the same effect as removing every term, so
-one term is currently doing all the work. Recorded in ADR 0008.
+corpus it changes 8 of 20 routes under routing policy 3 (3 under policy 2), so it
+is not saturated. Removing only the missing-gradient term changes 7 of them, so
+one term still does most of the work. Recorded in ADR 0008.
 
 ---
 
@@ -600,3 +600,97 @@ and slow clients are cut off by Caddy's header and body timeouts.
 **Check when:** a second API worker is added, the access log shows refusals for
 ordinary use (raise `RATE_LIMIT_ROUTES_PER_MINUTE`), or traffic from many
 addresses saturates routing.
+
+---
+
+## KI-14 — Some of the mapped network does not connect to the rest
+
+**Status: Open** · 2026-11-02 · Waterloo Core v2
+
+The Waterloo network has 157 parts that no walkable path joins. The largest
+holds 152,935 of 155,714 nodes. The second, 1,887 nodes, is RIM Park's path
+network. It is probably cut off where the region's boundary clips the roads that
+join it to Waterloo; this has not been confirmed against the extract. A journey
+from anywhere else to a point in it has no route in the map data.
+
+**What changed.** Such a request used to search everything reachable from one
+end before answering "No route satisfies the standard walking profile", which
+was slow and named the wrong cause. Parts are now numbered when the graph loads,
+counting only segments somebody may walk and, separately, those that are also
+step-free. When the nearest paths to the two ends are in different parts, one
+end moves to the nearest path within the same 150 m that connects. Otherwise the
+request fails at once with "These two points are on parts of the mapped path
+network that do not connect". The same rule now lets a Columbia Icefield point
+start outside the building rather than on a corridor behind an `access=private`
+door, and lets a step-free route start on a step-free path instead of a terrace
+the map reaches only by stairs. A moved start or end is reported as a caution.
+
+**Check when:** the region's bounds or the clipping rule change, or a new
+extract changes the part sizes.
+
+---
+
+## KI-15 — Building codes come from OpenStreetMap only
+
+**Status: Open — needs a licensing decision** · 2026-11-02 ·
+[ADR 0005](../adr/0005-map-and-geocoding-providers.md)
+
+Search finds a campus building by the code OpenStreetMap records for it (`ref`
+or `short_name`). Mappers have recorded codes on 61 building ways in the main
+campus area and on the Davis Centre relation (DC), plus UW (`short_name`) on the
+campus itself. A code nobody recorded is not found. Students' "DP" for the Dana
+Porter Library is one: its recorded code is LIB.
+
+The University of Waterloo publishes an authoritative building list. Neither
+form is usable as things stand:
+
+- **[uWaterloo/Datasets `Buildings`](https://github.com/uWaterloo/Datasets/tree/master/Buildings)**
+  (273 records: code, name, alternate names, latitude, longitude) has no licence
+  file in the repository or the folder. Unlicensed means all rights reserved, so
+  it cannot be copied into a public, source-visible product.
+- **The Open Data API v3** (`/v3/Locations`) needs an API key. Its
+  [terms of service](https://uwaterloo.atlassian.net/wiki/spaces/UWAPI/pages/34019780998)
+  (2018) forbid data-mining and bulk retrieval except by separate agreement, and
+  selling or licensing the data on.
+
+**What would unblock it:** the university's written permission, or a published
+licence, to store its building codes and names in PathAble's index and show
+them in a public product with attribution. With a v3 key as well, an enrichment
+step could read `/v3/Locations` once per index build. Nothing here uses either
+source.
+
+---
+
+## KI-16 — No entrance-aware routing
+
+**Status: Open, deferred** · 2026-11-02
+
+A route starts and ends at the nearest path to the point chosen. That is not a
+building's door, let alone its accessible door. For a step-free profile, the
+nearest step-free path can be some distance from the entrance that serves it.
+
+"Nearest" is also fragile at building scale. Two paths can lie within a metre
+of each other and lead to different routes. When the acceptance pass made
+snapping rank paths by metres instead of degrees, the shortest route to the
+Dana Porter Library's point moved to a path 24.5 m away instead of one 25.1 m
+away, on the other side of a stairway. The walker route's end is now 52 m from
+the shortest route's, not 25 m. Both answers follow the rule; neither is a door.
+
+There is no clean source for accessible-entrance coordinates on campus:
+
+- **OpenStreetMap** has 405 entrance nodes in the main campus area. 22 are
+  tagged `wheelchair=yes`, 11 `wheelchair=no` and 1 `limited`; 371 say nothing
+  about wheelchair access. That is too sparse to route to with any claim of
+  completeness, and missing is not "no".
+- **The university's** online campus map (uwaterloo.ca/map) has an
+  accessible-entrances layer. Its
+  [building accessibility pages](https://uwaterloo.ca/accessibility/getting-around)
+  describe entrances in words, for example the Arts Lecture Hall's "north side
+  facing the Dana Porter Library". Neither is a licensed, downloadable
+  coordinate dataset. Turning the descriptions into coordinates would be
+  placing entrances by hand, and the Open Data API terms above apply to anything
+  it serves.
+
+No entrance coordinate has been inferred or placed by hand. Entrance-aware
+routing waits for a licensed authoritative source, or for OpenStreetMap
+coverage good enough to state its gaps building by building.

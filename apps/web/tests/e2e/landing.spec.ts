@@ -77,8 +77,9 @@ test.describe('landing page', () => {
 
     const source = page.getByTestId('hero-readout');
     await expect(source).toBeVisible();
-    await expect(source).toContainText('Recorded from the routing API on 2026-10-13');
+    await expect(source).toContainText('Recorded from the routing API on 2026-11-02');
     await expect(source).toContainText('dataset 51e75f78');
+    await expect(source).toContainText('routing policy 3');
   });
 
   test('the stage follows the story as it is read, by ordinary scrolling', async ({ page }) => {

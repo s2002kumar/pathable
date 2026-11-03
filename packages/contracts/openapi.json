@@ -359,6 +359,121 @@
         "title": "DependencyCheck",
         "type": "object"
       },
+      "DifferenceSummaryModel": {
+        "description": "The comparison in one line.",
+        "properties": {
+          "headline": {
+            "examples": [
+              "Same path as shortest route.",
+              "+67 m to avoid 2 recorded stairways."
+            ],
+            "title": "Headline",
+            "type": "string"
+          },
+          "kind": {
+            "description": "'same_path' only when both routes travel the same segments and draw the same line — never inferred from distance.",
+            "enum": [
+              "same_path",
+              "different_path",
+              "no_profile_route",
+              "no_shortest_route"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "primary_basis": {
+            "anyOf": [
+              {
+                "enum": [
+                  "recorded",
+                  "estimated",
+                  "mixed",
+                  "not_recorded",
+                  "profile_rule"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the headline's reason rests on. 'not_recorded' means the route avoids missing data, not a recorded barrier.",
+            "title": "Primary Basis"
+          },
+          "primary_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The explanation the headline leads with: the first hard limit, otherwise the penalty that differed most.",
+            "title": "Primary Code"
+          }
+        },
+        "required": [
+          "kind",
+          "headline"
+        ],
+        "title": "DifferenceSummaryModel",
+        "type": "object"
+      },
+      "DurationEstimateModel": {
+        "description": "How long a route might take: distance over an assumed pace range.",
+        "properties": {
+          "basis": {
+            "const": "assumed_pace",
+            "default": "assumed_pace",
+            "description": "Always 'assumed_pace': distance divided by a planning assumption. No delay is added for crossings, signals or stairs, and nobody's pace was measured.",
+            "title": "Basis",
+            "type": "string"
+          },
+          "high_seconds": {
+            "description": "At the slow end of the assumed pace range.",
+            "minimum": 0.0,
+            "title": "High Seconds",
+            "type": "integer"
+          },
+          "low_seconds": {
+            "description": "At the fast end of the assumed pace range.",
+            "minimum": 0.0,
+            "title": "Low Seconds",
+            "type": "integer"
+          },
+          "pace_high_mps": {
+            "description": "Fastest assumed pace, metres per second.",
+            "exclusiveMinimum": 0.0,
+            "title": "Pace High Mps",
+            "type": "number"
+          },
+          "pace_label": {
+            "description": "Whose pace, in words to show beside the time: 'walking pace'.",
+            "examples": [
+              "walking pace",
+              "wheelchair pace"
+            ],
+            "title": "Pace Label",
+            "type": "string"
+          },
+          "pace_low_mps": {
+            "description": "Slowest assumed pace, metres per second.",
+            "exclusiveMinimum": 0.0,
+            "title": "Pace Low Mps",
+            "type": "number"
+          }
+        },
+        "required": [
+          "low_seconds",
+          "high_seconds",
+          "pace_low_mps",
+          "pace_high_mps",
+          "pace_label"
+        ],
+        "title": "DurationEstimateModel",
+        "type": "object"
+      },
       "ErrorDetail": {
         "description": "A single field-level problem, used for request-validation failures.",
         "properties": {
@@ -411,6 +526,14 @@
             "title": "Evidence",
             "type": "object"
           },
+          "shortest_route_segments": {
+            "description": "Positions in the shortest route's `segments` that this statement is about and the chosen route does not use: every one, for pointing at on a map.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Shortest Route Segments",
+            "type": "array"
+          },
           "summary": {
             "title": "Summary",
             "type": "string"
@@ -438,6 +561,23 @@
             "description": "What the provider called this — a road, a building, a suburb.",
             "title": "Category"
           },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "place",
+                  "address",
+                  "street"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The local index only: what kind of entry this is.",
+            "title": "Kind"
+          },
           "label": {
             "description": "Human-readable description, as the provider wrote it.",
             "title": "Label",
@@ -450,6 +590,24 @@
           "longitude": {
             "title": "Longitude",
             "type": "number"
+          },
+          "matched_on": {
+            "anyOf": [
+              {
+                "enum": [
+                  "code",
+                  "initialism",
+                  "name",
+                  "fuzzy"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The local index only: how the query matched. 'code' — a short code recorded in OpenStreetMap, such as DC or E5; 'initialism' — initials PathAble generated from the name; 'name' — the name or address; 'fuzzy' — the typo-tolerant pass.",
+            "title": "Matched On"
           }
         },
         "required": [
@@ -469,6 +627,12 @@
           }
         ],
         "properties": {
+          "autocomplete": {
+            "default": false,
+            "description": "True when the query is still being typed. Only a provider that permits as-you-type searching answers; any other reports that it did not search.",
+            "title": "Autocomplete",
+            "type": "boolean"
+          },
           "limit": {
             "default": 5,
             "maximum": 5.0,
@@ -477,7 +641,7 @@
             "type": "integer"
           },
           "query": {
-            "description": "Place name or address to look for.",
+            "description": "Place name, building code or address to look for.",
             "maxLength": 160,
             "minLength": 1,
             "title": "Query",
@@ -514,7 +678,7 @@
             "title": "Attribution"
           },
           "enabled": {
-            "description": "False when nothing was searched: no geocoder is configured, or the region has no place index yet. An empty `matches` with `enabled: false` means nothing was searched, not that nothing was found.",
+            "description": "False when nothing was searched: no geocoder is configured, the region has no place index yet, or the provider does not allow as-you-type search. An empty `matches` with `enabled: false` means nothing was searched, not that nothing was found.",
             "title": "Enabled",
             "type": "boolean"
           },
@@ -796,6 +960,52 @@
         "title": "MobilityProfileModel",
         "type": "object"
       },
+      "PlaceIndexReport": {
+        "description": "Whether the stored place index is the one this release reads.\n\nInformational: it never changes ``status``. A stale index degrades search,\nnot routing, and taking routing offline over it would trade one failure for\na worse one. Deployment tooling and the smoke test read it instead.",
+        "properties": {
+          "detail": {
+            "description": "Which region, and which versions.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "expected_version": {
+            "description": "The gazetteer version this release reads.",
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "status": {
+            "description": "'current' when every region's index was built by the gazetteer version this release reads; 'stale' when one was built by an older one; 'absent' when local search has no index; 'not_used' when search is not local; 'unknown' when the database could not be asked.",
+            "enum": [
+              "current",
+              "stale",
+              "absent",
+              "not_used",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stored_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The oldest gazetteer version among the stored indexes.",
+            "title": "Stored Version"
+          }
+        },
+        "required": [
+          "status",
+          "detail",
+          "expected_version"
+        ],
+        "title": "PlaceIndexReport",
+        "type": "object"
+      },
       "ReadinessChecks": {
         "description": "Per-dependency readiness results.",
         "properties": {
@@ -853,6 +1063,17 @@
           "checks": {
             "$ref": "#/components/schemas/ReadinessChecks",
             "description": "Individual dependency results."
+          },
+          "place_index": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceIndexReport"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the stored place index is the version this release reads. Does not affect `status`. Null only when this instance has no database configured."
           },
           "service": {
             "description": "Service identifier.",
@@ -990,6 +1211,12 @@
           "dataset": {
             "$ref": "#/components/schemas/DatasetProvenance"
           },
+          "distance_comparable": {
+            "default": false,
+            "description": "Whether the two routes start and end at the same points, so their lengths can be set against each other. False when either route is missing or when the profile route starts or ends elsewhere (see the profile_route_moved_endpoint caution).",
+            "title": "Distance Comparable",
+            "type": "boolean"
+          },
           "explanations": {
             "items": {
               "$ref": "#/components/schemas/ExplanationModel"
@@ -1006,6 +1233,7 @@
                 "type": "null"
               }
             ],
+            "description": "extra_distance_m as a share of the shortest route's length.",
             "title": "Extra Distance Fraction"
           },
           "extra_distance_m": {
@@ -1017,7 +1245,7 @@
                 "type": "null"
               }
             ],
-            "description": "How much further the accessible route is.",
+            "description": "How much further the accessible route is. Null unless distance_comparable: the length of a route to somewhere else is not a detour.",
             "title": "Extra Distance M"
           },
           "ml_predictions_used": {
@@ -1066,12 +1294,17 @@
               }
             ],
             "description": "Shortest walking route. Null when none exists."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DifferenceSummaryModel",
+            "description": "The comparison in one line, for reading before anything else."
           }
         },
         "required": [
           "profile",
           "profile_display_name",
           "profile_description",
+          "summary",
           "explanations",
           "cautions",
           "dataset",
@@ -1106,6 +1339,7 @@
             "type": "array"
           },
           "crossing_count": {
+            "description": "Mapped road crossings, each counted once however many segments it spans.",
             "title": "Crossing Count",
             "type": "integer"
           },
@@ -1117,13 +1351,17 @@
             "title": "Distance M",
             "type": "number"
           },
+          "duration_estimate": {
+            "$ref": "#/components/schemas/DurationEstimateModel",
+            "description": "Time as a range, at the assumed pace of the profile this route was computed for. The shortest route is always timed at walking pace; the profile route at that profile's assumed pace. The two are different paces, so subtracting one from the other does not say how much time a route saves."
+          },
           "effective_distance_m": {
             "description": "Distance weighted by this profile's cost model. Not a physical distance.",
             "title": "Effective Distance M",
             "type": "number"
           },
           "estimated_duration_seconds": {
-            "description": "Rough planning estimate from distance and obstacle counts, at the assumed pace of `pace_profile`. Not measured, and not specific to any individual.",
+            "description": "The middle of `duration_estimate`, for clients that need one figure. A rough planning figure at the assumed pace of `pace_profile`; prefer the range.",
             "title": "Estimated Duration Seconds",
             "type": "number"
           },
@@ -1155,7 +1393,7 @@
             "$ref": "#/components/schemas/SnappedPointModel"
           },
           "pace_profile": {
-            "description": "Profile whose assumed walking pace produced `estimated_duration_seconds`. In a comparison both routes use the chosen profile's pace — its base preset's, for a custom profile — so the two estimates can be compared directly.",
+            "description": "Profile whose assumed pace produced the estimate: 'standard' for the shortest route, the chosen profile — its base preset, for a custom one — for the other.",
             "title": "Pace Profile",
             "type": "string"
           },
@@ -1176,6 +1414,7 @@
             "type": "array"
           },
           "stairway_count": {
+            "description": "Stairways on this route, each counted once however many segments it spans.",
             "title": "Stairway Count",
             "type": "integer"
           },
@@ -1192,9 +1431,17 @@
             "title": "Steepest Incline Percent"
           },
           "step_count": {
-            "description": "Recorded steps across all stairways on this route.",
+            "description": "Recorded steps across this route's stairways, each stairway counted once. A stairway with no recorded count adds nothing, so this is a floor.",
             "title": "Step Count",
             "type": "integer"
+          },
+          "units": {
+            "description": "Every crossing and stairway on this route, in order of travel.",
+            "items": {
+              "$ref": "#/components/schemas/RouteUnitModel"
+            },
+            "title": "Units",
+            "type": "array"
           },
           "unknown_data_fraction": {
             "description": "Share of this route's length whose accessibility attributes are unrecorded.",
@@ -1204,6 +1451,7 @@
             "type": "number"
           },
           "unknown_kerb_crossing_count": {
+            "description": "Crossings without a recorded kerb at both ends.",
             "title": "Unknown Kerb Crossing Count",
             "type": "integer"
           }
@@ -1214,6 +1462,7 @@
           "distance_m",
           "effective_distance_m",
           "estimated_duration_seconds",
+          "duration_estimate",
           "pace_profile",
           "coordinates",
           "segments",
@@ -1417,6 +1666,82 @@
         "title": "RouteSegmentModel",
         "type": "object"
       },
+      "RouteUnitModel": {
+        "description": "One road crossing or stairway, as the route passes through it.\n\nOpenStreetMap draws each as one way, which the network splits into several\nsegments; this is the one crossing or stairway those segments make up.",
+        "properties": {
+          "crossing_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Crossings only: OSM `crossing` value, if recorded.",
+            "title": "Crossing Type"
+          },
+          "kerb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KerbType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Crossings only: the crossing's kerb, from every kerb recorded along it. `unknown` when either end has no record."
+          },
+          "kerb_recorded_ends": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Crossings only: how many ends have a recorded kerb (2 means both).",
+            "title": "Kerb Recorded Ends"
+          },
+          "kind": {
+            "enum": [
+              "crossing",
+              "stairway"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "segment_indexes": {
+            "description": "Positions in this route's `segments`.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Segment Indexes",
+            "type": "array"
+          },
+          "step_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stairways only: recorded steps, or null when unrecorded.",
+            "title": "Step Count"
+          }
+        },
+        "required": [
+          "kind",
+          "segment_indexes"
+        ],
+        "title": "RouteUnitModel",
+        "type": "object"
+      },
       "SmoothnessClass": {
         "description": "Coarse grouping of OSM `smoothness`.",
         "enum": [
@@ -1486,7 +1811,7 @@
   "paths": {
     "/api/v1/geocode/search": {
       "post": {
-        "description": "Searches for a place, address or street within a pilot region's extent, and returns at most five. Submit-only: there is no as-you-type endpoint, so the same client works against any provider, including a donated one whose usage policy forbids per-keystroke queries. Nothing about the request is stored.",
+        "description": "Searches for a place, building code, address or street within a pilot region's extent, and returns at most five. With `autocomplete: true` the local index is searched as somebody types; a provider whose usage policy forbids that reports that it did not search. Nothing about the request is stored.",
         "operationId": "searchPlaces",
         "requestBody": {
           "content": {
@@ -1596,7 +1921,7 @@
     },
     "/api/v1/health/ready": {
       "get": {
-        "description": "Reports whether this instance should receive traffic. Probes PostgreSQL connectivity and PostGIS availability under a bounded timeout, and reports whether every preloaded routing graph is loaded. Returns 200 when ready and 503 when not; the body shape is identical in both cases.",
+        "description": "Reports whether this instance should receive traffic. Probes PostgreSQL connectivity and PostGIS availability under a bounded timeout, and reports whether every preloaded routing graph is loaded. Returns 200 when ready and 503 when not; the body shape is identical in both cases. Also reports, without letting it affect readiness, whether the stored place index is the version this release reads.",
         "operationId": "getReadiness",
         "responses": {
           "200": {

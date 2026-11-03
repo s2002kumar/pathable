@@ -13,6 +13,51 @@ The repository has been public and source-visible since 2026-09-14
 
 ### Added
 
+- **Waterloo Core v2: the comparison is "shortest pedestrian route" against
+  "your selected mobility route".** Routing policy 3 charges and counts a
+  crossing or stairway OpenStreetMap draws in several segments once, and reads
+  a crossing's kerb from every kerb recorded along it: one recorded kerb leaves
+  the crossing unknown. The shortest route is timed at walking pace whatever
+  profile it is shown beside; each route's time is a range at a named, assumed
+  pace, with no fixed allowance for crossings or steps. Requests whose ends
+  fall on parts of the network that do not connect move one end within 150 m
+  or fail at once, and say so. A one-line summary ("+102 m to avoid 3 recorded
+  stairways.", "Same path as shortest route.") leads the comparison, with the
+  evidence behind it shown on the map on request. Place search suggests as you
+  type, from the local index only, and finds campus codes OpenStreetMap
+  records (DC, SLC, MC, E5) and generated initials (gazetteer version 2,
+  migration `0008`). `pathable truth-audit` checks 41 real journeys under
+  every profile; `pathable gazetteer evaluate` scores a 40-query search corpus.
+  Evidence: `docs/evidence/WATERLOO_CORE_V2.md`. On the twenty-journey corpus
+  17 of 20 wheelchair routes differ (18 under policy 2), median detour 51.5 m
+  (86.1 m).
+
+- **A place-index upgrade path for the pilot.** Gazetteer version 2 needs
+  migration `0008` and a rebuilt index, but the pilot restores its index rather
+  than rebuilding it. Without this, a deploy would have served version 1 rows,
+  and `DC` would have found a restaurant, while every check passed.
+  - `pathable gazetteer export` and `import` carry an index between databases
+    as a 0.9 MB self-verifying artifact. `import` swaps the index in one
+    transaction, and only accepts an artifact read from the active network's
+    extract.
+  - `pathable gazetteer status` reports whether the stored index is the version
+    the release reads. Readiness reports the same as `place_index`.
+  - `deploy.sh up` asks the new release before switching, and refuses a stale
+    index unless `PLACE_INDEX_ARTIFACT` is given.
+  - `smoke.py` checks the version and that `DC` is found by code.
+  - Rehearsed on a scratch copy of the production database
+    (`docs/evidence/place-index-upgrade-rehearsal.json`). Runbook:
+    `docs/deployment/VPS.md`, "Upgrading the place index".
+
+- **`pathable benchmark corpus`** times Dijkstra, A\* and the whole comparison
+  on the twenty-journey corpus, checks the two searches agree on cost, and
+  writes the machine, memory, commit and policy beside the numbers. Under
+  policy 3 on one laptop, A\* expands 1,398 nodes at the median against 7,041,
+  and its wall-clock lead is within that laptop's noise
+  (`docs/evidence/waterloo-performance-policy3.json`). A field-verification
+  checklist for eight Waterloo journeys is in
+  `docs/evidence/FIELD_VERIFICATION_CHECKLIST.md`. It has not been performed.
+
 - **Per-client rate limits on route comparison and place search (closes
   KI-13).** Each client may make 30 route comparisons and 60 searches a minute;
   beyond that the API answers 429 with `Retry-After` and code `rate_limited`
@@ -236,6 +281,30 @@ The repository has been public and source-visible since 2026-09-14
   2026-09-25. (The shortest route's time in a comparison does change — see D5.)
 
 ### Fixed
+
+- **Messages and labels that contradicted the data** (Waterloo Core v2): an
+  off-network point was "inf m" from the nearest path; a route with no surface
+  tag anywhere said "some route segments have no surface tag (0% recorded)"; a
+  stairway drawn in two segments was counted as two, in the planner, on the
+  phone card and on the landing page (the verified journey has 3 stairways, not
+  4); a route ending 25 m from the shortest route's end was called "43 m
+  shorter"; a restaurant's short name was called a building code.
+
+- **Routing faults found in the Waterloo Core v2 acceptance pass**, each with a
+  regression test that failed before the fix:
+  - Closed paths within 60 m of a point hid an open one 60–150 m away, so the
+    point was "off the network". The search also preferred a path 70 m north
+    to one 62 m east, because it ranked by degrees.
+  - Two ends on one segment were joined only through its junctions: 200 m for
+    an 80 m walk.
+  - A piece of a crossing or stairway paid the whole segment's flat penalties.
+    Two ends on one crossing paid for it twice.
+  - Routes that ended in different places still carried a length difference
+    (`extra_distance_m`) and a "shorter than the shortest route" explanation.
+    The response now says `distance_comparable: false` and sends no difference.
+  - At 1366 × 768 the comparison's dock cut the panel to 460 px, and a moved-end
+    headline pushed the shortest route's card below it. The dock now sits beside
+    the panel on short windows.
 
 - **The site's search description still called it "a local engineering build".**
   It now says it is a public pilot for Waterloo on one server that advises and

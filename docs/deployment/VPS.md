@@ -105,7 +105,9 @@ This is the sequence that built the pilot on 2026-10-14/15.
 
    The place index is restored rather than rebuilt: its rows carry the SHA-256
    and data date of the extract they were read from, the same extract as the
-   network. Rebuilding it needs the 970 MB extract on the host.
+   network. Rebuilding it needs the 970 MB extract on the host. An archive
+   holding an older gazetteer version than the release reads is upgraded on the
+   first `up`; see [Upgrading the place index](#upgrading-the-place-index).
 
 5. **Serve.** `infra/vps/deploy.sh up origin/main`.
 6. **Backups.** Copy the two units from `infra/vps/systemd/` to
@@ -164,6 +166,123 @@ Exercised on 2026-10-15: `up 465bab7` (the previous merge on `main`) ready in
 53.1 s, then `rollback` back to `a3f6448` in 51.6 s; the public version
 followed each switch. The refusal path has not been exercised, because no
 release since 0007 has changed the schema.
+
+## Upgrading the place index
+
+The place index is data, restored rather than rebuilt here, so a release that
+reads a newer gazetteer version than the database holds would migrate the schema
+and then serve search from the old index while every other check passed. Waterloo
+Core v2 is the first such release: gazetteer version 1 → 2, migration
+`0008_place_codes`. Version 1 rows get empty `codes` and `initialisms`, so `DC`,
+`SLC` and the rest find nothing by code.
+
+`deploy.sh up` asks first. Before anything switches, it runs the new release's own
+`pathable gazetteer status` against the live database, with `--entrypoint
+pathable` so the image's migrate-on-start does not run. If the stored index is
+not the version the release reads, or was not read from the active network's
+extract, the deploy is refused unless it is given an artifact. Readiness reports
+the same thing as `place_index` (never as a reason to refuse traffic), and the
+smoke test fails on it.
+
+### One-time procedure, version 1 → 2
+
+**1. Build the artifact where the extract is — not on the host.** The host is
+too small to read the 970 MB extract beside a running API. On a machine holding
+the exact extract the active network came from, against a database holding the
+same network at the release's head:
+
+```bash
+sha256sum ontario-latest.osm.pbf
+# must print cee90e3725139c41ef939f726730b4dfb6fd45e624d2797dac4be38a69145ef3,
+# the extract dataset 51585450 records. Never a newer Ontario extract: search
+# and routing must describe the same map, and `import` refuses any other.
+pathable gazetteer build  --region waterloo --file ontario-latest.osm.pbf
+pathable gazetteer status --region waterloo        # must end "current"
+pathable gazetteer export --region waterloo --out waterloo-place-index-v2.jsonl.gz
+sha256sum waterloo-place-index-v2.jsonl.gz
+```
+
+The artifact is the build's provenance and every entry as gzip-compressed JSON
+lines, about 0.9 MB. It is OpenStreetMap data under the ODbL, so it is not
+committed; it can be rebuilt from the extract at any time. The one prepared for
+this upgrade: 941,578 bytes, SHA-256 `8a1dd24bcc249fdbeff359f9009d05bb9b14576ae652de08f317c876380dcabd`,
+33,225 entries whose `entries_sha256` is `eb67add8…d7ad`: the same entries as the
+index the committed search-quality evidence was measured on.
+
+**2. Copy it to the host** and check it arrived whole:
+
+```bash
+scp waterloo-place-index-v2.jsonl.gz ubuntu@51.222.36.79:/srv/pathable/bootstrap/
+ssh ubuntu@51.222.36.79 sha256sum /srv/pathable/bootstrap/waterloo-place-index-v2.jsonl.gz
+```
+
+**3. Deploy with it:**
+
+```bash
+PLACE_INDEX_ARTIFACT=/srv/pathable/bootstrap/waterloo-place-index-v2.jsonl.gz \
+  /srv/pathable/repo/infra/vps/deploy.sh up <sha>
+```
+
+In order:
+
+1. `gazetteer status` with the new image reports the index is version 1.
+2. `gazetteer import --check` with the new image proves the artifact's own content
+   (its SHA-256 over every entry, the counts). It also checks that the artifact is
+   version 2 and was read from the active network's extract. Nothing is written.
+3. The pre-deploy backup is taken. It holds `0007` and the version 1 index.
+4. The switch: the API migrates to `0008` and serves. Until the import commits,
+   searches answer from the version 1 rows, by name only, and readiness reports
+   `place_index: stale`.
+5. `gazetteer import` deletes the version 1 index and writes version 2 in one
+   transaction, then counts it back before committing.
+6. `gazetteer status` must now say `current`. If it does not, the deploy fails.
+
+Then run the smoke test, which checks the place index version and `DC`.
+
+**If the import fails,** nothing was written: the version 1 index still serves,
+search is degraded and routing is not. Rerun the same command (the release is
+current, so it goes straight to the import), or go back.
+
+### Rolling back after this upgrade
+
+The previous release expects `0007`; after this deploy the database is at `0008`,
+so `deploy.sh rollback` refuses on its own. Restore the pre-deploy backup this
+deploy took, then roll back:
+
+```bash
+/srv/pathable/repo/infra/vps/restore.sh --into production --yes \
+  --dump /var/backups/pathable/pathable-<time>-pre-deploy-<sha>.dump
+/srv/pathable/repo/infra/vps/deploy.sh rollback
+```
+
+The backup brings back the version 1 index with the `0007` schema, which is
+exactly what the previous release reads. Rolling forward again needs the
+artifact again: `up` refuses without it. Restoring loses anything written to the
+database after the deploy; the pilot stores no user data, so that is only what
+an operator wrote.
+
+### Rehearsed
+
+On 2026-11-03, against a scratch copy of the production database. The copy used
+the production PostGIS image and a role that is not a superuser. `main`'s own
+migrations took it to `0007`, it held the same map rows (routing checksum
+`4a179dc0…bc5238f00`), and `main`'s code built a version 1 index from the same
+extract with production's counts. The release image (`e603872`) ran every step
+above in order, with `deploy.sh`'s `docker run` line verbatim. The results:
+
+- The preflight refused (version 1) without migrating anything.
+- The check passed.
+- The switch migrated to `0008` and served with readiness `ready`,
+  `place_index: stale`, and `DC` answering "DC BYTES".
+- The import replaced the index in one transaction in 18.2 s. Afterwards `DC`,
+  `SLC`, `MC`, `E5` and `PAC` each come first by code.
+- The search-quality corpus reproduced the committed results exactly.
+- The routing checksum was unchanged.
+- The rollback restored `0007` and the version 1 index in 25 s.
+
+`smoke.py` passes its API checks on the upgraded copy. On the stale copy every
+check it had before this change passes, and the two new ones fail. Details in
+[`place-index-upgrade-rehearsal.json`](../evidence/place-index-upgrade-rehearsal.json).
 
 ## Backups and restore
 
@@ -263,15 +382,26 @@ python infra/vps/smoke.py --url https://51.222.36.79 --expect-revision a3f6448aa
   --runs 10 --concurrency 4 --json smoke.json
 ```
 
-Sixteen checks: the certificate, the HTTP redirect, that 5432, 8000 and 3000
-do not answer, both pages and their security headers, the reported revision,
-readiness, the profiles, search for both ends of the journey recorded in
-[`waterloo-place-search.json`](../evidence/waterloo-place-search.json), and
-that journey's recorded answer — 406.4 m with 4 stairways, against 490.2 m
-with none for a wheelchair, from dataset `51585450`, with no model
-predictions. Then sequential and parallel route latency, and last, that the
-rate limit refuses this client with a standard 429. It exits non-zero if
-anything failed.
+Nineteen checks:
+
+- the certificate, the HTTP redirect, and that 5432, 8000 and 3000 do not
+  answer;
+- both pages and their security headers, the reported revision, readiness and
+  the profiles;
+- that readiness reports the place index as `current`, gazetteer version 2;
+- search for both ends of the journey recorded in
+  [`waterloo-place-search.json`](../evidence/waterloo-place-search.json), and
+  that `DC` finds the William G. Davis Computer Research Centre first, matched
+  on its recorded code — which an index older than version 2 cannot do;
+- that journey's recorded answer: 401.3 m with 3 stairways, against 503.7 m
+  with none for a wheelchair, from dataset `51585450`, with no model
+  predictions. Those are routing policy 3's figures as of the Waterloo Core v2
+  acceptance pass; a host still running policy 2 answers 4 stairways and
+  490.2 m, and fails this check until it is redeployed;
+- sequential and parallel route latency, and last, that the rate limit refuses
+  this client with a standard 429.
+
+It exits non-zero if anything failed.
 
 The script is one client, so it lives within one client's 30 routes a minute:
 the defaults spend 21 before the rate-limit check, and a second run from the

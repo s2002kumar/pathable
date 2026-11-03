@@ -111,9 +111,9 @@ A verified Waterloo example available for recruiter/static proof is:
 - shortest route: **287.4 m**;
 - wheelchair route: **354.1 m**;
 - detour: **+66.7 m (23%)**;
-- shortest route: **4 recorded stairways**;
+- shortest route: **3 recorded stairways** (one of them drawn as two segments);
 - wheelchair route: **0 recorded stairways**;
-- **16 recorded steps** across two stairways; two stairways have no recorded step count;
+- **16 recorded steps** across two stairways; one stairway has no recorded step count;
 - `gradient_source = derived_elevation`;
 - `unknown_data_fraction = 1.0` — meaning at least one assessed accessibility attribute is missing along 100% of route length, not that nothing is known;
 - `ml_predictions_used = false`.

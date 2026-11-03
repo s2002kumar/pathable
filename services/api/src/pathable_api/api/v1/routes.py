@@ -14,6 +14,7 @@ import datetime as dt
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from pathable_api.api.deps import DatabaseDep
 from pathable_api.core.errors import ApiError
@@ -22,8 +23,8 @@ from pathable_api.geo.elevation import elevation_attribution
 from pathable_api.geo.models import DatasetVersion
 from pathable_api.routing.comparison import RouteComparison, compare_routes
 from pathable_api.routing.cost import BlockReason
-from pathable_api.routing.engine import GradeExtreme, GradientSummary, Route
-from pathable_api.routing.graph import GraphRepository, NoActiveDatasetError
+from pathable_api.routing.engine import DurationEstimate, GradeExtreme, GradientSummary, Route
+from pathable_api.routing.graph import GraphRepository, NoActiveDatasetError, RoutableGraph
 from pathable_api.routing.profiles import (
     PROFILES,
     ROUTING_POLICY_VERSION,
@@ -37,6 +38,8 @@ from pathable_api.schemas.routing import (
     CautionModel,
     CostComponentModel,
     DatasetProvenance,
+    DifferenceSummaryModel,
+    DurationEstimateModel,
     ExplanationModel,
     GradeExtremeModel,
     GradientSummaryModel,
@@ -46,6 +49,7 @@ from pathable_api.schemas.routing import (
     RouteCompareResponse,
     RouteModel,
     RouteSegmentModel,
+    RouteUnitModel,
     SnappedPointModel,
 )
 
@@ -138,31 +142,7 @@ async def compare(
                 message=str(error),
             ) from error
 
-        # The provenance of the graph that will compute the route — not a second
-        # read of "active", which an activation or rollback committed in between
-        # would answer with a different dataset.
-        dataset = await session.get(DatasetVersion, graph.dataset_id)
-        assert dataset is not None  # noqa: S101 — a loaded graph's dataset exists
-
-        provenance = DatasetProvenance(
-            dataset_id=str(dataset.id),
-            region=payload.region,
-            checksum=dataset.checksum,
-            source_type=dataset.source_type,
-            source_name=dataset.source_name,
-            acquired_at=dataset.acquired_at.isoformat(),
-            source_timestamp=(
-                None if dataset.source_timestamp is None else dataset.source_timestamp.isoformat()
-            ),
-            evidence_age_days=_evidence_age_days(dataset.source_timestamp),
-            attribution=(
-                OSM_ATTRIBUTION if dataset.source_type == "osm" else SYNTHETIC_ATTRIBUTION
-            ),
-            # Grades derived from an elevation model carry their own licence
-            # obligation, separate from the map's. It travels with the response
-            # so no client can show a gradient without also having the credit.
-            elevation_attribution=await elevation_attribution(session, dataset.id),
-        )
+        provenance = await dataset_provenance(session, graph, payload.region)
 
     comparison = compare_routes(
         graph,
@@ -193,7 +173,38 @@ async def compare(
         },
     )
 
-    return _to_response(comparison, provenance)
+    return comparison_response(comparison, provenance)
+
+
+async def dataset_provenance(
+    session: AsyncSession, graph: RoutableGraph, region: str
+) -> DatasetProvenance:
+    """Where the network that computed a route came from.
+
+    The provenance of the graph that will compute the route — not a second read
+    of "active", which an activation or rollback committed in between would
+    answer with a different dataset.
+    """
+    dataset = await session.get(DatasetVersion, graph.dataset_id)
+    assert dataset is not None  # noqa: S101 — a loaded graph's dataset exists
+
+    return DatasetProvenance(
+        dataset_id=str(dataset.id),
+        region=region,
+        checksum=dataset.checksum,
+        source_type=dataset.source_type,
+        source_name=dataset.source_name,
+        acquired_at=dataset.acquired_at.isoformat(),
+        source_timestamp=(
+            None if dataset.source_timestamp is None else dataset.source_timestamp.isoformat()
+        ),
+        evidence_age_days=_evidence_age_days(dataset.source_timestamp),
+        attribution=(OSM_ATTRIBUTION if dataset.source_type == "osm" else SYNTHETIC_ATTRIBUTION),
+        # Grades derived from an elevation model carry their own licence
+        # obligation, separate from the map's. It travels with the response so no
+        # client can show a gradient without also having the credit.
+        elevation_attribution=await elevation_attribution(session, dataset.id),
+    )
 
 
 def _resolve_profile(payload: RouteCompareRequest) -> MobilityProfile:
@@ -230,7 +241,7 @@ def _profile_model(profile: MobilityProfile) -> MobilityProfileModel:
     )
 
 
-def _to_response(
+def comparison_response(
     comparison: RouteComparison, provenance: DatasetProvenance
 ) -> RouteCompareResponse:
     return RouteCompareResponse(
@@ -243,11 +254,22 @@ def _to_response(
         accessible_route=_route_model(comparison.accessible_route),
         standard_failure=comparison.standard_failure,
         accessible_failure=comparison.accessible_failure,
+        distance_comparable=comparison.distance_comparable,
         extra_distance_m=comparison.extra_distance_m,
         extra_distance_fraction=comparison.extra_distance_fraction,
+        summary=DifferenceSummaryModel(
+            kind=comparison.summary.kind,
+            headline=comparison.summary.headline,
+            primary_code=comparison.summary.primary_code,
+            primary_basis=comparison.summary.primary_basis,
+        ),
         explanations=[
             ExplanationModel(
-                code=item.code, summary=item.summary, basis=item.basis, evidence=item.evidence
+                code=item.code,
+                summary=item.summary,
+                basis=item.basis,
+                evidence=item.evidence,
+                shortest_route_segments=list(item.shortest_route_segments),
             )
             for item in comparison.explanations
         ],
@@ -287,6 +309,46 @@ def _gradient_model(summary: GradientSummary) -> GradientSummaryModel:
     )
 
 
+def _duration_model(duration: DurationEstimate) -> DurationEstimateModel:
+    return DurationEstimateModel(
+        low_seconds=round(duration.low_seconds),
+        high_seconds=round(duration.high_seconds),
+        pace_low_mps=duration.pace.low_mps,
+        pace_high_mps=duration.pace.high_mps,
+        pace_label=duration.pace.described_as,
+    )
+
+
+def _unit_models(route: Route) -> list[RouteUnitModel]:
+    units: list[RouteUnitModel] = []
+    for unit in route.units:
+        first = route.segments[unit.segment_indexes[0]]
+        if unit.kind == "crossing":
+            units.append(
+                RouteUnitModel(
+                    kind="crossing",
+                    segment_indexes=list(unit.segment_indexes),
+                    kerb=first.kerb,
+                    kerb_recorded_ends=first.features.crossing_kerb_ends,
+                    crossing_type=first.features.crossing_type,
+                )
+            )
+        else:
+            counts = [
+                count
+                for index in unit.segment_indexes
+                if (count := route.segments[index].step_count) is not None
+            ]
+            units.append(
+                RouteUnitModel(
+                    kind="stairway",
+                    segment_indexes=list(unit.segment_indexes),
+                    step_count=max(counts) if counts else None,
+                )
+            )
+    return units
+
+
 def _route_model(
     route: Route | None, *, exclusions: tuple[BlockReason | None, ...] = ()
 ) -> RouteModel | None:
@@ -299,6 +361,7 @@ def _route_model(
         distance_m=round(route.distance_m, 1),
         effective_distance_m=round(route.effective_distance_m, 1),
         estimated_duration_seconds=round(route.estimated_duration_seconds),
+        duration_estimate=_duration_model(route.duration),
         pace_profile=route.pace_profile_key,
         coordinates=list(route.coordinates),
         segments=[
@@ -346,6 +409,7 @@ def _route_model(
         step_count=route.step_count,
         crossing_count=route.crossing_count,
         unknown_kerb_crossing_count=route.unknown_kerb_crossing_count,
+        units=_unit_models(route),
         steepest_incline_percent=route.steepest_incline_percent,
         gradient=_gradient_model(route.gradient),
         evidence_coverage={

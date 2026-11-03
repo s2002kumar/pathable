@@ -67,6 +67,7 @@ from pathable_api.routing.profiles import (
     MobilityProfile,
     get_profile,
 )
+from pathable_api.routing.units import crossing_kerb
 
 SHADOW_POLICY_VERSION = "curb-ramp-shadow-policy-v1"
 #: How the shadow costs an eligible segment: as the production model costs a
@@ -364,14 +365,47 @@ def plan_substitutions(
 
 
 def shadow_kerb_graph(baseline: RoutableGraph, plan: CurbRampPlan) -> RoutableGraph:
-    """The baseline with only the planned crossing segments' kerbs replaced; the baseline is untouched."""
+    """The baseline with only the planned crossings' kerbs replaced; the baseline is untouched.
+
+    A municipal curb ramp is a lowered kerb where a crossing meets the sidewalk:
+    a record at that end of the crossing. Since routing policy 3 a crossing's
+    kerb is read from every kerb recorded along it (`routing.units`), so the
+    record is added at its end node and each affected crossing is read again by
+    the same rule. A ramp at one end of a crossing whose other end nobody
+    recorded leaves the crossing unknown, as a mapper's single kerb node would.
+    """
     by_identity = {e.identity: e for e in baseline.segments}
-    replacements = {
-        identity: replace(by_identity[identity].features, kerb=substitution.kerb_shadow)
-        for identity, substitution in plan.substitutions.items()
-        if identity in by_identity
+    node_kerbs = dict(baseline.node_kerbs)
+    replacements: dict[str, EdgeFeatures] = {}
+    for identity, substitution in plan.substitutions.items():
+        if identity not in by_identity:
+            continue
+        replacements[identity] = replace(
+            by_identity[identity].features, kerb=substitution.kerb_shadow, kerb_from_node=True
+        )
+        for node in substitution.end_nodes:
+            node_kerbs[node] = substitution.kerb_shadow
+
+    affected = {
+        unit
+        for identity in replacements
+        if (unit := by_identity[identity].features.unit_ref) is not None
     }
-    return substitute_features(baseline, replacements, policy=plan.policy, digest=plan.digest)
+    pieces_by_unit: dict[str, list[Any]] = defaultdict(list)
+    for edge in baseline.segments:
+        if edge.features.unit_ref in affected:
+            pieces_by_unit[edge.features.unit_ref].append(
+                replace(edge, features=replacements.get(edge.identity, edge.features))
+            )
+    for pieces in pieces_by_unit.values():
+        kerb = crossing_kerb(pieces, node_kerbs)
+        for piece in pieces:
+            replacements[piece.identity] = replace(
+                piece.features, crossing_kerb=kerb.kerb, crossing_kerb_ends=kerb.recorded_ends
+            )
+    return substitute_features(
+        baseline, replacements, policy=plan.policy, digest=plan.digest, node_kerbs=node_kerbs
+    )
 
 
 # ---------------------------------------------------------------------------

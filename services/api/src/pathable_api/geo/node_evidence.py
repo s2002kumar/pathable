@@ -18,6 +18,7 @@ surely as calling it ``FLUSH`` would invent a ramp.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -50,6 +51,12 @@ _NODE_KERB_VALUES: dict[str, KerbType] = {
     "no": KerbType.NONE,
     "yes": KerbType.PRESENT_UNKNOWN,
 }
+
+
+def worst_kerb(kerbs: Iterable[KerbType]) -> KerbType:
+    """The least favourable of several kerbs, by the same severity a crossing uses."""
+    return max(kerbs, key=_KERB_SEVERITY.__getitem__, default=KerbType.UNKNOWN)
+
 
 #: Node kerb values, best-to-worst, derived from the severity table above so the
 #: two orderings cannot drift apart.

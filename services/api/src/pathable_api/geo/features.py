@@ -460,6 +460,25 @@ class EdgeFeatures:
     #: stays passable and the doubt is surfaced rather than silently resolved.
     ambiguous_direction: bool = False
 
+    # --- One crossing, one stairway ----------------------------------------
+    # Set when a routing graph is built (see `pathable_api.routing.units`), not
+    # at ingestion. OpenStreetMap draws one road crossing or one stairway as a
+    # single way, and the network splits that way wherever another way joins it
+    # — a crossing almost always at the road's centreline. These fields let the
+    # pieces be costed and counted as the one thing they are.
+    #: The crossing or stairway this segment is part of. None for any other
+    #: segment.
+    unit_ref: str | None = None
+    #: This segment's share of its unit's length. Flat penalties are spread in
+    #: this proportion, so walking the whole unit pays them once.
+    unit_share: float = 1.0
+    #: The kerb of the crossing as a whole, from every kerb recorded along it.
+    #: None for anything that is not a crossing, in which case `kerb` applies.
+    crossing_kerb: KerbType | None = None
+    #: How many ends of the crossing have a recorded kerb: 0, 1 or 2 (two or
+    #: more kerb records count as both ends). None when not a crossing.
+    crossing_kerb_ends: int | None = None
+
     raw_tags: dict[str, Any] = field(default_factory=dict)
 
     def reversed(self) -> EdgeFeatures:
@@ -528,11 +547,20 @@ class EdgeFeatures:
             missing.append("smoothness")
         if self.effective_grade_percent is None:
             missing.append("incline")
-        if self.is_crossing and self.kerb is KerbType.UNKNOWN:
+        if self.is_crossing and self.kerb_at_crossing is KerbType.UNKNOWN:
             missing.append("kerb")
         if self.steps is TriState.UNKNOWN:
             missing.append("steps")
         return tuple(missing)
+
+    @property
+    def kerb_at_crossing(self) -> KerbType:
+        """The kerb a crossing segment is costed and described with.
+
+        The crossing's own kerb where the graph assigned one, otherwise what the
+        segment itself carries.
+        """
+        return self.kerb if self.crossing_kerb is None else self.crossing_kerb
 
 
 def normalise_edge(tags: dict[str, Any]) -> EdgeFeatures:

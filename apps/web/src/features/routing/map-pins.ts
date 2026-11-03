@@ -38,7 +38,7 @@ export function barrierPins(comparison: RouteCompareResponse, rules: ProfileRule
     const first = segments[0];
     const position = first ? segmentMidpoint(first) : null;
     if (position === null) continue;
-    const count = exclusion.segmentIndexes.length;
+    const count = exclusion.count;
 
     if (exclusion.reason === 'too_steep') {
       // The steepest of the ruled-out climbs, on the gradient routing used:
@@ -171,7 +171,7 @@ export function phonePins(comparison: RouteCompareResponse, points: PlannerPoint
       const first = standard.segments[exclusion.segmentIndexes[0]!];
       const position = first ? segmentMidpoint(first) : null;
       if (position === null) continue;
-      const count = exclusion.segmentIndexes.length;
+      const count = exclusion.count;
       badges.push({
         id: `badge-${exclusion.reason}`,
         variant: 'badge',

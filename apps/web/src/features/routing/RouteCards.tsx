@@ -4,18 +4,21 @@ import { type KeyboardEvent, useId } from 'react';
 import type { Route, RouteCompareResponse } from '@pathable/contracts';
 import { Icon } from '@/components/Icon';
 import {
+  type RouteDuration,
   type RouteExclusion,
   type RouteVariant,
   exclusionLabel,
   exclusionsOf,
+  formatDurationRange,
+  formatDurationShort,
   formatShare,
   gradeBasis,
-  rankedReasons,
-  routeTime,
+  paceLabel,
+  paceNote,
+  routeDuration,
   verdictOf,
 } from './route-evidence';
-import { routesSharePath } from './route-identity';
-import { formatDistance, formatDuration } from './types';
+import { formatDistance } from './types';
 import styles from './Planner.module.css';
 
 /**
@@ -26,10 +29,10 @@ import styles from './Planner.module.css';
  * stays drawn: a viewer who picks one has been shown it more clearly, not
  * shown that it is safe.
  *
- * Every figure is the response's. Time is withheld from a route the profile
- * cannot use — "23 min" beside a flight of stairs reads as a trip a wheelchair
- * user could take — so the design's time on the shortest card appears only
- * when the profile can actually use that route.
+ * Every figure is the response's. Each card's time is its own route's, at the
+ * pace that route was timed at — walking pace for the shortest route, the
+ * profile's assumed pace for the other — and the two are never subtracted:
+ * part of the gap would be a difference in assumed pace, not in route.
  */
 export function RouteCards({
   comparison,
@@ -99,9 +102,11 @@ function difference(comparison: RouteCompareResponse): string {
   const verdict = verdictOf(comparison);
   switch (verdict.kind) {
     case 'detour':
-      return `+${formatDistance(verdict.extraM)} detour`;
+      return `+${formatDistance(verdict.extraM)}`;
     case 'shorter':
       return `${formatDistance(verdict.savedM)} shorter`;
+    case 'ends_elsewhere':
+      return verdict.phrase;
     case 'same_length':
     case 'same_route':
       return 'Same length';
@@ -110,22 +115,39 @@ function difference(comparison: RouteCompareResponse): string {
   }
 }
 
-function ProfileCard({
-  comparison,
-  profileName,
-  route,
-  other,
-  checked,
-  onSelect,
-  onKeyDown,
-}: CardProps) {
+/** A route's time and whose pace it assumes, both from the response. */
+function Duration({
+  duration,
+  testId,
+}: {
+  readonly duration: RouteDuration;
+  readonly testId: string;
+}) {
+  return (
+    <span
+      className={styles.time}
+      data-kind="estimate"
+      data-testid={testId}
+      // The card has room for one line; the full sentence is the accessible
+      // description and the tooltip.
+      title={`${formatDurationRange(duration)} ${paceNote(duration)}`}
+    >
+      {formatDurationShort(duration)}
+      <span className={styles.paceNote}> · {paceLabel(duration)}</span>
+    </span>
+  );
+}
+
+/** "Your wheelchair route": the traveller's own, named as they chose it. */
+export function profileRouteName(profileName: string): string {
+  return `Your ${profileName.toLowerCase()} route`;
+}
+
+function ProfileCard({ comparison, profileName, route, checked, onSelect, onKeyDown }: CardProps) {
   const titleId = useId();
   const valueId = useId();
-  const time = routeTime(route, 'accessible', other);
   const climb = route.gradient.steepest_uphill;
   const surfaceGap = route.evidence_coverage?.['surface'];
-  const [top] = rankedReasons(comparison);
-  const samePath = routesSharePath(other, route);
 
   return (
     <button
@@ -143,21 +165,13 @@ function ProfileCard({
       <span className={styles.cardHead}>
         <span className={styles.cardName} id={titleId}>
           <span className={styles.swatch} data-variant="accessible" aria-hidden="true" />
-          {profileName} route
+          {profileRouteName(profileName)}
         </span>
       </span>
       <span className={styles.figures}>
         <span className={styles.figureMain} id={valueId}>
-          <span
-            className={styles.time}
-            data-kind={time.kind}
-            data-testid="difference-accessible-time"
-          >
-            {time.kind === 'estimate'
-              ? `Est. ${formatDuration(time.seconds)}`
-              : 'Time not estimated'}
-          </span>
           <span className={styles.distance}>{formatDistance(route.distance_m)}</span>
+          <Duration duration={routeDuration(route)} testId="difference-accessible-time" />
         </span>
         <span className={styles.delta} data-testid="difference-extra">
           {difference(comparison)}
@@ -187,17 +201,6 @@ function ProfileCard({
           tone={typeof surfaceGap === 'number' ? 'neutral' : 'unknown'}
         />
       </span>
-      {samePath ? (
-        <span className={styles.reasonLine} data-testid="same-path-note">
-          <Icon name="fork" size={16} className={styles.reasonIcon} />
-          Both routes use the same segments, so their lines overlap on the map.
-        </span>
-      ) : top ? (
-        <span className={styles.reasonLine} data-testid="main-difference">
-          <Icon name="fork" size={16} className={styles.reasonIcon} />
-          {top.explanation.summary}
-        </span>
-      ) : null}
     </button>
   );
 }
@@ -230,23 +233,17 @@ function Tile({
 /** What a ruled-out group reads as on the shortest card. */
 function exclusionChip(exclusion: RouteExclusion): string {
   return exclusion.reason === 'steps'
-    ? `${exclusion.segmentIndexes.length} recorded ${exclusion.segmentIndexes.length === 1 ? 'stairway' : 'stairways'}`
+    ? `${exclusion.count} recorded ${exclusion.count === 1 ? 'stairway' : 'stairways'}`
     : exclusionLabel(exclusion);
 }
 
-function ShortestCard({ profileName, route, other, checked, onSelect, onKeyDown }: CardProps) {
+function ShortestCard({ profileName, route, checked, onSelect, onKeyDown }: CardProps) {
   const titleId = useId();
   const valueId = useId();
-  const time = routeTime(route, 'standard', other);
   const exclusions = exclusionsOf(route);
   const climb = route.gradient.steepest_uphill;
   const steepRuledOut = exclusions.some((exclusion) => exclusion.reason === 'too_steep');
   const stairsRuledOut = exclusions.some((exclusion) => exclusion.reason === 'steps');
-  const otherTime = routeTime(other, 'accessible', route);
-  const saved =
-    time.kind === 'estimate' && otherTime.kind === 'estimate'
-      ? Math.round((otherTime.seconds - time.seconds) / 60)
-      : null;
 
   return (
     <button
@@ -274,34 +271,9 @@ function ShortestCard({ profileName, route, other, checked, onSelect, onKeyDown 
       </span>
       <span className={styles.figures}>
         <span className={styles.figureMain} id={valueId}>
-          {time.kind === 'estimate' ? (
-            <span
-              className={styles.time}
-              data-kind="estimate"
-              data-testid="difference-shortest-time"
-            >
-              Est. {formatDuration(time.seconds)}
-            </span>
-          ) : null}
           <span className={styles.distance}>{formatDistance(route.distance_m)}</span>
+          <Duration duration={routeDuration(route)} testId="difference-shortest-time" />
         </span>
-        {time.kind === 'estimate' ? (
-          saved !== null && saved > 0 ? (
-            <span className={styles.delta} data-tone="unknown">
-              {saved} min faster
-            </span>
-          ) : null
-        ) : (
-          <span
-            className={styles.time}
-            data-kind={time.kind}
-            data-testid="difference-shortest-time"
-          >
-            {time.kind === 'unavailable'
-              ? 'Time unavailable for this profile'
-              : 'Time not comparable'}
-          </span>
-        )}
       </span>
       {exclusions.length > 0 || (climb !== null && !steepRuledOut) || route.stairway_count > 0 ? (
         <span className={styles.chips} data-testid="route-blocked">

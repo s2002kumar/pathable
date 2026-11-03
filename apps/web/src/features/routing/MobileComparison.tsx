@@ -3,9 +3,16 @@
 import { type KeyboardEvent, type ReactNode, useId } from 'react';
 import type { ProfileKey, Route, RouteCompareResponse } from '@pathable/contracts';
 import { Icon } from '@/components/Icon';
+import { ComparisonSummary } from './ComparisonSummary';
 import { PROFILE_OPTIONS } from './ProfileChooser';
 import { limitText } from './UphillLimitControl';
-import { type RouteVariant, exclusionsOf, formatShare, gradeBasis } from './route-evidence';
+import {
+  type RouteVariant,
+  exclusionsOf,
+  formatShare,
+  gradeBasis,
+  movedEnds,
+} from './route-evidence';
 import {
   EVIDENCE_LABELS,
   type ProfileRules,
@@ -55,6 +62,8 @@ export function MobileComparison({
   editor,
   editorOpen,
   onEditorToggle,
+  evidenceHighlighted = false,
+  onToggleEvidenceHighlight,
 }: {
   readonly comparison: RouteCompareResponse;
   /** The preset the answer was asked with, for its glyph. */
@@ -71,6 +80,8 @@ export function MobileComparison({
   readonly editor: ReactNode;
   readonly editorOpen: boolean;
   readonly onEditorToggle: (open: boolean) => void;
+  readonly evidenceHighlighted?: boolean;
+  readonly onToggleEvidenceHighlight?: () => void;
 }) {
   const { standard_route: standard, accessible_route: accessible } = comparison;
   if (!standard || !accessible) return null;
@@ -80,6 +91,8 @@ export function MobileComparison({
   );
   const extra = comparison.extra_distance_m;
   const fraction = comparison.extra_distance_fraction;
+  // Routes that end in different places are not set against each other.
+  const moved = movedEnds(comparison);
   const exclusions = exclusionsOf(standard);
   const stairsRuledOut = exclusions.some((item) => item.reason === 'steps');
   const climb = accessible.gradient.steepest_uphill;
@@ -153,6 +166,12 @@ export function MobileComparison({
         <div className={styles.editorBody}>{editor}</div>
       </details>
 
+      <ComparisonSummary
+        comparison={comparison}
+        highlighted={evidenceHighlighted}
+        {...(onToggleEvidenceHighlight ? { onToggleHighlight: onToggleEvidenceHighlight } : {})}
+      />
+
       <div className={styles.optionsHead}>
         <h2 className={styles.optionsTitle}>Available options</h2>
         <span className={styles.optionsNote}>Route comparison</span>
@@ -180,7 +199,9 @@ export function MobileComparison({
                 ) : null}
               </span>
               <span className={styles.optionMeta} data-testid="difference-extra">
-                {typeof extra === 'number' && extra >= 0.5 ? (
+                {moved !== null ? (
+                  moved
+                ) : typeof extra === 'number' && extra >= 0.5 ? (
                   <>
                     +{preciseDistance(extra)}
                     <span aria-hidden="true"> • </span>
@@ -241,7 +262,7 @@ export function MobileComparison({
             <span className={styles.optionFigures}>
               <span className={styles.optionLine}>
                 <span className={styles.distance}>{formatDistance(standard.distance_m)}</span>
-                {typeof extra === 'number' && extra >= 0.5 ? (
+                {moved === null && typeof extra === 'number' && extra >= 0.5 ? (
                   <span className={styles.plainPill}>{formatDistance(extra)} shorter</span>
                 ) : null}
               </span>

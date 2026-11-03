@@ -44,13 +44,15 @@ from shapely.ops import polygonize, unary_union
 from pathable_api.core.logging import get_logger
 from pathable_api.geo.enums import PlaceKind
 from pathable_api.geo.pbf import CLIP_MARGIN_DEGREES, EXCLUDED_HIGHWAYS, file_sha256
-from pathable_api.geo.place_text import category_tier, normalise_text
+from pathable_api.geo.place_text import (
+    GAZETTEER_VERSION,
+    category_tier,
+    code_of,
+    initialism,
+    normalise_text,
+)
 
 logger = get_logger(__name__)
-
-#: Bumped whenever extraction or normalisation changes what an extract becomes,
-#: so a stored index says which rules produced it.
-GAZETTEER_VERSION = 1
 
 # --- What counts as a place -----------------------------------------------------
 
@@ -79,6 +81,32 @@ _PATH_HIGHWAYS = frozenset({"footway", "path", "cycleway", "bridleway", "track",
 
 #: Names a feature is also known by. Searched, never shown.
 _ALTERNATIVE_NAME_KEYS = ("alt_name", "short_name", "official_name", "loc_name", "old_name")
+
+#: Tags whose code-like values are a place's short code: the University of
+#: Waterloo records its building codes as `ref` (DC, MC, SLC, E5) and some as
+#: `short_name` (UW, CMH). Only a value shaped like a code counts; see `code_of`.
+_CODE_KEYS = ("ref", "short_name")
+
+
+def place_codes(tags: Mapping[str, str]) -> tuple[str, ...]:
+    """The short codes OpenStreetMap records for a place, normalised, in tag order."""
+    codes: list[str] = []
+    for key in _CODE_KEYS:
+        for value in tags.get(key, "").split(";"):
+            code = code_of(value.strip() or None)
+            if code is not None and code not in codes:
+                codes.append(code)
+    return tuple(codes)
+
+
+def place_initialisms(name: str, tags: Mapping[str, str]) -> tuple[str, ...]:
+    """Initials of a place's name and official name — generated, never recorded."""
+    found: list[str] = []
+    for text in (name, tags.get("official_name", "")):
+        letters = initialism(text) if text else None
+        if letters is not None and letters not in found:
+            found.append(letters)
+    return tuple(found)
 
 
 def place_category(tags: Mapping[str, str]) -> str | None:
@@ -162,6 +190,10 @@ class PlaceEntry:
     osm_type: str
     osm_id: int
     osm_version: int | None
+    #: Short codes recorded in OpenStreetMap (`ref`, `short_name`), normalised.
+    codes: tuple[str, ...] = ()
+    #: Initials generated from the name. Never shown as a recorded code.
+    initialisms: tuple[str, ...] = ()
 
 
 def _entries_for(
@@ -195,6 +227,8 @@ def _entries_for(
                 osm_type=osm_type,
                 osm_id=osm_id,
                 osm_version=osm_version,
+                codes=place_codes(tags),
+                initialisms=place_initialisms(name, tags),
             )
         )
 

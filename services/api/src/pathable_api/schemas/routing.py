@@ -288,6 +288,60 @@ class GradientSummaryModel(BaseModel):
     )
 
 
+class DurationEstimateModel(BaseModel):
+    """How long a route might take: distance over an assumed pace range."""
+
+    model_config = ConfigDict(frozen=True)
+
+    low_seconds: int = Field(ge=0, description="At the fast end of the assumed pace range.")
+    high_seconds: int = Field(ge=0, description="At the slow end of the assumed pace range.")
+    pace_low_mps: float = Field(gt=0.0, description="Slowest assumed pace, metres per second.")
+    pace_high_mps: float = Field(gt=0.0, description="Fastest assumed pace, metres per second.")
+    pace_label: str = Field(
+        description="Whose pace, in words to show beside the time: 'walking pace'.",
+        examples=["walking pace", "wheelchair pace"],
+    )
+    basis: Literal["assumed_pace"] = Field(
+        default="assumed_pace",
+        description=(
+            "Always 'assumed_pace': distance divided by a planning assumption. No delay is "
+            "added for crossings, signals or stairs, and nobody's pace was measured."
+        ),
+    )
+
+
+class RouteUnitModel(BaseModel):
+    """One road crossing or stairway, as the route passes through it.
+
+    OpenStreetMap draws each as one way, which the network splits into several
+    segments; this is the one crossing or stairway those segments make up.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal["crossing", "stairway"]
+    segment_indexes: list[int] = Field(description="Positions in this route's `segments`.")
+    kerb: KerbType | None = Field(
+        default=None,
+        description=(
+            "Crossings only: the crossing's kerb, from every kerb recorded along it. "
+            "`unknown` when either end has no record."
+        ),
+    )
+    kerb_recorded_ends: int | None = Field(
+        default=None,
+        ge=0,
+        le=2,
+        description="Crossings only: how many ends have a recorded kerb (2 means both).",
+    )
+    crossing_type: str | None = Field(
+        default=None, description="Crossings only: OSM `crossing` value, if recorded."
+    )
+    step_count: int | None = Field(
+        default=None, description="Stairways only: recorded steps, or null when unrecorded."
+    )
+
+
 class RouteModel(BaseModel):
     """A computed route."""
 
@@ -301,15 +355,22 @@ class RouteModel(BaseModel):
     )
     estimated_duration_seconds: float = Field(
         description=(
-            "Rough planning estimate from distance and obstacle counts, at the assumed pace of "
-            "`pace_profile`. Not measured, and not specific to any individual."
+            "The middle of `duration_estimate`, for clients that need one figure. A rough "
+            "planning figure at the assumed pace of `pace_profile`; prefer the range."
+        )
+    )
+    duration_estimate: DurationEstimateModel = Field(
+        description=(
+            "Time as a range, at the assumed pace of the profile this route was computed "
+            "for. The shortest route is always timed at walking pace; the profile route at "
+            "that profile's assumed pace. The two are different paces, so subtracting one "
+            "from the other does not say how much time a route saves."
         )
     )
     pace_profile: str = Field(
         description=(
-            "Profile whose assumed walking pace produced `estimated_duration_seconds`. In a "
-            "comparison both routes use the chosen profile's pace — its base preset's, for a "
-            "custom profile — so the two estimates can be compared directly."
+            "Profile whose assumed pace produced the estimate: 'standard' for the shortest "
+            "route, the chosen profile — its base preset, for a custom one — for the other."
         )
     )
     coordinates: list[tuple[float, float]] = Field(
@@ -318,10 +379,25 @@ class RouteModel(BaseModel):
     segments: list[RouteSegmentModel]
     origin: SnappedPointModel
     destination: SnappedPointModel
-    stairway_count: int
-    step_count: int = Field(description="Recorded steps across all stairways on this route.")
-    crossing_count: int
-    unknown_kerb_crossing_count: int
+    stairway_count: int = Field(
+        description="Stairways on this route, each counted once however many segments it spans."
+    )
+    step_count: int = Field(
+        description=(
+            "Recorded steps across this route's stairways, each stairway counted once. A "
+            "stairway with no recorded count adds nothing, so this is a floor."
+        )
+    )
+    crossing_count: int = Field(
+        description="Mapped road crossings, each counted once however many segments it spans."
+    )
+    unknown_kerb_crossing_count: int = Field(
+        description="Crossings without a recorded kerb at both ends."
+    )
+    units: list[RouteUnitModel] = Field(
+        default_factory=list,
+        description="Every crossing and stairway on this route, in order of travel.",
+    )
     steepest_incline_percent: float | None = Field(
         description=(
             "Steepest gradient recorded in OpenStreetMap, either direction, as a magnitude. "
@@ -382,6 +458,43 @@ class ExplanationModel(BaseModel):
     evidence: dict[str, object] = Field(
         default_factory=dict,
         description="The recorded values this statement was derived from.",
+    )
+    shortest_route_segments: list[int] = Field(
+        default_factory=list,
+        description=(
+            "Positions in the shortest route's `segments` that this statement is about and "
+            "the chosen route does not use: every one, for pointing at on a map."
+        ),
+    )
+
+
+class DifferenceSummaryModel(BaseModel):
+    """The comparison in one line."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal["same_path", "different_path", "no_profile_route", "no_shortest_route"] = Field(
+        description=(
+            "'same_path' only when both routes travel the same segments and draw the same "
+            "line — never inferred from distance."
+        )
+    )
+    headline: str = Field(
+        examples=["Same path as shortest route.", "+67 m to avoid 2 recorded stairways."]
+    )
+    primary_code: str | None = Field(
+        default=None,
+        description=(
+            "The explanation the headline leads with: the first hard limit, otherwise the "
+            "penalty that differed most."
+        ),
+    )
+    primary_basis: EvidenceBasis | None = Field(
+        default=None,
+        description=(
+            "What the headline's reason rests on. 'not_recorded' means the route avoids "
+            "missing data, not a recorded barrier."
+        ),
     )
 
 
@@ -464,10 +577,28 @@ class RouteCompareResponse(BaseModel):
     accessible_failure: str | None = Field(
         default=None, description="Why no route satisfies the chosen profile."
     )
-    extra_distance_m: float | None = Field(
-        default=None, description="How much further the accessible route is."
+    distance_comparable: bool = Field(
+        default=False,
+        description=(
+            "Whether the two routes start and end at the same points, so their lengths "
+            "can be set against each other. False when either route is missing or when "
+            "the profile route starts or ends elsewhere (see the "
+            "profile_route_moved_endpoint caution)."
+        ),
     )
-    extra_distance_fraction: float | None = None
+    extra_distance_m: float | None = Field(
+        default=None,
+        description=(
+            "How much further the accessible route is. Null unless distance_comparable: "
+            "the length of a route to somewhere else is not a detour."
+        ),
+    )
+    extra_distance_fraction: float | None = Field(
+        default=None, description="extra_distance_m as a share of the shortest route's length."
+    )
+    summary: DifferenceSummaryModel = Field(
+        description="The comparison in one line, for reading before anything else."
+    )
     explanations: list[ExplanationModel]
     cautions: list[CautionModel]
     dataset: DatasetProvenance

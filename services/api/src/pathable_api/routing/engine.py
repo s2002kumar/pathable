@@ -13,8 +13,11 @@ number of edges the search may evaluate are capped.
 
 from __future__ import annotations
 
+import math
 import time
-from dataclasses import dataclass, replace
+from collections.abc import Sequence
+from dataclasses import dataclass
+from itertools import pairwise
 from typing import Literal
 
 from shapely.geometry import Point
@@ -25,7 +28,7 @@ from pathable_api.geo.features import EdgeFeatures
 from pathable_api.geo.geometry import geodesic_distance_m
 from pathable_api.routing.cost import BlockReason, CostComponent, EdgeCost, evaluate_edge
 from pathable_api.routing.graph import DirectedEdge, RoutableEdge, RoutableGraph, SnappedPoint
-from pathable_api.routing.profiles import MobilityProfile
+from pathable_api.routing.profiles import MobilityProfile, PaceAssumption
 from pathable_api.routing.search import (
     Algorithm,
     NoPathError,
@@ -33,7 +36,8 @@ from pathable_api.routing.search import (
     SearchResult,
     search,
 )
-from pathable_api.routing.snapping import EdgeSnap, prorate, split_geometry, virtual_node_id
+from pathable_api.routing.snapping import EdgeSnap, prorate, split_at, virtual_node_id
+from pathable_api.routing.units import UnitTraversal, traversals
 
 logger = get_logger(__name__)
 
@@ -54,11 +58,6 @@ MAX_SNAP_DISTANCE_M = 150.0
 #: a normal cross-Waterloo route evaluates a small fraction of this.
 MAX_EDGE_EVALUATIONS = 750_000
 
-#: Seconds added for obstacles that cost time rather than distance. The same for
-#: every profile; the pace is the profile's own (`walking_speed_mps`).
-_SECONDS_PER_STEP = 2.5
-_SECONDS_PER_CROSSING = 20.0
-
 #: Where a gradient came from: a mapper's `incline` tag, or the elevation model.
 GradeSource = Literal["osm_incline", "derived_elevation"]
 GradeDirection = Literal["uphill", "downhill"]
@@ -78,8 +77,15 @@ class PointOffNetworkError(RoutingError):
     def __init__(self, label: str, distance_m: float) -> None:
         self.label = label
         self.distance_m = distance_m
+        # The snap search stops at the limit, so beyond it there is no distance
+        # to give: "inf m" reached people clicking open farmland.
+        how_far = (
+            f"{distance_m:.0f} m"
+            if math.isfinite(distance_m)
+            else f"more than {MAX_SNAP_DISTANCE_M:.0f} m"
+        )
         super().__init__(
-            f"The {label} is {distance_m:.0f} m from the nearest mapped path, which is "
+            f"The {label} is {how_far} from the nearest mapped path, which is "
             f"further than PathAble will guess. Choose a point closer to a street or footpath."
         )
 
@@ -91,6 +97,26 @@ class NoRouteFoundError(RoutingError):
         self.profile = profile
         super().__init__(
             f"No route satisfies the {profile.display_name.lower()} profile between these points."
+        )
+
+
+class DisconnectedEndpointsError(NoRouteFoundError):
+    """The two points are on parts of the mapped network that never meet."""
+
+    def __init__(self, profile: MobilityProfile) -> None:
+        super().__init__(profile)
+        # For a step-free traveller the parts are joined only by step-free
+        # paths; somebody who can use stairs may still have a route.
+        self.args = (
+            (
+                "These two points are on parts of the mapped path network that no step-free "
+                "path joins, so the map data has no step-free route between them."
+            )
+            if profile.hard_limits.exclude_steps
+            else (
+                "These two points are on parts of the mapped path network that do not "
+                "connect, so the map data has no route between them for any traveller."
+            ),
         )
 
 
@@ -206,6 +232,33 @@ def summarise_gradients(segments: tuple[RouteSegment, ...]) -> GradientSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class DurationEstimate:
+    """How long a route might take at an assumed pace: a range, not a promise."""
+
+    low_seconds: float
+    high_seconds: float
+    pace: PaceAssumption
+    #: Whose pace: the profile the route was computed for, or its base preset.
+    pace_profile_key: str
+
+    @property
+    def middle_seconds(self) -> float:
+        return (self.low_seconds + self.high_seconds) / 2.0
+
+
+def estimate_duration(distance_m: float, profile: MobilityProfile) -> DurationEstimate:
+    """Distance over the profile's assumed pace range, and nothing else.
+
+    Deliberately *not* derived from effective metres: those encode preference as
+    well as effort, and a route that avoids an unrecorded kerb is not slower for
+    having done so. Nor are fixed delays added for crossings or steps — see
+    `PaceAssumption` for why.
+    """
+    low, high = profile.pace.seconds_for(distance_m)
+    return DurationEstimate(low, high, profile.pace, profile.pace_profile_key)
+
+
+@dataclass(frozen=True, slots=True)
 class Route:
     """A computed route and the evidence behind it."""
 
@@ -213,10 +266,10 @@ class Route:
     profile_display_name: str
     distance_m: float
     effective_distance_m: float
-    estimated_duration_seconds: float
-    #: Whose assumed pace produced `estimated_duration_seconds`. Two estimates
-    #: are only comparable when this matches — see `with_pace_of`.
-    pace_profile_key: str
+    #: At the pace of the profile the route was computed for. The shortest route
+    #: is computed for standard walking and is timed at walking pace, whichever
+    #: profile it is compared with.
+    duration: DurationEstimate
     coordinates: tuple[tuple[float, float], ...]
     segments: tuple[RouteSegment, ...]
     origin: SnappedPoint
@@ -236,42 +289,53 @@ class Route:
         """Recorded and estimated gradients, with direction. See `summarise_gradients`."""
         return summarise_gradients(self.segments)
 
-    def with_pace_of(self, profile: MobilityProfile) -> Route:
-        """The same route, its time estimated at another profile's assumed pace.
+    @property
+    def estimated_duration_seconds(self) -> float:
+        """The middle of `duration`. A single figure for callers that need one."""
+        return self.duration.middle_seconds
 
-        A comparison showed the shortest route at a standard walking pace beside
-        the accessible route at, say, a wheelchair pace — so the gap between the
-        two times mixed a difference in pace into a difference in route. Timing
-        both at the chosen profile's pace makes the two figures comparable. The
-        route itself, and everything it was costed on, is unchanged.
-        """
-        return replace(
-            self,
-            estimated_duration_seconds=_estimate_duration(self.segments, profile),
-            pace_profile_key=profile.pace_profile_key,
-        )
+    @property
+    def pace_profile_key(self) -> str:
+        return self.duration.pace_profile_key
+
+    @property
+    def units(self) -> tuple[UnitTraversal, ...]:
+        """The crossings and stairways this route passes through, each once."""
+        return tuple(traversals([segment.features for segment in self.segments]))
+
+    @property
+    def stairways(self) -> tuple[UnitTraversal, ...]:
+        return tuple(unit for unit in self.units if unit.kind == "stairway")
+
+    @property
+    def crossings(self) -> tuple[UnitTraversal, ...]:
+        return tuple(unit for unit in self.units if unit.kind == "crossing")
 
     @property
     def step_count(self) -> int:
-        """Total steps on this route, counting an unrecorded stairway as unknown."""
+        """Steps recorded across this route's stairways, each stairway counted once.
+
+        A stairway with no recorded count adds nothing, so this is a floor.
+        """
         return sum(
-            segment.step_count or 0 for segment in self.segments if segment.steps is TriState.YES
+            max((self.segments[index].step_count or 0) for index in unit.segment_indexes)
+            for unit in self.stairways
         )
 
     @property
     def stairway_count(self) -> int:
-        return sum(1 for segment in self.segments if segment.steps is TriState.YES)
+        return len(self.stairways)
 
     @property
     def crossing_count(self) -> int:
-        return sum(1 for segment in self.segments if segment.is_crossing)
+        return len(self.crossings)
 
     @property
     def unknown_kerb_crossing_count(self) -> int:
         return sum(
             1
-            for segment in self.segments
-            if segment.is_crossing and segment.kerb is KerbType.UNKNOWN
+            for unit in self.crossings
+            if self.segments[unit.segment_indexes[0]].kerb is KerbType.UNKNOWN
         )
 
     @property
@@ -389,13 +453,11 @@ def compute_route(
         )
         raise RequestTooLargeError(msg)
 
-    start_snap = _snap_or_fail(graph, origin, "origin", profile)
-    end_snap = _snap_or_fail(graph, destination, "destination", profile)
+    start_snap, end_snap = _snap_connected(graph, origin, destination, profile)
 
     started = time.perf_counter()
     overlay = _Overlay(graph)
-    start_node = overlay.attach(start_snap, "origin")
-    goal_node = overlay.attach(end_snap, "destination")
+    start_node, goal_node = overlay.attach([(start_snap, "origin"), (end_snap, "destination")])
 
     goal_position = overlay.position(goal_node)
 
@@ -436,8 +498,7 @@ def compute_route(
         profile_display_name=profile.display_name,
         distance_m=distance_m,
         effective_distance_m=effective_m,
-        estimated_duration_seconds=_estimate_duration(segments, profile),
-        pace_profile_key=profile.pace_profile_key,
+        duration=estimate_duration(distance_m, profile),
         coordinates=_stitch(segments),
         segments=tuple(segments),
         origin=_as_snapped_point(start_snap),
@@ -472,47 +533,56 @@ class _Overlay:
         self._adjacency: dict[str, list[tuple[str, DirectedEdge]]] = {}
         self._positions: dict[str, tuple[float, float]] = {}
 
-    def attach(self, snap: EdgeSnap, label: str) -> str:
-        """Introduce a snap point and return the node routing should use."""
-        if snap.is_on_node and snap.node_id is not None:
-            return snap.node_id
+    def attach(self, snaps: Sequence[tuple[EdgeSnap, str]]) -> list[str]:
+        """Introduce snap points and return the node routing should use for each.
 
-        # Landing on an endpoint needs no split — the junction is already there.
-        if snap.fraction <= 1e-9:
-            return snap.edge.source_u
-        if snap.fraction >= 1.0 - 1e-9:
-            return snap.edge.source_v
+        Snap points on one segment cut it into one chain, junction to junction
+        through every point in order along it, so a route between two ends on
+        one segment is the stretch between them. Each snap used to cut the
+        whole segment on its own, which joined each point to the junctions but
+        not to each other: the route walked to a junction and back, 200 m for
+        an 80 m walk, and paid twice for any crossing it was on.
+        """
+        nodes: list[str] = []
+        cuts: dict[str, list[tuple[float, int]]] = {}
+        for index, (snap, label) in enumerate(snaps):
+            if snap.is_on_node and snap.node_id is not None:
+                nodes.append(snap.node_id)
+            # Landing on an endpoint needs no cut — the junction is already there.
+            elif snap.fraction <= 1e-9:
+                nodes.append(snap.edge.source_u)
+            elif snap.fraction >= 1.0 - 1e-9:
+                nodes.append(snap.edge.source_v)
+            else:
+                node = virtual_node_id(label)
+                self._positions[node] = (snap.longitude, snap.latitude)
+                nodes.append(node)
+                cuts.setdefault(snap.edge.identity, []).append((snap.fraction, index))
 
-        node = virtual_node_id(label)
-        self._positions[node] = (snap.longitude, snap.latitude)
+        for points in cuts.values():
+            points.sort()
+            edge = snaps[points[0][1]][0].edge
+            pieces = split_at(edge.geometry, [fraction for fraction, _ in points])
+            chain = [edge.source_u, *(nodes[index] for _, index in points), edge.source_v]
+            forward = DirectedEdge(edge=edge, features=edge.features, reversed=False)
+            backward = DirectedEdge(edge=edge, features=edge.features.reversed(), reversed=True)
+            for (near, far), piece in zip(pairwise(chain), pieces, strict=True):
+                # Direction survives the cut: a piece of a one-way segment is
+                # still one-way, and no piece runs against the permitted
+                # direction.
+                if edge.foot_forward:
+                    self._link(near, far, prorate(forward, piece))
+                if edge.foot_backward:
+                    # Pieces stay in `source_u -> source_v` order, exactly as a
+                    # whole segment's geometry is, because a DirectedEdge marked
+                    # `reversed` flips its own geometry when asked for
+                    # travel-oriented coordinates. Reversing here as well
+                    # flipped it twice and drew the piece backwards — which put
+                    # a gap of up to 93 m in a route's polyline and made it end
+                    # somewhere the user never chose.
+                    self._link(far, near, prorate(backward, piece))
 
-        head_geometry, tail_geometry = split_geometry(snap.edge.geometry, snap.fraction)
-        edge = snap.edge
-
-        forward_head = DirectedEdge(edge=edge, features=edge.features, reversed=False)
-        forward_tail = DirectedEdge(edge=edge, features=edge.features, reversed=False)
-        backward_head = DirectedEdge(edge=edge, features=edge.features.reversed(), reversed=True)
-        backward_tail = DirectedEdge(edge=edge, features=edge.features.reversed(), reversed=True)
-
-        # Direction survives the split: half of a one-way segment is still
-        # one-way, and the half running against the permitted direction must
-        # never appear.
-        if edge.foot_forward:
-            # u -> node -> v
-            self._link(edge.source_u, node, prorate(forward_head, head_geometry))
-            self._link(node, edge.source_v, prorate(forward_tail, tail_geometry))
-        if edge.foot_backward:
-            # v -> node -> u. The halves are stored in `source_u -> source_v`
-            # order, exactly as a whole segment's geometry is, because a
-            # DirectedEdge marked `reversed` flips its own geometry when asked
-            # for travel-oriented coordinates. Reversing here as well flipped it
-            # twice and drew the piece backwards — which put a gap of up to 93 m
-            # in a route's polyline and made it end somewhere the user never
-            # chose.
-            self._link(edge.source_v, node, prorate(backward_tail, tail_geometry))
-            self._link(node, edge.source_u, prorate(backward_head, head_geometry))
-
-        return node
+        return nodes
 
     def _link(self, source: str, target: str, edge: DirectedEdge) -> None:
         self._adjacency.setdefault(source, []).append((target, edge))
@@ -560,6 +630,71 @@ def _snap_or_fail(
     return snapped
 
 
+def _snap_connected(
+    graph: RoutableGraph,
+    origin: tuple[float, float],
+    destination: tuple[float, float],
+    profile: MobilityProfile,
+) -> tuple[EdgeSnap, EdgeSnap]:
+    """Attach both ends to paths that connect to each other, or say there are none.
+
+    Each end goes to the nearest path the traveller may use. When those two
+    paths are in parts of the network that never meet — a corridor reachable
+    only through a private door, a terrace reachable only by stairs for a
+    step-free traveller — one end moves to the nearest path within the same
+    snapping distance that is in the other end's part, preferring to move into
+    the larger part. Without this the answer was "no route", for a building
+    with a usable path thirty metres from the one nearest the point chosen. The
+    move is reported by the snap distance and by the comparison's cautions.
+
+    Decided from the precomputed parts, without a search: the alternative
+    explores everything reachable from one end — on Waterloo, 98% of the
+    network — to learn the same thing.
+    """
+    start = _snap_or_fail(graph, origin, "origin", profile)
+    end = _snap_or_fail(graph, destination, "destination", profile)
+    parts = graph.parts_for(profile.hard_limits.exclude_steps)
+    start_part = parts.get(start.edge.source_u)
+    end_part = parts.get(end.edge.source_u)
+    if start_part is None or end_part is None or start_part == end_part:
+        return start, end
+
+    def within(
+        part: int, coordinate: tuple[float, float], other: tuple[float, float]
+    ) -> EdgeSnap | None:
+        moved = graph.snap_to_edge(
+            coordinate[0],
+            coordinate[1],
+            accept=lambda edge: parts.get(edge.source_u) == part and _usable_for(edge, profile),
+            max_distance_m=MAX_SNAP_DISTANCE_M,
+        )
+        if moved is None or moved.distance_m > MAX_SNAP_DISTANCE_M:
+            return None
+        # A moved end must still be nearer the point it stands for than the
+        # other one. Moved to the foot of a stairway somebody asked to climb, the
+        # top's nearest step-free path was the start itself: a route of 0 m,
+        # "29 m shorter". There is no step-free route to that point, and that is
+        # the answer.
+        at = Point(moved.longitude, moved.latitude)
+        if geodesic_distance_m(at, Point(*coordinate)) >= geodesic_distance_m(at, Point(*other)):
+            return None
+        return moved
+
+    # (part moved into, extra snapping distance, origin snap, destination snap)
+    options: list[tuple[int, float, EdgeSnap, EdgeSnap]] = []
+    moved_end = within(start_part, destination, origin)
+    if moved_end is not None:
+        options.append((start_part, moved_end.distance_m - end.distance_m, start, moved_end))
+    moved_start = within(end_part, origin, destination)
+    if moved_start is not None:
+        options.append((end_part, moved_start.distance_m - start.distance_m, moved_start, end))
+    if not options:
+        raise DisconnectedEndpointsError(profile)
+    # Parts are numbered largest first, so the lowest number is the larger part.
+    _, _, chosen_start, chosen_end = min(options, key=lambda option: (option[0], option[1]))
+    return chosen_start, chosen_end
+
+
 def _to_segment(edge: DirectedEdge, cost: EdgeCost) -> RouteSegment:
     # Geometry and features both already point along travel.
     coordinates = edge.coordinates()
@@ -578,7 +713,8 @@ def _to_segment(edge: DirectedEdge, cost: EdgeCost) -> RouteSegment:
         step_count=features.step_count,
         incline_percent=features.incline_percent,
         derived_grade_percent=features.derived_grade_percent,
-        kerb=features.kerb,
+        # What a crossing was costed with: the whole crossing's kerb.
+        kerb=features.kerb_at_crossing if features.is_crossing else features.kerb,
         is_crossing=features.is_crossing,
         width_m=features.width_m,
         unknown_attributes=features.unknown_attributes,
@@ -596,28 +732,6 @@ def _stitch(segments: list[RouteSegment]) -> tuple[tuple[float, float], ...]:
                 continue
             coordinates.append(position)
     return tuple(coordinates)
-
-
-def _estimate_duration(
-    segments: list[RouteSegment] | tuple[RouteSegment, ...], profile: MobilityProfile
-) -> float:
-    """A planning estimate, from distance and obstacle counts.
-
-    Deliberately *not* derived from effective metres: those encode preference as
-    well as effort, and a route that avoids an unrecorded kerb is not slower for
-    having done so.
-
-    The pace is the profile's own. It used to be looked up by key, and every
-    custom profile — whatever preset it was built on — got the wheelchair pace.
-    """
-    seconds = sum(segment.length_m for segment in segments) / profile.walking_speed_mps
-
-    for segment in segments:
-        if segment.steps is TriState.YES:
-            seconds += _SECONDS_PER_STEP * (segment.step_count or profile.assumed_step_count)
-        if segment.is_crossing:
-            seconds += _SECONDS_PER_CROSSING
-    return seconds
 
 
 def _edge_cost(edge: DirectedEdge, profile: MobilityProfile) -> EdgeCost:

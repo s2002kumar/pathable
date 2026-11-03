@@ -1,0 +1,2204 @@
+{
+ "corpus_version": 1,
+ "index": {
+  "gazetteer_version": 2,
+  "file_name": "ontario-latest.osm.pbf",
+  "file_sha256": "cee90e3725139c41ef939f726730b4dfb6fd45e624d2797dac4be38a69145ef3",
+  "source_timestamp": "2026-08-16T20:21:06+00:00",
+  "places": 5232,
+  "addresses": 26201,
+  "streets": 1792
+ },
+ "run": {
+  "python": "3.13.2",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "git_commit": "89121e080ef3848335aa52b24348169f5cc88307"
+ },
+ "summary": {
+  "queries": 40,
+  "passed": 37,
+  "first_result_is_the_place_meant": 34,
+  "not_in_results": 3,
+  "by_category": {
+   "address": {
+    "queries": 3,
+    "passed": 2
+   },
+   "code": {
+    "queries": 10,
+    "passed": 9
+   },
+   "misspelling": {
+    "queries": 3,
+    "passed": 3
+   },
+   "name": {
+    "queries": 13,
+    "passed": 13
+   },
+   "partial": {
+    "queries": 5,
+    "passed": 5
+   },
+   "spelling": {
+    "queries": 2,
+    "passed": 2
+   },
+   "street": {
+    "queries": 3,
+    "passed": 3
+   },
+   "transit": {
+    "queries": 1,
+    "passed": 0
+   }
+  },
+  "matched_on_first_result": {
+   "code": 10,
+   "fuzzy": 3,
+   "initialism": 1,
+   "name": 26
+  },
+  "latency_ms": {
+   "median": 96.6,
+   "max": 204.1
+  }
+ },
+ "queries": [
+  {
+   "query": "DC",
+   "category": "code",
+   "meaning": "the Davis Centre building",
+   "expected": [
+    [
+     "relation",
+     8765264
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 114.9,
+   "results": [
+    {
+     "label": "William G. Davis Computer Research Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "relation",
+      8765264
+     ]
+    },
+    {
+     "label": "Desi Chatt Room",
+     "category": "restaurant",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "node",
+      12849840346
+     ]
+    },
+    {
+     "label": "Denture Clinic",
+     "category": "dentist",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      1616159705
+     ]
+    },
+    {
+     "label": "Donald Choi, 205 Frobisher Drive",
+     "category": "building",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      133561404
+     ]
+    },
+    {
+     "label": "Darlise Cafe, 33 Queen Street South",
+     "category": "cafe",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      4818439558
+     ]
+    }
+   ]
+  },
+  {
+   "query": "dc",
+   "category": "code",
+   "meaning": "the Davis Centre, typed in lower case",
+   "expected": [
+    [
+     "relation",
+     8765264
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 79.2,
+   "results": [
+    {
+     "label": "William G. Davis Computer Research Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "relation",
+      8765264
+     ]
+    },
+    {
+     "label": "Desi Chatt Room",
+     "category": "restaurant",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "node",
+      12849840346
+     ]
+    },
+    {
+     "label": "Denture Clinic",
+     "category": "dentist",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      1616159705
+     ]
+    },
+    {
+     "label": "Donald Choi, 205 Frobisher Drive",
+     "category": "building",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      133561404
+     ]
+    },
+    {
+     "label": "Darlise Cafe, 33 Queen Street South",
+     "category": "cafe",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      4818439558
+     ]
+    }
+   ]
+  },
+  {
+   "query": "SLC",
+   "category": "code",
+   "meaning": "the Student Life Centre",
+   "expected": [
+    [
+     "way",
+     43250627
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 102.1,
+   "results": [
+    {
+     "label": "Student Life Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      43250627
+     ]
+    },
+    {
+     "label": "Sweet Lou's Cookies",
+     "category": "bakery",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      12803264621
+     ]
+    },
+    {
+     "label": "Spur Line Crossing, 55 Erb Street East",
+     "category": "retail building",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      157555055
+     ]
+    }
+   ]
+  },
+  {
+   "query": "MC",
+   "category": "code",
+   "meaning": "the Mathematics & Computer building",
+   "expected": [
+    [
+     "way",
+     43250630
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 100.4,
+   "results": [
+    {
+     "label": "Mathematics & Computer",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      43250630
+     ]
+    },
+    {
+     "label": "Mill-Courtland",
+     "category": "locality",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      1557190977
+     ]
+    },
+    {
+     "label": "Math CnD",
+     "category": "cafe",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      702776031
+     ]
+    },
+    {
+     "label": "Marquez Churros",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      10869574308
+     ]
+    },
+    {
+     "label": "Maple Convenience",
+     "category": "post office",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      1673521671
+     ]
+    }
+   ]
+  },
+  {
+   "query": "E5",
+   "category": "code",
+   "meaning": "Engineering 5",
+   "expected": [
+    [
+     "way",
+     51125806
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 97.4,
+   "results": [
+    {
+     "label": "Engineering 5",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      51125806
+     ]
+    },
+    {
+     "label": "East 5",
+     "category": "dormitory building",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      141718267
+     ]
+    },
+    {
+     "label": "E5 Bridge",
+     "category": "path",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      175807556
+     ]
+    }
+   ]
+  },
+  {
+   "query": "PAC",
+   "category": "code",
+   "meaning": "the Physical Activities Complex",
+   "expected": [
+    [
+     "way",
+     43250596
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 69.8,
+   "results": [
+    {
+     "label": "Physical Activities Complex",
+     "category": "sports centre",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      43250596
+     ]
+    },
+    {
+     "label": "Corbett Packaging, 367 Ottawa Street South",
+     "category": "company",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      5076415902
+     ]
+    }
+   ]
+  },
+  {
+   "query": "QNC",
+   "category": "code",
+   "meaning": "the Quantum-Nano Centre",
+   "expected": [
+    [
+     "way",
+     182091547
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 65.7,
+   "results": [
+    {
+     "label": "Mike & Ophelia Lazaridis Quantum Nano Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      182091547
+     ]
+    },
+    {
+     "label": "MC to QNC Walkway",
+     "category": "path",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      182197539
+     ]
+    }
+   ]
+  },
+  {
+   "query": "EV3",
+   "category": "code",
+   "meaning": "Environment 3",
+   "expected": [
+    [
+     "way",
+     167411346
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 72.0,
+   "results": [
+    {
+     "label": "Environment 3",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      167411346
+     ]
+    },
+    {
+     "label": "Ev3rgreen Cafe",
+     "category": "cafe",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1503534623
+     ]
+    }
+   ]
+  },
+  {
+   "query": "UW",
+   "category": "code",
+   "meaning": "the University of Waterloo",
+   "expected": [
+    [
+     "relation",
+     11680616
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 72.0,
+   "results": [
+    {
+     "label": "University of Waterloo",
+     "category": "university",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "relation",
+      11680616
+     ]
+    },
+    {
+     "label": "UW Place Grand Commons",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      143668848
+     ]
+    },
+    {
+     "label": "Universty Wireless, 280 Lester Street",
+     "category": "mobile phone",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      5368660997
+     ]
+    },
+    {
+     "label": "The Market At UWP",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      5366431384
+     ]
+    },
+    {
+     "label": "Union / Weber",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      1573333765
+     ]
+    }
+   ]
+  },
+  {
+   "query": "DP",
+   "category": "code",
+   "meaning": "the Dana Porter Library, by its campus nickname",
+   "expected": [
+    [
+     "way",
+     43250626
+    ]
+   ],
+   "within": 3,
+   "rank": null,
+   "passed": false,
+   "median_ms": 89.3,
+   "results": [
+    {
+     "label": "Dulux Paints",
+     "category": "paint",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      9061302978
+     ]
+    },
+    {
+     "label": "Davenport Pizza",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      2884642466
+     ]
+    },
+    {
+     "label": "Dunvegan Park, 362 Dunvegan Drive",
+     "category": "park",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      39972733
+     ]
+    },
+    {
+     "label": "Dynamite Pizza, 501 Krug Street",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      10096782162
+     ]
+    },
+    {
+     "label": "Detweiler Park, 471 Westforest Trail",
+     "category": "park",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      144130706
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Davis",
+   "category": "name",
+   "meaning": "the Davis Centre or its library",
+   "expected": [
+    [
+     "relation",
+     8765264
+    ],
+    [
+     "node",
+     1505832285
+    ]
+   ],
+   "within": 2,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 89.5,
+   "results": [
+    {
+     "label": "Davis Centre Library",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1505832285
+     ]
+    },
+    {
+     "label": "William G. Davis Computer Research Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "relation",
+      8765264
+     ]
+    },
+    {
+     "label": "FedBus Davis Centre",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      13892551092
+     ]
+    },
+    {
+     "label": "Davis Centre",
+     "category": "taxi",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1941952834
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Davis Centre",
+   "category": "name",
+   "meaning": "the Davis Centre or its library",
+   "expected": [
+    [
+     "relation",
+     8765264
+    ],
+    [
+     "node",
+     1505832285
+    ]
+   ],
+   "within": 2,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 139.8,
+   "results": [
+    {
+     "label": "Davis Centre Library",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1505832285
+     ]
+    },
+    {
+     "label": "William G. Davis Computer Research Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "relation",
+      8765264
+     ]
+    },
+    {
+     "label": "FedBus Davis Centre",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      13892551092
+     ]
+    },
+    {
+     "label": "Davis Centre",
+     "category": "taxi",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1941952834
+     ]
+    }
+   ]
+  },
+  {
+   "query": "University of Waterloo",
+   "category": "name",
+   "meaning": "the campus",
+   "expected": [
+    [
+     "relation",
+     11680616
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 85.0,
+   "results": [
+    {
+     "label": "University of Waterloo",
+     "category": "university",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "relation",
+      11680616
+     ]
+    },
+    {
+     "label": "University of Waterloo Campus Police Station",
+     "category": "police",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1563802049
+     ]
+    },
+    {
+     "label": "University of Waterloo",
+     "category": "transit station",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      4211159080
+     ]
+    },
+    {
+     "label": "University of Waterloo Station",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      9536179462
+     ]
+    },
+    {
+     "label": "University of Waterloo Terminal",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1924285218
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Student Life Centre",
+   "category": "name",
+   "meaning": "the Student Life Centre",
+   "expected": [
+    [
+     "way",
+     43250627
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 85.9,
+   "results": [
+    {
+     "label": "Student Life Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250627
+     ]
+    },
+    {
+     "label": "W Store Essentials - Student Life Centre",
+     "category": "stationery",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2296089569
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Math and Computer",
+   "category": "name",
+   "meaning": "MC, with 'and' for '&'",
+   "expected": [
+    [
+     "way",
+     43250630
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 75.5,
+   "results": [
+    {
+     "label": "Mathematics & Computer",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250630
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Dana Porter",
+   "category": "name",
+   "meaning": "the Dana Porter Library",
+   "expected": [
+    [
+     "way",
+     43250626
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 67.7,
+   "results": [
+    {
+     "label": "Dana Porter Library",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250626
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Federation Hall",
+   "category": "name",
+   "meaning": "Fed Hall",
+   "expected": [
+    [
+     "way",
+     43250640
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 91.5,
+   "results": [
+    {
+     "label": "Federation Hall",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250640
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Conestoga Mall",
+   "category": "name",
+   "meaning": "the mall",
+   "expected": [
+    [
+     "way",
+     165512577
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 120.0,
+   "results": [
+    {
+     "label": "Conestoga Mall, 550 King Street North",
+     "category": "mall",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      165512577
+     ]
+    },
+    {
+     "label": "Conestoga Mall Food Court, 550 King Street North",
+     "category": "food court",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      497254265
+     ]
+    },
+    {
+     "label": "Conestoga Mall Lane",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      165513425
+     ]
+    },
+    {
+     "label": "Davenport / Conestoga Mall",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      836238312
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Waterloo Public Square",
+   "category": "name",
+   "meaning": "the square, not its stop",
+   "expected": [
+    [
+     "way",
+     62299949
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 131.0,
+   "results": [
+    {
+     "label": "Waterloo Public Square, 75 King Street South",
+     "category": "square",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      62299949
+     ]
+    },
+    {
+     "label": "Waterloo Public Square",
+     "category": "transit station",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      6538626461
+     ]
+    },
+    {
+     "label": "Waterloo Public Square Station",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      502854872
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Kitchener City Hall",
+   "category": "name",
+   "meaning": "the city hall, not its stop",
+   "expected": [
+    [
+     "way",
+     138175760
+    ]
+   ],
+   "within": 2,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 146.6,
+   "results": [
+    {
+     "label": "Kitchener City Hall, 200 King Street West",
+     "category": "townhall",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      138175760
+     ]
+    },
+    {
+     "label": "Kitchener City Hall",
+     "category": "transit station",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      6538855848
+     ]
+    },
+    {
+     "label": "Kitchener City Hall Station",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      8178511445
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Waterloo Public Library",
+   "category": "name",
+   "meaning": "the main branch",
+   "expected": [
+    [
+     "way",
+     43251385
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 146.9,
+   "results": [
+    {
+     "label": "Waterloo Public Library - Main, 35 Albert Street",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43251385
+     ]
+    },
+    {
+     "label": "Waterloo Public Library - McCormick Branch, 500 Parkside Drive",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1566548213
+     ]
+    },
+    {
+     "label": "Waterloo Public Library - Eastside Branch, 2001 University Avenue East",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      1222304369
+     ]
+    },
+    {
+     "label": "Waterloo Public Library - John M. Harper Branch, 500 Fischer-Hallman Road North",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      7935712615
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Wilfrid Laurier University",
+   "category": "name",
+   "meaning": "Laurier's Waterloo campus",
+   "expected": [
+    [
+     "way",
+     226405688
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 133.0,
+   "results": [
+    {
+     "label": "Wilfrid Laurier University, 75 University Avenue West",
+     "category": "university",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      226405688
+     ]
+    },
+    {
+     "label": "Wilfrid Laurier University Special Constable Service, 232 King Street North",
+     "category": "police",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      118662109
+     ]
+    },
+    {
+     "label": "Wilfrid Laurier University - Lyle S. Hallman Faculty of Social Work, 120 Duke Street West",
+     "category": "university",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      710567146
+     ]
+    },
+    {
+     "label": "Wilfrid Laurier University",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2043274992
+     ]
+    },
+    {
+     "label": "Hazel / Wilfrid Laurier University",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2043274989
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Grand River Hospital",
+   "category": "name",
+   "meaning": "the hospital, renamed WRHN @ Midtown",
+   "expected": [
+    [
+     "relation",
+     18980846
+    ],
+    [
+     "way",
+     140180455
+    ]
+   ],
+   "within": 3,
+   "rank": 3,
+   "passed": true,
+   "median_ms": 147.8,
+   "results": [
+    {
+     "label": "Grand River Hospital",
+     "category": "transit station",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      11961617802
+     ]
+    },
+    {
+     "label": "Grand River Hospital Station",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      502854868
+     ]
+    },
+    {
+     "label": "WRHN @ Midtown, 835 King Street West",
+     "category": "hospital",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      140180455
+     ]
+    },
+    {
+     "label": "WRHN @ Midtown (formerly Grand River Hospital), 835 King Street West",
+     "category": "hospital building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "relation",
+      18980846
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Davi",
+   "category": "partial",
+   "meaning": "Davis, half typed",
+   "expected": [
+    [
+     "relation",
+     8765264
+    ],
+    [
+     "node",
+     1505832285
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 73.4,
+   "results": [
+    {
+     "label": "Davis Centre Library",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1505832285
+     ]
+    },
+    {
+     "label": "David's Fresh Cut NFLD Fries",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      12288812563
+     ]
+    },
+    {
+     "label": "David Street, Kitchener",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      194225558
+     ]
+    },
+    {
+     "label": "Crow Shield Lodge, 101 David Street",
+     "category": "residential building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      154387637
+     ]
+    },
+    {
+     "label": "William G. Davis Computer Research Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "relation",
+      8765264
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Student L",
+   "category": "partial",
+   "meaning": "the Student Life Centre, half typed",
+   "expected": [
+    [
+     "way",
+     43250627
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 132.1,
+   "results": [
+    {
+     "label": "Student Life Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250627
+     ]
+    },
+    {
+     "label": "W Store Essentials - Student Life Centre",
+     "category": "stationery",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2296089569
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Conest",
+   "category": "partial",
+   "meaning": "Conestoga Mall, half typed",
+   "expected": [
+    [
+     "way",
+     165512577
+    ]
+   ],
+   "within": 3,
+   "rank": 2,
+   "passed": true,
+   "median_ms": 204.1,
+   "results": [
+    {
+     "label": "Conestoga Interlocking",
+     "category": "service building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      881139601
+     ]
+    },
+    {
+     "label": "Conestoga Mall, 550 King Street North",
+     "category": "mall",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      165512577
+     ]
+    },
+    {
+     "label": "Conestoga Convenience, 209 Lexington Road",
+     "category": "convenience",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      12105340568
+     ]
+    },
+    {
+     "label": "Conestoga Towers, 221 Queen Street South",
+     "category": "apartments building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      186580114
+     ]
+    },
+    {
+     "label": "Conestoga Mall Food Court, 550 King Street North",
+     "category": "food court",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      497254265
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Physical Act",
+   "category": "partial",
+   "meaning": "the PAC, half typed",
+   "expected": [
+    [
+     "way",
+     43250596
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 117.9,
+   "results": [
+    {
+     "label": "Physical Activities Complex",
+     "category": "sports centre",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250596
+     ]
+    },
+    {
+     "label": "PASS Bracing, 65 University Avenue East",
+     "category": "medical supply",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      10308014742
+     ]
+    }
+   ]
+  },
+  {
+   "query": "sl",
+   "category": "partial",
+   "meaning": "SLC, two letters in",
+   "expected": [
+    [
+     "way",
+     43250627
+    ]
+   ],
+   "within": 5,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 128.2,
+   "results": [
+    {
+     "label": "Student Life Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "code",
+     "osm": [
+      "way",
+      43250627
+     ]
+    },
+    {
+     "label": "Sweet Loop",
+     "category": "ice cream",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      5923220713
+     ]
+    },
+    {
+     "label": "Schooner Link, 318 Schooner Crescent",
+     "category": "park",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "way",
+      1369213370
+     ]
+    },
+    {
+     "label": "Sign Language, 300 Gage Avenue",
+     "category": "signmaker",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      13869860178
+     ]
+    },
+    {
+     "label": "Sherman Law, 625 King Street East",
+     "category": "lawyer",
+     "kind": "place",
+     "matched_on": "initialism",
+     "osm": [
+      "node",
+      2266363323
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Davis Center",
+   "category": "spelling",
+   "meaning": "the Davis Centre, US spelling",
+   "expected": [
+    [
+     "relation",
+     8765264
+    ],
+    [
+     "node",
+     1505832285
+    ]
+   ],
+   "within": 2,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 84.4,
+   "results": [
+    {
+     "label": "Davis Centre Library",
+     "category": "library",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1505832285
+     ]
+    },
+    {
+     "label": "William G. Davis Computer Research Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "relation",
+      8765264
+     ]
+    },
+    {
+     "label": "FedBus Davis Centre",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      13892551092
+     ]
+    },
+    {
+     "label": "Davis Centre",
+     "category": "taxi",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1941952834
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Student Life Center",
+   "category": "spelling",
+   "meaning": "the SLC, US spelling",
+   "expected": [
+    [
+     "way",
+     43250627
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 103.3,
+   "results": [
+    {
+     "label": "Student Life Centre",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250627
+     ]
+    },
+    {
+     "label": "W Store Essentials - Student Life Centre",
+     "category": "stationery",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2296089569
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Konestoga Mall",
+   "category": "misspelling",
+   "meaning": "Conestoga, misspelled",
+   "expected": [
+    [
+     "way",
+     165512577
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 108.1,
+   "results": [
+    {
+     "label": "Conestoga Mall, 550 King Street North",
+     "category": "mall",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "way",
+      165512577
+     ]
+    },
+    {
+     "label": "Conestoga Mall Food Court, 550 King Street North",
+     "category": "food court",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "node",
+      497254265
+     ]
+    },
+    {
+     "label": "Davenport / Conestoga Mall",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "way",
+      836238312
+     ]
+    },
+    {
+     "label": "Conestoga Mall Lane",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "fuzzy",
+     "osm": [
+      "way",
+      165513425
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Unversity of Waterloo",
+   "category": "misspelling",
+   "meaning": "University, a letter dropped",
+   "expected": [
+    [
+     "relation",
+     11680616
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 104.7,
+   "results": [
+    {
+     "label": "University of Waterloo",
+     "category": "university",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "relation",
+      11680616
+     ]
+    },
+    {
+     "label": "University of Waterloo Campus Police Station",
+     "category": "police",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "node",
+      1563802049
+     ]
+    },
+    {
+     "label": "School of Pharmacy, 10A Victoria Street South",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "way",
+      132778102
+     ]
+    },
+    {
+     "label": "University of Waterloo",
+     "category": "transit station",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "node",
+      4211159080
+     ]
+    },
+    {
+     "label": "Hagey / University of Waterloo",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "way",
+      265235998
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Federaton Hall",
+   "category": "misspelling",
+   "meaning": "Federation, a letter dropped",
+   "expected": [
+    [
+     "way",
+     43250640
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 112.4,
+   "results": [
+    {
+     "label": "Federation Hall",
+     "category": "university building",
+     "kind": "place",
+     "matched_on": "fuzzy",
+     "osm": [
+      "way",
+      43250640
+     ]
+    }
+   ]
+  },
+  {
+   "query": "200 University Ave W",
+   "category": "address",
+   "meaning": "the campus's street address",
+   "expected": [
+    [
+     "node",
+     11541059296
+    ],
+    [
+     "way",
+     258817910
+    ]
+   ],
+   "within": 1,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 61.9,
+   "results": [
+    {
+     "label": "200 University Avenue West, Waterloo",
+     "category": "address",
+     "kind": "address",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      11541059296
+     ]
+    },
+    {
+     "label": "POETS, 200 University Avenue West",
+     "category": "lounge",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1947762169
+     ]
+    },
+    {
+     "label": "Flock Stop, 200 University Avenue West",
+     "category": "convenience",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      626125006
+     ]
+    },
+    {
+     "label": "Bike Centre, 200 University Avenue West",
+     "category": "bicycle",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      6391917951
+     ]
+    },
+    {
+     "label": "Graduate House, 200 University Avenue West",
+     "category": "pub",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      145890265
+     ]
+    }
+   ]
+  },
+  {
+   "query": "100 Regina St S",
+   "category": "address",
+   "meaning": "Waterloo City Centre",
+   "expected": [
+    [
+     "way",
+     43250653
+    ]
+   ],
+   "within": 3,
+   "rank": 2,
+   "passed": true,
+   "median_ms": 66.1,
+   "results": [
+    {
+     "label": "City Centre Link, 100 Regina Street South",
+     "category": "park",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      802668612
+     ]
+    },
+    {
+     "label": "Waterloo City Centre, 100 Regina Street South",
+     "category": "townhall",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      43250653
+     ]
+    }
+   ]
+  },
+  {
+   "query": "550 King St N",
+   "category": "address",
+   "meaning": "Conestoga Mall's address",
+   "expected": [
+    [
+     "way",
+     165512577
+    ]
+   ],
+   "within": 3,
+   "rank": null,
+   "passed": false,
+   "median_ms": 60.3,
+   "results": [
+    {
+     "label": "CIBC, 550 King Street North",
+     "category": "bank",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      165513424
+     ]
+    },
+    {
+     "label": "Subway, 550 King Street North",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1776711727
+     ]
+    },
+    {
+     "label": "Indigo, 550 King Street North",
+     "category": "books",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      707339581
+     ]
+    },
+    {
+     "label": "Cultures, 550 King Street North",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      6647152057
+     ]
+    },
+    {
+     "label": "Sport Chek, 550 King Street North",
+     "category": "sports",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      1290108452
+     ]
+    }
+   ]
+  },
+  {
+   "query": "King Street North",
+   "category": "street",
+   "meaning": "King Street North, Waterloo",
+   "expected": [
+    [
+     "way",
+     193617706
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 72.4,
+   "results": [
+    {
+     "label": "King Street North, Waterloo",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      193617706
+     ]
+    },
+    {
+     "label": "King Street North Service Road",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      28119093
+     ]
+    },
+    {
+     "label": "308 King, 308 King Street North",
+     "category": "apartments building",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      1411743504
+     ]
+    },
+    {
+     "label": "CIBC, 27 King Street North",
+     "category": "bank",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      150152313
+     ]
+    },
+    {
+     "label": "loop, 13 King Street North",
+     "category": "clothes",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      150152317
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Columbia St W",
+   "category": "street",
+   "meaning": "Columbia Street West",
+   "expected": [
+    [
+     "way",
+     42684286
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 103.4,
+   "results": [
+    {
+     "label": "Columbia Street West, Waterloo",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      42684286
+     ]
+    },
+    {
+     "label": "CIBC, 450 Columbia Street West",
+     "category": "bank",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2577399004
+     ]
+    },
+    {
+     "label": "LCBO, 450 Columbia Street West",
+     "category": "alcohol",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      996069266
+     ]
+    },
+    {
+     "label": "Sobeys, 450 Columbia Street West",
+     "category": "supermarket",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      295792119
+     ]
+    },
+    {
+     "label": "Subway, 450 Columbia Street West",
+     "category": "fast food",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      2878975127
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Ring Road",
+   "category": "street",
+   "meaning": "the campus ring road",
+   "expected": [
+    [
+     "way",
+     24636861
+    ]
+   ],
+   "within": 3,
+   "rank": 1,
+   "passed": true,
+   "median_ms": 82.4,
+   "results": [
+    {
+     "label": "Ring Road",
+     "category": "street",
+     "kind": "street",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      24636861
+     ]
+    },
+    {
+     "label": "Ring Rd. / U.W. - Environment 3",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1953079543
+     ]
+    },
+    {
+     "label": "Ring Rd. / U.W. - University Club",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      184789524
+     ]
+    },
+    {
+     "label": "Ring Rd. / U.W. - B.C. Matthews Hall",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1953079580
+     ]
+    },
+    {
+     "label": "Ring Rd. / U.W. - South Campus Hall",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "way",
+      184788099
+     ]
+    }
+   ]
+  },
+  {
+   "query": "University of Waterloo station",
+   "category": "transit",
+   "meaning": "the campus ION station",
+   "expected": [
+    [
+     "node",
+     4211159080
+    ]
+   ],
+   "within": 3,
+   "rank": null,
+   "passed": false,
+   "median_ms": 95.8,
+   "results": [
+    {
+     "label": "University of Waterloo Station",
+     "category": "transit stop",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      9536179462
+     ]
+    },
+    {
+     "label": "University of Waterloo Station",
+     "category": "bus station",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      9412123831
+     ]
+    },
+    {
+     "label": "University of Waterloo Campus Police Station",
+     "category": "police",
+     "kind": "place",
+     "matched_on": "name",
+     "osm": [
+      "node",
+      1563802049
+     ]
+    }
+   ]
+  }
+ ]
+}

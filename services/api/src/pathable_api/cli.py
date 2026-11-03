@@ -30,6 +30,8 @@ import asyncio
 import collections
 import datetime as dt
 import json
+import os
+import platform
 import sys
 import time
 import uuid
@@ -39,9 +41,11 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import String, cast, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pathable_api import __version__
+from pathable_api.api.v1.routes import comparison_response, dataset_provenance
 from pathable_api.core.config import ConfigurationError, get_settings
 from pathable_api.core.event_loop import selector_loop_factory
 from pathable_api.core.logging import configure_logging, get_logger
@@ -65,6 +69,15 @@ from pathable_api.geo.gazetteer_store import (
     gazetteer_build,
     replace_gazetteer,
     search_gazetteer,
+)
+from pathable_api.geo.gazetteer_transfer import (
+    PlaceIndexArtifact,
+    PlaceIndexTransferError,
+    check_place_index,
+    export_place_index,
+    install_place_index,
+    place_index_status,
+    read_place_index,
 )
 from pathable_api.geo.kitchener.arcgis import (
     DEFAULT_CHUNK_SIZE,
@@ -226,6 +239,8 @@ from pathable_api.geo.overture.osm_versions import VersionEvidenceError, read_ve
 from pathable_api.geo.overture.pathable import PathAbleSideError, load_identities
 from pathable_api.geo.pbf import import_from_pbf
 from pathable_api.geo.regions import PILOT_REGIONS, region_definition, seed_pilot_regions
+from pathable_api.geo.search_corpus import SEARCH_CORPUS, SEARCH_CORPUS_VERSION
+from pathable_api.geo.search_evaluation import evaluate_search, summarise_search
 from pathable_api.routing.ablation import run_ablation, summarise_ablation
 from pathable_api.routing.activation import (
     IDENTICAL,
@@ -237,7 +252,7 @@ from pathable_api.routing.activation import (
     rollback_target,
     verify_rollback_target,
 )
-from pathable_api.routing.benchmark import build_measurement_grid, measure
+from pathable_api.routing.benchmark import build_measurement_grid, measure, measure_corpus
 from pathable_api.routing.evaluation import as_records, compare_algorithms, evaluate
 from pathable_api.routing.graph import GraphRepository, NoActiveDatasetError, graph_from_payload
 from pathable_api.routing.load_benchmark import (
@@ -247,7 +262,16 @@ from pathable_api.routing.load_benchmark import (
     run_load_benchmark,
 )
 from pathable_api.routing.load_benchmark import render as render_load_benchmark
-from pathable_api.routing.profiles import get_profile
+from pathable_api.routing.profiles import ROUTING_POLICY_VERSION, get_profile
+from pathable_api.routing.truth_audit import (
+    TRUTH_AUDIT_VERSION,
+    CaseOutcome,
+    audit_profiles,
+)
+from pathable_api.routing.truth_audit import as_records as truth_records
+from pathable_api.routing.truth_audit import run_audit as run_truth_audit
+from pathable_api.routing.truth_audit import totals as truth_totals
+from pathable_api.routing.truth_corpus import TRUTH_CORPUS, TRUTH_CORPUS_VERSION
 from pathable_api.routing.waterloo_cases import WATERLOO_CASES
 
 logger = get_logger(__name__)
@@ -377,6 +401,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Profile to measure; repeatable. Defaults to standard and wheelchair.",
     )
 
+    corpus_bench = benchmark_actions.add_parser(
+        "corpus",
+        help=(
+            "Time Dijkstra, A* and the whole comparison on the fixed Waterloo journey "
+            "corpus, and check the two searches agree on cost. Warm, single process."
+        ),
+    )
+    corpus_bench.add_argument(
+        "--region", default="waterloo", choices=sorted(region.slug for region in PILOT_REGIONS)
+    )
+    corpus_bench.add_argument("--repeats", type=int, default=5)
+    corpus_bench.add_argument(
+        "--profile",
+        action="append",
+        default=None,
+        help="Profile to measure; repeatable. Defaults to standard and wheelchair.",
+    )
+    corpus_bench.add_argument("--json", default=None, help="Write the full report here.")
+
     load_bench = benchmark_actions.add_parser(
         "load",
         help=(
@@ -446,6 +489,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--ablate",
         action="store_true",
         help="Also route without the unknown-data penalties, to see what they buy.",
+    )
+
+    truth_audit = subcommands.add_parser(
+        "truth-audit",
+        help=(
+            "Route the truth-audit corpus under every profile and check what each "
+            "comparison says against the routes themselves."
+        ),
+    )
+    truth_audit.add_argument(
+        "--region", required=True, choices=sorted(region.slug for region in PILOT_REGIONS)
+    )
+    truth_audit.add_argument("--json", required=True, help="Write the full audit here.")
+    truth_audit.add_argument(
+        "--case",
+        action="append",
+        default=None,
+        help="Route only this case (repeatable). Every case by default.",
     )
 
     coverage = subcommands.add_parser(
@@ -552,6 +613,16 @@ def build_parser() -> argparse.ArgumentParser:
             "header; left unknown if neither says."
         ),
     )
+    gazetteer_evaluate_command = gazetteer_actions.add_parser(
+        "evaluate",
+        help="Run the search-quality corpus against the region's place index.",
+    )
+    gazetteer_evaluate_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_evaluate_command.add_argument(
+        "--json", required=True, help="Write every query and its results here."
+    )
     gazetteer_search_command = gazetteer_actions.add_parser(
         "search", help="Search a region's place index exactly as the API does."
     )
@@ -560,6 +631,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gazetteer_search_command.add_argument("query", help="Place name, address or street.")
     gazetteer_search_command.add_argument("--limit", type=int, default=5, choices=range(1, 6))
+    gazetteer_status_command = gazetteer_actions.add_parser(
+        "status",
+        help=(
+            "Whether the stored place index is the version this release reads, read from "
+            "the active network's extract. Exits 1 when it is not. Reads only, and works "
+            "before this release's migrations have run."
+        ),
+    )
+    gazetteer_status_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_export_command = gazetteer_actions.add_parser(
+        "export",
+        help="Write the region's place index to an artifact another database can install.",
+    )
+    gazetteer_export_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_export_command.add_argument(
+        "--out", required=True, type=Path, help="Where to write the artifact (.jsonl.gz)."
+    )
+    gazetteer_import_command = gazetteer_actions.add_parser(
+        "import",
+        help=(
+            "Replace the region's place index with an artifact's, in one transaction, once "
+            "the artifact has proved its content and fits this release and the active network."
+        ),
+    )
+    gazetteer_import_command.add_argument(
+        "--region", required=True, choices=[definition.slug for definition in PILOT_REGIONS]
+    )
+    gazetteer_import_command.add_argument(
+        "--file", required=True, help="The artifact, or '-' to read it from standard input."
+    )
+    gazetteer_import_command.add_argument(
+        "--check",
+        action="store_true",
+        help="Verify the artifact against this release and the database; write nothing.",
+    )
 
     overture = subcommands.add_parser(
         "overture",
@@ -1132,12 +1242,24 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 return await _coverage(database, args)
             case "evaluate":
                 return await _evaluate(database, args)
+            case "truth-audit":
+                return await _truth_audit(database, args)
             case "benchmark" if args.benchmark_command == "load":
                 return await _benchmark_load(database, args)
+            case "benchmark" if args.benchmark_command == "corpus":
+                return await _benchmark_corpus(database, args)
             case "benchmark":
                 return await _benchmark(database, args)
             case "gazetteer" if args.gazetteer_command == "build":
                 return await _gazetteer_build(database, args)
+            case "gazetteer" if args.gazetteer_command == "evaluate":
+                return await _gazetteer_evaluate(database, args)
+            case "gazetteer" if args.gazetteer_command == "status":
+                return await _gazetteer_status(database, args)
+            case "gazetteer" if args.gazetteer_command == "export":
+                return await _gazetteer_export(database, args)
+            case "gazetteer" if args.gazetteer_command == "import":
+                return await _gazetteer_import(database, args)
             case "gazetteer":
                 return await _gazetteer_search(database, args)
             case "overture":
@@ -1317,6 +1439,90 @@ async def _gazetteer_build(database: Database, args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+async def _gazetteer_status(database: Database, args: argparse.Namespace) -> int:
+    definition = region_definition(args.region)
+    async with database.session() as session:
+        try:
+            status = await place_index_status(session, definition.slug)
+        except DatasetLifecycleError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return EXIT_FAILED
+    print(f"Place index for {definition.display_name}:")
+    print(f"  present           {'yes' if status.present else 'no'}")
+    print(f"  stored version    {status.stored_version}")
+    print(f"  expected version  {status.expected_version}")
+    print(f"  entries           {status.entries}")
+    print(f"  extract sha256    {status.file_sha256}")
+    print(f"  network sha256    {status.network_sha256}")
+    for problem in status.problems:
+        print(f"  problem           {problem}")
+    print("  current" if status.current else "  NOT CURRENT")
+    return EXIT_OK if status.current else EXIT_FAILED
+
+
+async def _gazetteer_export(database: Database, args: argparse.Namespace) -> int:
+    definition = region_definition(args.region)
+    async with database.session() as session:
+        try:
+            data = await export_place_index(session, definition.slug)
+        except PlaceIndexTransferError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return EXIT_FAILED
+    # Read back before it is reported, so a file that does not verify is never
+    # announced as written.
+    artifact = read_place_index(data)
+    out = Path(args.out)
+    out.write_bytes(data)
+    print(f"Wrote {out} ({len(data):,} bytes).")
+    _describe_artifact(artifact)
+    return EXIT_OK
+
+
+async def _gazetteer_import(database: Database, args: argparse.Namespace) -> int:
+    definition = region_definition(args.region)
+    data = sys.stdin.buffer.read() if args.file == "-" else Path(args.file).read_bytes()
+    try:
+        artifact = read_place_index(data)
+    except PlaceIndexTransferError as error:
+        print(f"error: {error}. Nothing was written.", file=sys.stderr)
+        return EXIT_FAILED
+    _describe_artifact(artifact)
+
+    async with database.session() as session:
+        try:
+            if args.check:
+                await check_place_index(session, artifact, region_slug=definition.slug)
+                print("  fits this release and the active network; nothing was written")
+                return EXIT_OK
+            started = time.perf_counter()
+            build = await install_place_index(session, artifact, region_slug=definition.slug)
+            await session.commit()
+        except (PlaceIndexTransferError, DatasetLifecycleError, SQLAlchemyError) as error:
+            await session.rollback()
+            print(
+                f"error: {error}. Nothing was written; the previous place index is unchanged.",
+                file=sys.stderr,
+            )
+            return EXIT_FAILED
+    print(
+        f"Place index for {definition.display_name} replaced in one transaction "
+        f"({time.perf_counter() - started:.1f}s): {build.place_count} places, "
+        f"{build.address_count} addresses, {build.street_count} streets."
+    )
+    return EXIT_OK
+
+
+def _describe_artifact(artifact: PlaceIndexArtifact) -> None:
+    header = artifact.header
+    print(f"  artifact sha256   {artifact.sha256}")
+    print(f"  region            {artifact.region}")
+    print(f"  gazetteer version {artifact.gazetteer_version}")
+    print(f"  entries           {artifact.entry_count} {header['counts']}")
+    print(f"  extract           {header.get('file_name')} {artifact.file_sha256}")
+    print(f"  data as of        {header.get('source_timestamp')}")
+    print(f"  built             {header.get('built_at')}")
+
+
 async def _gazetteer_search(database: Database, args: argparse.Namespace) -> int:
     definition = region_definition(args.region)
     async with database.session() as session:
@@ -1452,6 +1658,112 @@ async def _apply_elevation(database: Database, args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+async def _gazetteer_evaluate(database: Database, args: argparse.Namespace) -> int:
+    """Every corpus query against the region's index; exits non-zero on no index."""
+    async with database.session() as session:
+        build = await gazetteer_build(session, args.region)
+        if build is None:
+            print(f"error: no place index for {args.region}. Run gazetteer build.", file=sys.stderr)
+            return EXIT_MISCONFIGURED
+        records = await evaluate_search(session, build.id, SEARCH_CORPUS)
+
+    summary = summarise_search(records)
+    document = {
+        "corpus_version": SEARCH_CORPUS_VERSION,
+        "index": {
+            "gazetteer_version": build.configuration.get("gazetteer_version"),
+            "file_name": build.file_name,
+            "file_sha256": build.file_sha256,
+            "source_timestamp": (
+                None if build.source_timestamp is None else build.source_timestamp.isoformat()
+            ),
+            "places": build.place_count,
+            "addresses": build.address_count,
+            "streets": build.street_count,
+        },
+        "run": describe_environment(),
+        "summary": summary,
+        "queries": records,
+    }
+    Path(args.json).write_text(
+        json.dumps(document, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
+    for record in records:
+        top = record["results"][0]["label"] if record["results"] else "(nothing)"
+        mark = "pass" if record["passed"] else "MISS"
+        print(f"  {mark}  {record['query']:32} rank {record['rank']}  -> {top}")
+    print(json.dumps(summary, indent=1))
+    return EXIT_OK
+
+
+async def _truth_audit(database: Database, args: argparse.Namespace) -> int:
+    """Route the corpus, check every comparison, and write every outcome.
+
+    Exits non-zero when any check finds a defect — a contradiction that must
+    never happen. Flags are outcomes to inspect and do not fail the run.
+    """
+    definition = region_definition(args.region)
+    repository = GraphRepository()
+    async with database.session() as session:
+        graph = await repository.active_graph(session, definition.slug)
+        provenance = await dataset_provenance(session, graph, definition.slug)
+
+    wanted = set(args.case or ())
+    cases = tuple(case for case in TRUTH_CORPUS if not wanted or case.key in wanted)
+    unknown = wanted - {case.key for case in cases}
+    if unknown:
+        print(f"error: no such case: {', '.join(sorted(unknown))}", file=sys.stderr)
+        return EXIT_MISCONFIGURED
+
+    profiles = audit_profiles()
+    print(
+        f"{definition.display_name}: {graph.segment_count} segments (loaded in "
+        f"{graph.load_seconds:.1f}s). {len(cases)} cases x {len(profiles)} profiles."
+    )
+
+    def progress(outcome: CaseOutcome) -> None:
+        defects = sum(1 for finding in outcome.findings if finding.severity == "defect")
+        flags = sum(1 for finding in outcome.findings if finding.severity == "flag")
+        print(f"  {outcome.case.key:34} defects {defects}  flags {flags}", flush=True)
+
+    started = time.perf_counter()
+    outcomes = run_truth_audit(
+        graph,
+        cases,
+        profiles,
+        serialize=lambda comparison: comparison_response(comparison, provenance).model_dump(
+            mode="json"
+        ),
+        progress=progress,
+    )
+    elapsed = time.perf_counter() - started
+
+    summary = truth_totals(outcomes)
+    # The dataset's age in days changes every day the file is regenerated; the
+    # source timestamp it is computed from is kept.
+    dataset = provenance.model_dump(mode="json", exclude={"evidence_age_days"})
+    document = {
+        "audit": {
+            "truth_audit_version": TRUTH_AUDIT_VERSION,
+            "corpus_version": TRUTH_CORPUS_VERSION,
+            "routing_policy_version": ROUTING_POLICY_VERSION,
+            "profiles": [profile.key for profile in profiles],
+            "custom_profile": profiles[-1].description,
+        },
+        "dataset": dataset,
+        "run": {**describe_environment(), "route_seconds": round(elapsed, 1)},
+        "totals": summary,
+        "cases": truth_records(outcomes),
+    }
+    Path(args.json).write_text(
+        json.dumps(document, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    print(json.dumps(summary, indent=1))
+    print(f"Wrote {args.json}")
+    return EXIT_FAILED if summary["defects"] else EXIT_OK
+
+
 async def _evaluate(database: Database, args: argparse.Namespace) -> int:
     definition = region_definition(args.region)
     baseline = get_profile("standard")
@@ -1476,8 +1788,18 @@ async def _evaluate(database: Database, args: argparse.Namespace) -> int:
     unroutable = sum(1 for entry in comparisons if not entry.subject.routed)
 
     for entry in comparisons:
-        marker = "changed" if entry.route_changed else "same   "
-        detour = "" if entry.detour_m is None else f"{entry.detour_m:+8.1f} m"
+        # Two journeys with no route are not "the same route": say there is none.
+        marker = (
+            "no route" if not entry.subject.routed else "changed" if entry.route_changed else "same"
+        )
+        marker = f"{marker:<8}"
+        detour = (
+            "ends moved"
+            if entry.ends_moved_m
+            else ""
+            if entry.detour_m is None
+            else f"{entry.detour_m:+8.1f} m"
+        )
         print(f"  [{marker}] {entry.case:<32} {detour:>12}  {entry.reason()}")
 
     print(
@@ -1628,6 +1950,82 @@ async def _benchmark(database: Database, args: argparse.Namespace) -> int:
             f"{summary.profile:<18}{summary.samples:>5}{summary.failures:>6}"
             f"{summary.p50_ms:>10.2f}{summary.p95_ms:>10.2f}{summary.max_ms:>10.2f}"
         )
+    return EXIT_OK
+
+
+async def _benchmark_corpus(database: Database, args: argparse.Namespace) -> int:
+    """Measure routing on the fixed corpus, with the conditions written beside it."""
+    if args.repeats < 1:
+        print("error: ask for at least one repeat.", file=sys.stderr)
+        return EXIT_MISCONFIGURED
+    profiles = [get_profile(key) for key in (args.profile or ["standard", "wheelchair"])]
+    definition = region_definition(args.region)
+
+    before = machine_memory()
+    repository = GraphRepository()
+    async with database.session() as session:
+        graph = await repository.active_graph(session, definition.slug)
+    loaded = process_memory()
+
+    report = measure_corpus(
+        graph,
+        WATERLOO_CASES,
+        profiles,
+        repeats=args.repeats,
+        compare_profile=get_profile("wheelchair"),
+    )
+    after = process_memory()
+    payload: dict[str, object] = {
+        "region": definition.slug,
+        "dataset_id": str(graph.dataset_id),
+        "dataset_checksum": graph.checksum,
+        "routing_policy_version": ROUTING_POLICY_VERSION,
+        "environment": {
+            **describe_environment(),
+            "processor": platform.processor(),
+            "logical_cpus": os.cpu_count(),
+        },
+        "machine_memory_before_load": asdict(before),
+        "graph": {
+            "nodes": graph.node_count,
+            "segments": graph.segment_count,
+            "load_seconds_reported": round(graph.load_seconds, 2),
+            "load_note": (
+                "One load, timed by the loader itself, on the machine described. "
+                "`pathable benchmark load` is the dedicated measurement."
+            ),
+        },
+        "process_memory_after_load": asdict(loaded),
+        "process_memory_after_routing": asdict(after),
+        "cases": len(WATERLOO_CASES),
+        "profiles": [profile.key for profile in profiles],
+        **report,
+    }
+
+    summary = report["summary"]
+    print(
+        f"{definition.display_name}: {graph.node_count} nodes, {graph.segment_count} segments, "
+        f"routing policy {ROUTING_POLICY_VERSION}, {args.repeats} repeats per journey."
+    )
+    for profile_key, algorithms in summary["by_profile"].items():
+        for algorithm, figures in algorithms.items():
+            print(
+                f"  {profile_key:<12}{algorithm:<10} n {figures['n']:>3}  "
+                f"p50 {figures['p50_ms']} ms  p95 {figures['p95_ms']} ms  "
+                f"max {figures['max_ms']} ms  median expanded {figures['median_expanded_nodes']}"
+            )
+    agreement = summary["cost_agreement"]
+    print(f"  cost agreement: {agreement['agree']} agree, {agreement['disagree']} disagree")
+    print(f"  comparison (wheelchair, A*): {summary['comparison']}")
+    print(f"  RSS after load {loaded.rss_mb} MB, peak {after.peak_rss_mb} MB")
+
+    if args.json:
+        Path(args.json).write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"Wrote {args.json}")
+    if agreement["disagree"]:
+        return EXIT_FAILED
     return EXIT_OK
 
 

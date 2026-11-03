@@ -4,15 +4,18 @@
  * The default pair is the product's central case: a shortest route that
  * crosses one recorded stairway the wheelchair profile rules out, and a longer
  * step-free route. Every count agrees with the segments it summarises —
- * `stairway_count` is the number of segments whose `steps` is `yes`, and the
- * stairway carries `excluded_by_profile` — because a fixture whose summary
- * contradicts its own segments tests a response the API cannot send.
+ * `stairway_count` is the number of stairways in `units`, each stairway one
+ * segment here, and the stairway carries `excluded_by_profile` — because a
+ * fixture whose summary contradicts its own segments tests a response the API
+ * cannot send.
  */
 import type {
+  DurationEstimate,
   Route,
   RouteCompareResponse,
   RouteExplanation,
   RouteSegment,
+  RouteUnit,
 } from '@pathable/contracts';
 
 export function segment(overrides: Partial<RouteSegment> = {}): RouteSegment {
@@ -43,6 +46,40 @@ export function segment(overrides: Partial<RouteSegment> = {}): RouteSegment {
   };
 }
 
+/**
+ * The crossings and stairways a route passes through, one segment each, as the
+ * API lists them in `units`.
+ */
+export function unitsOf(segments: readonly RouteSegment[]): RouteUnit[] {
+  return segments.flatMap((item, index): RouteUnit[] => {
+    if (item.is_crossing) {
+      return [
+        {
+          kind: 'crossing',
+          segment_indexes: [index],
+          kerb: item.kerb,
+          kerb_recorded_ends: item.kerb === 'unknown' ? 0 : 2,
+          crossing_type: null,
+          step_count: null,
+        },
+      ];
+    }
+    if (item.steps === 'yes') {
+      return [
+        {
+          kind: 'stairway',
+          segment_indexes: [index],
+          kerb: null,
+          kerb_recorded_ends: null,
+          crossing_type: null,
+          step_count: item.step_count ?? null,
+        },
+      ];
+    }
+    return [];
+  });
+}
+
 /** Totals a route's summary figures from its segments, so they cannot disagree. */
 function summarise(segments: readonly RouteSegment[]) {
   const distance = segments.reduce((total, item) => total + item.length_m, 0);
@@ -54,21 +91,43 @@ function summarise(segments: readonly RouteSegment[]) {
     step_count: stairs.reduce((total, item) => total + (item.step_count ?? 0), 0),
     crossing_count: crossings.length,
     unknown_kerb_crossing_count: crossings.filter((item) => item.kerb === 'unknown').length,
+    units: unitsOf(segments),
     coordinates: segments.flatMap((item, index) =>
       index === 0 ? item.coordinates : item.coordinates.slice(1),
     ),
   };
 }
 
+/** Distance over a pace range, as the API times a route. */
+export function durationOf(
+  distance: number,
+  pace: { low: number; high: number; label: string },
+): DurationEstimate {
+  return {
+    low_seconds: Math.round(distance / pace.high),
+    high_seconds: Math.round(distance / pace.low),
+    pace_low_mps: pace.low,
+    pace_high_mps: pace.high,
+    pace_label: pace.label,
+    basis: 'assumed_pace',
+  };
+}
+
+export const WALKING_PACE = { low: 1.1, high: 1.4, label: 'walking pace' };
+export const WHEELCHAIR_PACE = { low: 0.8, high: 1.2, label: 'wheelchair pace' };
+
 export function route(segments: readonly RouteSegment[], overrides: Partial<Route> = {}): Route {
   const summary = summarise(segments);
+  // The shortest route is always timed at walking pace, as the API times it.
+  const standard = overrides.profile === 'standard';
   return {
     profile: 'wheelchair',
     profile_display_name: 'Wheelchair',
     ...summary,
     effective_distance_m: summary.distance_m,
-    estimated_duration_seconds: Math.round(summary.distance_m / 0.95),
-    pace_profile: 'wheelchair',
+    estimated_duration_seconds: Math.round(summary.distance_m / (standard ? 1.25 : 1.0)),
+    duration_estimate: durationOf(summary.distance_m, standard ? WALKING_PACE : WHEELCHAIR_PACE),
+    pace_profile: standard ? 'standard' : 'wheelchair',
     segments: [...segments],
     origin: { longitude: -80.54, latitude: 43.47, distance_m: 2 },
     destination: { longitude: -80.534, latitude: 43.47, distance_m: 3 },
@@ -192,6 +251,7 @@ const STAIRS_EXPLANATION: RouteExplanation = {
     stairways_without_step_count: 0,
     segments: ['way/11:0-1'],
   },
+  shortest_route_segments: [1],
 };
 
 const DISTANCE_EXPLANATION: RouteExplanation = {
@@ -202,9 +262,15 @@ const DISTANCE_EXPLANATION: RouteExplanation = {
 };
 
 export function comparison(overrides: Partial<RouteCompareResponse> = {}): RouteCompareResponse {
-  const standard = route(shortestSegments(), {
+  const shortest = shortestSegments();
+  const standard = route(shortest, {
     profile: 'standard',
     profile_display_name: 'Standard walking',
+    pace_profile: 'standard',
+    duration_estimate: durationOf(
+      shortest.reduce((total, item) => total + item.length_m, 0),
+      WALKING_PACE,
+    ),
     evidence_coverage: { surface: 0.03, smoothness: 1, gradient: 0, width: 1, kerb: 0 },
   });
   const accessible = route(accessibleSegments(), {
@@ -227,8 +293,15 @@ export function comparison(overrides: Partial<RouteCompareResponse> = {}): Route
     accessible_route: accessible,
     standard_failure: null,
     accessible_failure: null,
+    distance_comparable: true,
     extra_distance_m: extra,
     extra_distance_fraction: extra / standard.distance_m,
+    summary: {
+      kind: 'different_path',
+      headline: `+${Math.round(extra)} m to avoid 1 recorded stairway.`,
+      primary_code: 'avoids_stairs',
+      primary_basis: 'recorded',
+    },
     explanations: [STAIRS_EXPLANATION, DISTANCE_EXPLANATION],
     cautions: [],
     dataset: {
@@ -240,7 +313,7 @@ export function comparison(overrides: Partial<RouteCompareResponse> = {}): Route
       acquired_at: '2026-08-12T00:00:00+00:00',
       attribution: '© OpenStreetMap contributors, ODbL 1.0',
     },
-    routing_policy_version: 2,
+    routing_policy_version: 3,
     ml_predictions_used: false,
     ...overrides,
   };
@@ -253,5 +326,5 @@ export function explanation(
   evidence: Record<string, unknown> = {},
   summary = `Statement ${code}.`,
 ): RouteExplanation {
-  return { code, basis, evidence, summary };
+  return { code, basis, evidence, summary, shortest_route_segments: [] };
 }

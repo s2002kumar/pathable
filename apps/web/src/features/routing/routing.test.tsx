@@ -59,6 +59,14 @@ function buildRoute(overrides: Record<string, unknown> = {}) {
     distance_m: 709,
     effective_distance_m: 980,
     estimated_duration_seconds: 746,
+    duration_estimate: {
+      low_seconds: 634,
+      high_seconds: 933,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     // Both routes of a comparison are timed at the traveller's pace.
     pace_profile: 'wheelchair',
     gradient: {
@@ -105,6 +113,15 @@ const COMPARISON = {
     // Distinct from the accessible route's, so a figure showing the wrong
     // route's walking time cannot pass by coincidence.
     estimated_duration_seconds: 508,
+    pace_profile: 'standard',
+    duration_estimate: {
+      low_seconds: 432,
+      high_seconds: 635,
+      pace_low_mps: 1.1,
+      pace_high_mps: 1.4,
+      pace_label: 'walking pace',
+      basis: 'assumed_pace',
+    },
     stairway_count: 1,
     step_count: 14,
     unknown_kerb_crossing_count: 1,
@@ -177,6 +194,12 @@ const COMPARISON = {
     attribution: '© OpenStreetMap contributors, ODbL 1.0',
   },
   ml_predictions_used: false,
+  summary: {
+    kind: 'different_path',
+    headline: '+226 m to avoid 1 recorded stairway.',
+    primary_code: 'avoids_stairs',
+    primary_basis: 'recorded',
+  },
 } as unknown as RouteCompareResponse;
 
 function renderPlanner(overrides: Partial<RoutePlannerProps> = {}) {
@@ -251,7 +274,7 @@ describe('RoutePlanner', () => {
   it('states the trade-off on the profile’s own route card', () => {
     renderPlanner();
 
-    expect(screen.getByTestId('difference-extra')).toHaveTextContent('+226 m detour');
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent('+226 m');
   });
 
   it('shows both routes with their own figures', () => {
@@ -261,15 +284,22 @@ describe('RoutePlanner', () => {
     expect(screen.getByTestId('difference-shortest')).toHaveTextContent('483 m');
   });
 
-  it('reports the walking time the response gave for each route', () => {
+  it('reports each route’s time as the response’s range, at its own pace', () => {
     renderPlanner();
 
-    // 746 s and 508 s in the fixture. Read as an estimate, not a measurement:
-    // the figure is distance over an assumed pace plus fixed allowances, which
-    // the schema itself describes as "not measured, and not specific to any
-    // individual" — so the UI says "Est." rather than asserting a duration.
-    expect(screen.getByTestId('difference-accessible')).toHaveTextContent('Est. 12 min');
-    expect(screen.getByTestId('difference-shortest')).toHaveTextContent('Est. 8 min');
+    // A range over an assumed pace, labelled with whose pace it is: the
+    // profile's for its route, walking pace for the shortest. Neither is a
+    // measurement, and the two are never subtracted.
+    const accessible = screen.getByTestId('difference-accessible-time');
+    const shortest = screen.getByTestId('difference-shortest-time');
+    expect(accessible).toHaveTextContent(/^\d+–\d+ min · assumed wheelchair pace$/);
+    expect(shortest).toHaveTextContent(/^\d+–\d+ min · walking pace$/);
+    // The full sentence travels with the short form.
+    expect(accessible).toHaveAttribute(
+      'title',
+      expect.stringMatching(/^About \d+–\d+ min at an assumed wheelchair pace$/),
+    );
+    expect(screen.queryByText(/min faster/)).not.toBeInTheDocument();
   });
 
   it('names the stairway the shortest route uses, and none on the profile’s route', () => {
@@ -282,9 +312,10 @@ describe('RoutePlanner', () => {
   it('leads with the reason the engine gave, in its own words', () => {
     renderPlanner();
 
-    expect(screen.getByTestId('main-difference')).toHaveTextContent(
-      'Avoids 1 stairway (14 steps in total).',
+    expect(screen.getByTestId('comparison-headline')).toHaveTextContent(
+      '+226 m to avoid 1 recorded stairway.',
     );
+    expect(screen.getByTestId('comparison-basis')).toHaveTextContent('Recorded in OpenStreetMap');
   });
 
   it('says what the answer rests on, and how old the map is', () => {
@@ -504,7 +535,7 @@ describe('the evidence panel', () => {
   it('says the route was found with gaps, and that this is no guarantee', () => {
     renderPlanner({ layout: 'evidence' });
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Wheelchair route');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Your wheelchair route');
     expect(screen.getByTestId('journey-origin')).toHaveTextContent('Davis Centre library');
     expect(screen.getByTestId('journey-destination')).toHaveTextContent('Student Life Centre');
     const banner = screen.getByTestId('gap-banner');
@@ -533,7 +564,9 @@ describe('the evidence panel', () => {
   it('describes the shortest route when that is the one chosen', () => {
     renderPlanner({ layout: 'evidence', selectedRoute: 'standard' });
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Shortest walking route');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Shortest pedestrian route',
+    );
   });
 
   it('opens the full record and goes back to the comparison', async () => {

@@ -1,0 +1,1669 @@
+{
+  "region": "waterloo",
+  "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+  "dataset_checksum": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+  "routing_policy_version": 3,
+  "environment": {
+    "python": "3.13.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "git_commit": "43574b89375380cae317f7cfb16a442033b45acb",
+    "processor": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "logical_cpus": 22
+  },
+  "machine_memory_before_load": {
+    "total_mb": 16498.0,
+    "available_mb": 629.5,
+    "method": "windows:GlobalMemoryStatusEx"
+  },
+  "graph": {
+    "nodes": 155714,
+    "segments": 180554,
+    "load_seconds_reported": 42.63,
+    "load_note": "One load, timed by the loader itself, on the machine described. `pathable benchmark load` is the dedicated measurement."
+  },
+  "process_memory_after_load": {
+    "rss_mb": 810.4,
+    "peak_rss_mb": 1019.1,
+    "method": "windows:GetProcessMemoryInfo working set"
+  },
+  "process_memory_after_routing": {
+    "rss_mb": 298.1,
+    "peak_rss_mb": 1019.1,
+    "method": "windows:GetProcessMemoryInfo working set"
+  },
+  "cases": 20,
+  "profiles": [
+    "standard",
+    "wheelchair"
+  ],
+  "method": "Warm, single process: the graph is loaded and its spatial index built (timed separately) before any route is timed, and every journey is routed once per profile and algorithm before timing. Each timed run is one compute_route call - snapping, the request-local split, the search and building the route's segments - measured with time.perf_counter. Dijkstra and A* alternate within each repeat so machine noise falls on both. Per journey the median of the repeats is kept; the summary's percentiles are over those per-journey medians. Agreement means both algorithms found a route of the same effective cost (within 0.01) or both found none. The comparison timing is compare_routes with A*: both routes and the explanation, without HTTP or JSON.",
+  "repeats": 5,
+  "spatial_index_build_ms": 227.4,
+  "summary": {
+    "by_profile": {
+      "standard": {
+        "dijkstra": {
+          "n": 19,
+          "p50_ms": 249.53,
+          "p95_ms": 1267.83,
+          "max_ms": 1267.83,
+          "median_expanded_nodes": 7984
+        },
+        "astar": {
+          "n": 19,
+          "p50_ms": 168.65,
+          "p95_ms": 513.5,
+          "max_ms": 513.5,
+          "median_expanded_nodes": 807
+        }
+      },
+      "wheelchair": {
+        "dijkstra": {
+          "n": 19,
+          "p50_ms": 269.64,
+          "p95_ms": 1562.44,
+          "max_ms": 1562.44,
+          "median_expanded_nodes": 6640
+        },
+        "astar": {
+          "n": 19,
+          "p50_ms": 282.73,
+          "p95_ms": 2512.11,
+          "max_ms": 2512.11,
+          "median_expanded_nodes": 1886
+        }
+      }
+    },
+    "cost_agreement": {
+      "agree": 40,
+      "disagree": 0
+    },
+    "comparison": {
+      "n": 20,
+      "p50_ms": 458.79,
+      "p95_ms": 1595.07,
+      "max_ms": 2281.29
+    }
+  },
+  "runs": [
+    {
+      "case": "campus-library-to-student-life",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 30.75,
+      "runs_ms": [
+        63.16,
+        35.28,
+        30.75,
+        29.22,
+        28.88
+      ],
+      "expanded_nodes": 702,
+      "effective_cost": 287.391,
+      "distance_m": 287.4
+    },
+    {
+      "case": "campus-library-to-student-life",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 24.82,
+      "runs_ms": [
+        23.6,
+        24.82,
+        28.06,
+        32.71,
+        21.42
+      ],
+      "expanded_nodes": 85,
+      "effective_cost": 287.391,
+      "distance_m": 287.4
+    },
+    {
+      "case": "campus-library-to-student-life",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 46.99,
+      "runs_ms": [
+        223.18,
+        46.99,
+        46.64,
+        46.98,
+        53.58
+      ],
+      "expanded_nodes": 718,
+      "effective_cost": 601.003,
+      "distance_m": 354.1
+    },
+    {
+      "case": "campus-library-to-student-life",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 85.02,
+      "runs_ms": [
+        61.23,
+        94.83,
+        78.69,
+        85.02,
+        103.85
+      ],
+      "expanded_nodes": 353,
+      "effective_cost": 601.003,
+      "distance_m": 354.1
+    },
+    {
+      "case": "campus-to-laurier",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 410.74,
+      "runs_ms": [
+        593.16,
+        406.51,
+        410.74,
+        365.16,
+        499.79
+      ],
+      "expanded_nodes": 10867,
+      "effective_cost": 1464.484,
+      "distance_m": 1464.5
+    },
+    {
+      "case": "campus-to-laurier",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 330.61,
+      "runs_ms": [
+        330.61,
+        247.77,
+        294.79,
+        420.05,
+        475.29
+      ],
+      "expanded_nodes": 1771,
+      "effective_cost": 1464.484,
+      "distance_m": 1464.5
+    },
+    {
+      "case": "campus-to-laurier",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 628.83,
+      "runs_ms": [
+        658.21,
+        788.67,
+        628.83,
+        479.45,
+        489.0
+      ],
+      "expanded_nodes": 11236,
+      "effective_cost": 2466.566,
+      "distance_m": 1516.0
+    },
+    {
+      "case": "campus-to-laurier",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 795.44,
+      "runs_ms": [
+        1015.01,
+        1045.54,
+        780.64,
+        795.44,
+        530.97
+      ],
+      "expanded_nodes": 4336,
+      "effective_cost": 2466.566,
+      "distance_m": 1516.0
+    },
+    {
+      "case": "laurier-to-uptown",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 237.66,
+      "runs_ms": [
+        322.61,
+        220.31,
+        237.66,
+        218.58,
+        261.77
+      ],
+      "expanded_nodes": 8054,
+      "effective_cost": 1316.102,
+      "distance_m": 1316.1
+    },
+    {
+      "case": "laurier-to-uptown",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 111.95,
+      "runs_ms": [
+        113.99,
+        100.82,
+        111.95,
+        145.04,
+        97.5
+      ],
+      "expanded_nodes": 807,
+      "effective_cost": 1316.102,
+      "distance_m": 1316.1
+    },
+    {
+      "case": "laurier-to-uptown",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 209.46,
+      "runs_ms": [
+        209.46,
+        203.32,
+        222.15,
+        195.07,
+        221.57
+      ],
+      "expanded_nodes": 6640,
+      "effective_cost": 2001.337,
+      "distance_m": 1341.4
+    },
+    {
+      "case": "laurier-to-uptown",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 203.46,
+      "runs_ms": [
+        167.88,
+        197.04,
+        209.24,
+        203.46,
+        212.78
+      ],
+      "expanded_nodes": 1894,
+      "effective_cost": 2001.337,
+      "distance_m": 1341.4
+    },
+    {
+      "case": "uptown-to-waterloo-park",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 169.6,
+      "runs_ms": [
+        1352.9,
+        158.67,
+        161.79,
+        172.63,
+        169.6
+      ],
+      "expanded_nodes": 6374,
+      "effective_cost": 1066.57,
+      "distance_m": 1066.6
+    },
+    {
+      "case": "uptown-to-waterloo-park",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 83.83,
+      "runs_ms": [
+        61.48,
+        82.4,
+        83.83,
+        96.34,
+        93.83
+      ],
+      "expanded_nodes": 623,
+      "effective_cost": 1066.57,
+      "distance_m": 1066.6
+    },
+    {
+      "case": "uptown-to-waterloo-park",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 193.86,
+      "runs_ms": [
+        222.73,
+        193.86,
+        145.54,
+        194.72,
+        179.13
+      ],
+      "expanded_nodes": 4788,
+      "effective_cost": 1395.825,
+      "distance_m": 1066.6
+    },
+    {
+      "case": "uptown-to-waterloo-park",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 167.39,
+      "runs_ms": [
+        203.4,
+        125.03,
+        167.39,
+        168.46,
+        134.35
+      ],
+      "expanded_nodes": 1099,
+      "effective_cost": 1395.825,
+      "distance_m": 1066.6
+    },
+    {
+      "case": "park-to-campus",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 184.04,
+      "runs_ms": [
+        210.04,
+        162.75,
+        174.92,
+        191.53,
+        184.04
+      ],
+      "expanded_nodes": 6709,
+      "effective_cost": 1020.298,
+      "distance_m": 1020.3
+    },
+    {
+      "case": "park-to-campus",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 54.46,
+      "runs_ms": [
+        60.84,
+        46.62,
+        54.46,
+        76.88,
+        50.52
+      ],
+      "expanded_nodes": 472,
+      "effective_cost": 1020.298,
+      "distance_m": 1020.3
+    },
+    {
+      "case": "park-to-campus",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 202.7,
+      "runs_ms": [
+        213.56,
+        202.7,
+        159.33,
+        193.29,
+        293.01
+      ],
+      "expanded_nodes": 6175,
+      "effective_cost": 1543.249,
+      "distance_m": 1022.8
+    },
+    {
+      "case": "park-to-campus",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 200.84,
+      "runs_ms": [
+        200.84,
+        123.02,
+        127.94,
+        201.86,
+        267.4
+      ],
+      "expanded_nodes": 1360,
+      "effective_cost": 1543.249,
+      "distance_m": 1022.8
+    },
+    {
+      "case": "uptown-to-transit-hub",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 20.2,
+      "runs_ms": [
+        24.46,
+        14.5,
+        19.83,
+        22.32,
+        20.2
+      ],
+      "expanded_nodes": 328,
+      "effective_cost": 182.267,
+      "distance_m": 182.3
+    },
+    {
+      "case": "uptown-to-transit-hub",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 18.78,
+      "runs_ms": [
+        11.89,
+        13.99,
+        18.78,
+        20.77,
+        23.16
+      ],
+      "expanded_nodes": 61,
+      "effective_cost": 182.267,
+      "distance_m": 182.3
+    },
+    {
+      "case": "uptown-to-transit-hub",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 28.36,
+      "runs_ms": [
+        25.95,
+        26.47,
+        28.36,
+        37.19,
+        33.49
+      ],
+      "expanded_nodes": 531,
+      "effective_cost": 375.006,
+      "distance_m": 183.0
+    },
+    {
+      "case": "uptown-to-transit-hub",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 44.79,
+      "runs_ms": [
+        44.79,
+        25.67,
+        45.57,
+        47.99,
+        39.4
+      ],
+      "expanded_nodes": 157,
+      "effective_cost": 375.006,
+      "distance_m": 183.0
+    },
+    {
+      "case": "rec-complex-to-campus",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 231.3,
+      "runs_ms": [
+        359.79,
+        231.11,
+        236.25,
+        231.3,
+        197.81
+      ],
+      "expanded_nodes": 6892,
+      "effective_cost": 1290.322,
+      "distance_m": 1290.3
+    },
+    {
+      "case": "rec-complex-to-campus",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 138.09,
+      "runs_ms": [
+        147.23,
+        145.22,
+        138.09,
+        114.92,
+        108.35
+      ],
+      "expanded_nodes": 918,
+      "effective_cost": 1290.322,
+      "distance_m": 1290.3
+    },
+    {
+      "case": "rec-complex-to-campus",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 269.64,
+      "runs_ms": [
+        310.04,
+        265.05,
+        261.84,
+        269.64,
+        307.05
+      ],
+      "expanded_nodes": 6010,
+      "effective_cost": 2026.927,
+      "distance_m": 1359.4
+    },
+    {
+      "case": "rec-complex-to-campus",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 282.01,
+      "runs_ms": [
+        332.79,
+        276.46,
+        246.81,
+        303.75,
+        282.01
+      ],
+      "expanded_nodes": 1792,
+      "effective_cost": 2026.927,
+      "distance_m": 1359.4
+    },
+    {
+      "case": "northfield-to-conestoga",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 96.85,
+      "runs_ms": [
+        399.44,
+        90.51,
+        96.85,
+        102.02,
+        92.52
+      ],
+      "expanded_nodes": 4446,
+      "effective_cost": 1174.295,
+      "distance_m": 1174.3
+    },
+    {
+      "case": "northfield-to-conestoga",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 60.78,
+      "runs_ms": [
+        65.5,
+        65.9,
+        52.37,
+        60.78,
+        57.2
+      ],
+      "expanded_nodes": 683,
+      "effective_cost": 1174.295,
+      "distance_m": 1174.3
+    },
+    {
+      "case": "northfield-to-conestoga",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 142.15,
+      "runs_ms": [
+        201.25,
+        115.43,
+        142.15,
+        109.69,
+        168.39
+      ],
+      "expanded_nodes": 4154,
+      "effective_cost": 1953.675,
+      "distance_m": 1334.2
+    },
+    {
+      "case": "northfield-to-conestoga",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 133.1,
+      "runs_ms": [
+        136.93,
+        133.1,
+        130.41,
+        128.54,
+        141.35
+      ],
+      "expanded_nodes": 1395,
+      "effective_cost": 1953.675,
+      "distance_m": 1334.2
+    },
+    {
+      "case": "conestoga-to-rim-park",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": false,
+      "median_ms": null,
+      "runs_ms": [],
+      "expanded_nodes": null,
+      "effective_cost": null,
+      "distance_m": null
+    },
+    {
+      "case": "conestoga-to-rim-park",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": false,
+      "median_ms": null,
+      "runs_ms": [],
+      "expanded_nodes": null,
+      "effective_cost": null,
+      "distance_m": null
+    },
+    {
+      "case": "conestoga-to-rim-park",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": false,
+      "median_ms": null,
+      "runs_ms": [],
+      "expanded_nodes": null,
+      "effective_cost": null,
+      "distance_m": null
+    },
+    {
+      "case": "conestoga-to-rim-park",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": false,
+      "median_ms": null,
+      "runs_ms": [],
+      "expanded_nodes": null,
+      "effective_cost": null,
+      "distance_m": null
+    },
+    {
+      "case": "erb-westmount-to-uptown",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 541.84,
+      "runs_ms": [
+        932.21,
+        565.93,
+        444.4,
+        541.84,
+        393.46
+      ],
+      "expanded_nodes": 20117,
+      "effective_cost": 2439.831,
+      "distance_m": 2439.8
+    },
+    {
+      "case": "erb-westmount-to-uptown",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 182.11,
+      "runs_ms": [
+        210.75,
+        232.44,
+        182.11,
+        144.82,
+        153.22
+      ],
+      "expanded_nodes": 2344,
+      "effective_cost": 2439.831,
+      "distance_m": 2439.8
+    },
+    {
+      "case": "erb-westmount-to-uptown",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 559.13,
+      "runs_ms": [
+        1681.42,
+        339.27,
+        557.07,
+        654.49,
+        559.13
+      ],
+      "expanded_nodes": 15296,
+      "effective_cost": 3932.069,
+      "distance_m": 2494.3
+    },
+    {
+      "case": "erb-westmount-to-uptown",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 704.75,
+      "runs_ms": [
+        343.2,
+        704.75,
+        755.2,
+        709.72,
+        570.25
+      ],
+      "expanded_nodes": 4820,
+      "effective_cost": 3932.069,
+      "distance_m": 2494.3
+    },
+    {
+      "case": "uptown-to-belmont",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 644.93,
+      "runs_ms": [
+        2519.82,
+        656.03,
+        644.93,
+        594.97,
+        525.54
+      ],
+      "expanded_nodes": 31702,
+      "effective_cost": 2668.121,
+      "distance_m": 2668.1
+    },
+    {
+      "case": "uptown-to-belmont",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 275.02,
+      "runs_ms": [
+        352.92,
+        288.2,
+        275.02,
+        243.94,
+        249.85
+      ],
+      "expanded_nodes": 3889,
+      "effective_cost": 2668.121,
+      "distance_m": 2668.1
+    },
+    {
+      "case": "uptown-to-belmont",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 919.15,
+      "runs_ms": [
+        919.15,
+        809.44,
+        865.99,
+        1230.47,
+        964.36
+      ],
+      "expanded_nodes": 30179,
+      "effective_cost": 4041.878,
+      "distance_m": 2829.2
+    },
+    {
+      "case": "uptown-to-belmont",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 783.14,
+      "runs_ms": [
+        734.16,
+        783.14,
+        1071.93,
+        812.46,
+        749.29
+      ],
+      "expanded_nodes": 8334,
+      "effective_cost": 4041.878,
+      "distance_m": 2829.2
+    },
+    {
+      "case": "belmont-to-hospital",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 435.7,
+      "runs_ms": [
+        4260.34,
+        368.62,
+        409.87,
+        435.7,
+        470.75
+      ],
+      "expanded_nodes": 11705,
+      "effective_cost": 1902.041,
+      "distance_m": 1902.0
+    },
+    {
+      "case": "belmont-to-hospital",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 199.77,
+      "runs_ms": [
+        164.14,
+        199.77,
+        256.12,
+        281.53,
+        188.28
+      ],
+      "expanded_nodes": 1401,
+      "effective_cost": 1902.041,
+      "distance_m": 1902.0
+    },
+    {
+      "case": "belmont-to-hospital",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 589.63,
+      "runs_ms": [
+        2345.71,
+        611.59,
+        589.63,
+        457.1,
+        458.08
+      ],
+      "expanded_nodes": 14864,
+      "effective_cost": 3300.13,
+      "distance_m": 2018.9
+    },
+    {
+      "case": "belmont-to-hospital",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 638.3,
+      "runs_ms": [
+        966.27,
+        739.88,
+        638.3,
+        492.66,
+        550.15
+      ],
+      "expanded_nodes": 4523,
+      "effective_cost": 3300.13,
+      "distance_m": 2018.9
+    },
+    {
+      "case": "hospital-to-city-hall",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 264.19,
+      "runs_ms": [
+        873.29,
+        226.03,
+        264.7,
+        264.19,
+        197.28
+      ],
+      "expanded_nodes": 8031,
+      "effective_cost": 1563.968,
+      "distance_m": 1564.0
+    },
+    {
+      "case": "hospital-to-city-hall",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 109.97,
+      "runs_ms": [
+        219.03,
+        109.97,
+        130.23,
+        74.69,
+        103.44
+      ],
+      "expanded_nodes": 712,
+      "effective_cost": 1563.968,
+      "distance_m": 1564.0
+    },
+    {
+      "case": "hospital-to-city-hall",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 203.22,
+      "runs_ms": [
+        2008.04,
+        210.65,
+        192.87,
+        183.94,
+        203.22
+      ],
+      "expanded_nodes": 7190,
+      "effective_cost": 2313.463,
+      "distance_m": 1618.2
+    },
+    {
+      "case": "hospital-to-city-hall",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 225.68,
+      "runs_ms": [
+        225.68,
+        211.19,
+        197.39,
+        247.96,
+        292.49
+      ],
+      "expanded_nodes": 1886,
+      "effective_cost": 2313.463,
+      "distance_m": 1618.2
+    },
+    {
+      "case": "city-hall-to-victoria-park",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 201.92,
+      "runs_ms": [
+        568.97,
+        201.92,
+        214.27,
+        189.89,
+        126.16
+      ],
+      "expanded_nodes": 4341,
+      "effective_cost": 900.93,
+      "distance_m": 900.9
+    },
+    {
+      "case": "city-hall-to-victoria-park",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 168.65,
+      "runs_ms": [
+        178.12,
+        177.31,
+        168.65,
+        97.2,
+        81.82
+      ],
+      "expanded_nodes": 717,
+      "effective_cost": 900.93,
+      "distance_m": 900.9
+    },
+    {
+      "case": "city-hall-to-victoria-park",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 351.0,
+      "runs_ms": [
+        223.89,
+        153.04,
+        427.13,
+        365.62,
+        351.0
+      ],
+      "expanded_nodes": 5152,
+      "effective_cost": 1486.202,
+      "distance_m": 926.8
+    },
+    {
+      "case": "city-hall-to-victoria-park",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 499.92,
+      "runs_ms": [
+        174.25,
+        478.02,
+        685.85,
+        499.92,
+        517.79
+      ],
+      "expanded_nodes": 1765,
+      "effective_cost": 1486.202,
+      "distance_m": 926.8
+    },
+    {
+      "case": "city-hall-to-market",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 197.87,
+      "runs_ms": [
+        244.36,
+        200.08,
+        197.87,
+        177.5,
+        188.81
+      ],
+      "expanded_nodes": 4016,
+      "effective_cost": 865.382,
+      "distance_m": 865.4
+    },
+    {
+      "case": "city-hall-to-market",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 215.92,
+      "runs_ms": [
+        214.11,
+        205.38,
+        215.92,
+        220.89,
+        262.7
+      ],
+      "expanded_nodes": 708,
+      "effective_cost": 865.382,
+      "distance_m": 865.4
+    },
+    {
+      "case": "city-hall-to-market",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 218.61,
+      "runs_ms": [
+        205.29,
+        326.84,
+        220.15,
+        218.61,
+        202.31
+      ],
+      "expanded_nodes": 3782,
+      "effective_cost": 1243.095,
+      "distance_m": 898.7
+    },
+    {
+      "case": "city-hall-to-market",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 282.73,
+      "runs_ms": [
+        380.38,
+        280.64,
+        314.08,
+        274.44,
+        282.73
+      ],
+      "expanded_nodes": 1250,
+      "effective_cost": 1243.095,
+      "distance_m": 898.7
+    },
+    {
+      "case": "victoria-park-to-market",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 412.19,
+      "runs_ms": [
+        575.17,
+        443.03,
+        412.19,
+        355.01,
+        283.08
+      ],
+      "expanded_nodes": 7984,
+      "effective_cost": 1422.678,
+      "distance_m": 1422.7
+    },
+    {
+      "case": "victoria-park-to-market",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 451.88,
+      "runs_ms": [
+        568.08,
+        590.22,
+        451.88,
+        252.54,
+        247.53
+      ],
+      "expanded_nodes": 1648,
+      "effective_cost": 1422.678,
+      "distance_m": 1422.7
+    },
+    {
+      "case": "victoria-park-to-market",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 338.34,
+      "runs_ms": [
+        1051.01,
+        333.15,
+        260.92,
+        338.34,
+        493.96
+      ],
+      "expanded_nodes": 8110,
+      "effective_cost": 2287.341,
+      "distance_m": 1449.2
+    },
+    {
+      "case": "victoria-park-to-market",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 446.17,
+      "runs_ms": [
+        511.06,
+        446.17,
+        391.39,
+        558.05,
+        380.1
+      ],
+      "expanded_nodes": 2681,
+      "effective_cost": 2287.341,
+      "distance_m": 1449.2
+    },
+    {
+      "case": "boardwalk-to-uptown",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 1267.83,
+      "runs_ms": [
+        9727.67,
+        1156.06,
+        1267.83,
+        8346.3,
+        1233.59
+      ],
+      "expanded_nodes": 41740,
+      "effective_cost": 5491.777,
+      "distance_m": 5491.8
+    },
+    {
+      "case": "boardwalk-to-uptown",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 223.35,
+      "runs_ms": [
+        223.35,
+        297.81,
+        201.32,
+        178.37,
+        268.72
+      ],
+      "expanded_nodes": 1267,
+      "effective_cost": 5491.777,
+      "distance_m": 5491.8
+    },
+    {
+      "case": "boardwalk-to-uptown",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 1562.44,
+      "runs_ms": [
+        1339.63,
+        2381.07,
+        1562.44,
+        1546.65,
+        1660.13
+      ],
+      "expanded_nodes": 39291,
+      "effective_cost": 8723.347,
+      "distance_m": 5491.8
+    },
+    {
+      "case": "boardwalk-to-uptown",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 2512.11,
+      "runs_ms": [
+        2229.19,
+        3616.73,
+        2393.36,
+        2512.11,
+        3043.54
+      ],
+      "expanded_nodes": 15508,
+      "effective_cost": 8723.347,
+      "distance_m": 5491.8
+    },
+    {
+      "case": "laurel-creek-to-campus",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 809.97,
+      "runs_ms": [
+        929.88,
+        993.39,
+        661.93,
+        809.97,
+        566.08
+      ],
+      "expanded_nodes": 20217,
+      "effective_cost": 2370.649,
+      "distance_m": 2370.6
+    },
+    {
+      "case": "laurel-creek-to-campus",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 456.09,
+      "runs_ms": [
+        801.97,
+        498.42,
+        456.09,
+        346.81,
+        245.78
+      ],
+      "expanded_nodes": 2425,
+      "effective_cost": 2370.649,
+      "distance_m": 2370.6
+    },
+    {
+      "case": "laurel-creek-to-campus",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 735.96,
+      "runs_ms": [
+        697.66,
+        735.96,
+        610.5,
+        920.22,
+        793.89
+      ],
+      "expanded_nodes": 16275,
+      "effective_cost": 3298.416,
+      "distance_m": 2400.7
+    },
+    {
+      "case": "laurel-creek-to-campus",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 815.1,
+      "runs_ms": [
+        784.7,
+        698.29,
+        931.34,
+        815.1,
+        1131.89
+      ],
+      "expanded_nodes": 4406,
+      "effective_cost": 3298.416,
+      "distance_m": 2400.7
+    },
+    {
+      "case": "bridgeport-to-columbia",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 249.53,
+      "runs_ms": [
+        442.79,
+        205.36,
+        271.2,
+        223.98,
+        249.53
+      ],
+      "expanded_nodes": 4645,
+      "effective_cost": 1196.089,
+      "distance_m": 1196.1
+    },
+    {
+      "case": "bridgeport-to-columbia",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 121.77,
+      "runs_ms": [
+        136.44,
+        108.56,
+        121.77,
+        108.36,
+        169.88
+      ],
+      "expanded_nodes": 421,
+      "effective_cost": 1196.089,
+      "distance_m": 1196.1
+    },
+    {
+      "case": "bridgeport-to-columbia",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 268.88,
+      "runs_ms": [
+        333.75,
+        252.58,
+        226.62,
+        268.88,
+        316.14
+      ],
+      "expanded_nodes": 3824,
+      "effective_cost": 1728.102,
+      "distance_m": 1212.2
+    },
+    {
+      "case": "bridgeport-to-columbia",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 263.53,
+      "runs_ms": [
+        263.53,
+        205.25,
+        306.21,
+        538.56,
+        237.85
+      ],
+      "expanded_nodes": 891,
+      "effective_cost": 1728.102,
+      "distance_m": 1212.2
+    },
+    {
+      "case": "columbia-to-rec-complex",
+      "profile": "standard",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 645.04,
+      "runs_ms": [
+        1337.69,
+        645.04,
+        476.25,
+        521.33,
+        732.23
+      ],
+      "expanded_nodes": 13279,
+      "effective_cost": 1792.388,
+      "distance_m": 1792.4
+    },
+    {
+      "case": "columbia-to-rec-complex",
+      "profile": "standard",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 513.5,
+      "runs_ms": [
+        576.54,
+        366.1,
+        296.75,
+        544.55,
+        513.5
+      ],
+      "expanded_nodes": 1882,
+      "effective_cost": 1792.388,
+      "distance_m": 1792.4
+    },
+    {
+      "case": "columbia-to-rec-complex",
+      "profile": "wheelchair",
+      "algorithm": "dijkstra",
+      "routed": true,
+      "median_ms": 1052.75,
+      "runs_ms": [
+        1993.28,
+        1093.12,
+        1032.52,
+        902.66,
+        1052.75
+      ],
+      "expanded_nodes": 14873,
+      "effective_cost": 3109.107,
+      "distance_m": 1956.5
+    },
+    {
+      "case": "columbia-to-rec-complex",
+      "profile": "wheelchair",
+      "algorithm": "astar",
+      "routed": true,
+      "median_ms": 1199.28,
+      "runs_ms": [
+        1777.92,
+        1556.8,
+        1195.3,
+        1199.28,
+        1183.17
+      ],
+      "expanded_nodes": 5011,
+      "effective_cost": 3109.107,
+      "distance_m": 1956.5
+    }
+  ],
+  "comparisons": [
+    {
+      "case": "campus-library-to-student-life",
+      "profile": "wheelchair",
+      "median_ms": 106.67,
+      "runs_ms": [
+        426.63,
+        106.67,
+        105.93,
+        102.98,
+        111.17
+      ]
+    },
+    {
+      "case": "campus-to-laurier",
+      "profile": "wheelchair",
+      "median_ms": 1595.07,
+      "runs_ms": [
+        2467.77,
+        1583.03,
+        1898.27,
+        1595.07,
+        1212.86
+      ]
+    },
+    {
+      "case": "laurier-to-uptown",
+      "profile": "wheelchair",
+      "median_ms": 526.5,
+      "runs_ms": [
+        788.38,
+        679.87,
+        526.5,
+        441.23,
+        390.62
+      ]
+    },
+    {
+      "case": "uptown-to-waterloo-park",
+      "profile": "wheelchair",
+      "median_ms": 292.12,
+      "runs_ms": [
+        433.36,
+        292.12,
+        317.7,
+        282.01,
+        221.94
+      ]
+    },
+    {
+      "case": "park-to-campus",
+      "profile": "wheelchair",
+      "median_ms": 274.3,
+      "runs_ms": [
+        338.03,
+        273.42,
+        266.49,
+        274.3,
+        366.52
+      ]
+    },
+    {
+      "case": "uptown-to-transit-hub",
+      "profile": "wheelchair",
+      "median_ms": 51.43,
+      "runs_ms": [
+        62.77,
+        51.43,
+        45.16,
+        44.85,
+        53.65
+      ]
+    },
+    {
+      "case": "rec-complex-to-campus",
+      "profile": "wheelchair",
+      "median_ms": 587.71,
+      "runs_ms": [
+        918.76,
+        568.79,
+        425.77,
+        596.89,
+        587.71
+      ]
+    },
+    {
+      "case": "northfield-to-conestoga",
+      "profile": "wheelchair",
+      "median_ms": 421.52,
+      "runs_ms": [
+        1030.12,
+        421.52,
+        403.24,
+        424.42,
+        414.14
+      ]
+    },
+    {
+      "case": "conestoga-to-rim-park",
+      "profile": "wheelchair",
+      "median_ms": 23.12,
+      "runs_ms": [
+        541.98,
+        21.41,
+        17.65,
+        23.12,
+        27.35
+      ]
+    },
+    {
+      "case": "erb-westmount-to-uptown",
+      "profile": "wheelchair",
+      "median_ms": 1116.53,
+      "runs_ms": [
+        2764.9,
+        1116.53,
+        1218.13,
+        773.12,
+        766.18
+      ]
+    },
+    {
+      "case": "uptown-to-belmont",
+      "profile": "wheelchair",
+      "median_ms": 1497.19,
+      "runs_ms": [
+        5943.22,
+        1608.03,
+        1293.14,
+        1497.19,
+        1314.4
+      ]
+    },
+    {
+      "case": "belmont-to-hospital",
+      "profile": "wheelchair",
+      "median_ms": 1007.65,
+      "runs_ms": [
+        2263.68,
+        1007.65,
+        910.61,
+        871.75,
+        1029.68
+      ]
+    },
+    {
+      "case": "hospital-to-city-hall",
+      "profile": "wheelchair",
+      "median_ms": 423.39,
+      "runs_ms": [
+        1026.64,
+        430.4,
+        423.39,
+        396.55,
+        406.7
+      ]
+    },
+    {
+      "case": "city-hall-to-victoria-park",
+      "profile": "wheelchair",
+      "median_ms": 331.92,
+      "runs_ms": [
+        704.57,
+        296.24,
+        304.46,
+        331.92,
+        507.83
+      ]
+    },
+    {
+      "case": "city-hall-to-market",
+      "profile": "wheelchair",
+      "median_ms": 398.71,
+      "runs_ms": [
+        634.33,
+        398.71,
+        474.94,
+        343.96,
+        241.16
+      ]
+    },
+    {
+      "case": "victoria-park-to-market",
+      "profile": "wheelchair",
+      "median_ms": 494.2,
+      "runs_ms": [
+        623.57,
+        415.77,
+        454.68,
+        503.87,
+        494.2
+      ]
+    },
+    {
+      "case": "boardwalk-to-uptown",
+      "profile": "wheelchair",
+      "median_ms": 2281.29,
+      "runs_ms": [
+        2757.37,
+        1630.78,
+        2281.29,
+        2824.36,
+        2024.05
+      ]
+    },
+    {
+      "case": "laurel-creek-to-campus",
+      "profile": "wheelchair",
+      "median_ms": 697.63,
+      "runs_ms": [
+        1289.36,
+        697.63,
+        693.34,
+        662.99,
+        925.43
+      ]
+    },
+    {
+      "case": "bridgeport-to-columbia",
+      "profile": "wheelchair",
+      "median_ms": 205.39,
+      "runs_ms": [
+        416.06,
+        231.92,
+        199.25,
+        202.78,
+        205.39
+      ]
+    },
+    {
+      "case": "columbia-to-rec-complex",
+      "profile": "wheelchair",
+      "median_ms": 895.72,
+      "runs_ms": [
+        1209.01,
+        902.34,
+        665.8,
+        810.16,
+        895.72
+      ]
+    }
+  ]
+}

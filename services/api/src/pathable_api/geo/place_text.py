@@ -15,6 +15,17 @@ import re
 import unicodedata
 from collections.abc import Mapping
 
+#: Bumped whenever extraction or normalisation changes what an extract becomes,
+#: so a stored index says which rules produced it, and an index built under
+#: older rules can be told apart from a current one. Defined here rather than in
+#: the extract reader so the API can compare versions without importing it.
+#:
+#: 2 — places carry the short codes OpenStreetMap records for them (`ref`,
+#:     `short_name`: DC, SLC, E5) and the initials of their names, kept apart
+#:     because one is recorded and the other generated; "center" and "centre"
+#:     are folded together.
+GAZETTEER_VERSION = 2
+
 #: Written forms that mean the same thing. The rule is symmetry, not accuracy:
 #: "St Jacobs" becomes "street jacobs" on both sides, which is ugly and still
 #: matches.
@@ -39,7 +50,19 @@ ABBREVIATIONS: Mapping[str, str] = {
     "s": "south",
     "e": "east",
     "w": "west",
+    # Spellings, folded the same way: "Davis Center" is how half the people who
+    # type it spell the Davis Centre, and neither spelling is wrong.
+    "center": "centre",
+    "theater": "theatre",
 }
+
+#: Words an initialism leaves out: "Faculty of Mathematics" is FM, not FOM.
+_INITIALISM_SKIPS = frozenset({"of", "the", "and", "at", "on", "for", "in", "a", "an"})
+
+#: What a building code looks like: one to four letters, then at most two
+#: digits, at least two characters in all — DC, SLC, E5, EV3, PAC. A road
+#: number, a stop number or a lone letter does not.
+_CODE = re.compile(r"^(?=.{2,6}$)[a-z]{1,4}[0-9]{0,2}$")
 
 #: Removed rather than turned into a space, so "Children's" stays one word
 #: instead of becoming "children" and a stray "s" that would read as "south".
@@ -69,6 +92,43 @@ def query_terms(text: str) -> tuple[str, ...]:
         if term not in terms:
             terms.append(term)
     return tuple(terms[:MAX_QUERY_TERMS])
+
+
+def code_of(value: str | None) -> str | None:
+    """A recorded short code, normalised, or None when the value is not code-like.
+
+    Codes are compared as written, so abbreviation expansion is not applied:
+    the code "S" is not the word "south".
+    """
+    if value is None:
+        return None
+    compact = "".join(_NON_WORD.split(value.lower()))
+    return compact if _CODE.fullmatch(compact) else None
+
+
+def initialism(name: str) -> str | None:
+    """The initials of a name, generated rather than recorded: "Student Life Centre" -> slc.
+
+    A number stays whole, so "Engineering 5" gives e5. Small linking words are
+    skipped. A one-word name has no initialism, and neither does one whose
+    initials would be longer than a person would type.
+    """
+    words = [word for word in normalise_text(name).split() if word not in _INITIALISM_SKIPS]
+    if len(words) < 2:
+        return None
+    letters = "".join(word if word.isdigit() else word[0] for word in words)
+    return letters if 2 <= len(letters) <= 6 else None
+
+
+def compact_query(text: str) -> str:
+    """A query as a code or initialism is written: letters and digits, run together.
+
+    From the text as typed, without abbreviations expanded — "St" stays st
+    rather than becoming "street" — so "P.A.C." is pac and "E 5" is e5.
+    """
+    decomposed = unicodedata.normalize("NFKD", text)
+    plain = "".join(character for character in decomposed if not unicodedata.combining(character))
+    return "".join(_NON_WORD.split(plain.lower().translate(_APOSTROPHES)))
 
 
 # --- What a result is -------------------------------------------------------------

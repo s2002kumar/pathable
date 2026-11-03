@@ -14,6 +14,7 @@ from pathable_api.schemas.errors import ApiErrorResponse, ErrorDetail
 from pathable_api.schemas.health import (
     DependencyCheck,
     LivenessResponse,
+    PlaceIndexReport,
     ReadinessChecks,
     ReadinessResponse,
 )
@@ -74,6 +75,26 @@ class TestReadinessResponse:
                     "latency_ms": None,
                 },
             },
+            "place_index": None,
+        }
+
+    def test_a_place_index_report_says_both_versions(self) -> None:
+        report = PlaceIndexReport.model_validate(
+            {
+                "status": "stale",
+                "detail": "waterloo: version 1; this release reads version 2",
+                "stored_version": 1,
+                "expected_version": 2,
+            }
+        )
+        body = self.build().model_copy(update={"place_index": report}).model_dump(mode="json")
+
+        assert body["status"] == "ready"
+        assert body["place_index"] == {
+            "status": "stale",
+            "detail": "waterloo: version 1; this release reads version 2",
+            "stored_version": 1,
+            "expected_version": 2,
         }
 
     def test_failure_uses_the_identical_key_set(self) -> None:

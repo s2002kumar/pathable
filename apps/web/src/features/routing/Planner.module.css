@@ -1189,21 +1189,14 @@
 
 .figureMain {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 2px 8px;
   align-items: baseline;
-  white-space: nowrap;
 }
 
+/* Time is secondary to distance and to what the route avoids: an assumed pace
+   over a distance, shown smaller, beside the distance it came from. */
 .time {
-  color: var(--color-text);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
-  line-height: 26px;
-  letter-spacing: -0.4px;
-}
-
-.time[data-kind='unavailable'],
-.time[data-kind='not_comparable'] {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -1211,24 +1204,95 @@
   letter-spacing: 0;
 }
 
+.paceNote {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+}
+
 .card[data-variant='standard'] .time[data-kind='estimate'] {
+  color: var(--color-text-subtle);
+}
+
+.distance {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: 26px;
+  letter-spacing: -0.4px;
+}
+
+.card[data-variant='standard'] .distance {
   color: var(--color-text-muted);
   font-size: var(--text-md);
   line-height: 22px;
   letter-spacing: -0.24px;
 }
 
-.distance {
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
-  line-height: 20px;
-  letter-spacing: -0.07px;
+/* ---------------------------------------------------------------------------
+   The comparison in one line, above the two cards
+   --------------------------------------------------------------------------- */
+
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-md);
+  background: var(--color-brand-tint);
 }
 
-.card[data-variant='standard'] .distance {
-  color: var(--color-text-subtle);
+.summary[data-kind='same_path'] {
+  border-color: var(--color-border);
+  background: var(--color-surface-high);
+}
+
+.summaryHeadline {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: 20px;
+}
+
+.summaryBasis {
+  grid-column: 1;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
+  line-height: 14px;
+}
+
+.summaryBasis[data-basis='not_recorded'] {
+  color: var(--color-unknown);
+}
+
+.summaryButton {
+  display: inline-flex;
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.summaryButton[aria-pressed='true'] {
+  border-color: var(--color-stairs);
+  color: var(--color-stairs);
+}
+
+.summaryButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .delta {

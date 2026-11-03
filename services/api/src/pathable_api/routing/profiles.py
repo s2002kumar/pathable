@@ -42,7 +42,37 @@ DEFAULT_ACCESSIBLE_PROFILE_KEY: Final = "wheelchair"
 #:     a wheelchair preset silently deleted every segment steeper than 8%,
 #:     narrower than 0.90 m or rougher than paved, which stated a physical
 #:     impossibility the product had no basis for.
-ROUTING_POLICY_VERSION: Final = 2
+#: 3 — a crossing or a stairway is costed once, as the one thing it is, however
+#:     many segments the network splits it into, and a crossing's kerb is read
+#:     from every kerb recorded along it (`routing.units`).
+ROUTING_POLICY_VERSION: Final = 3
+
+
+@dataclass(frozen=True, slots=True)
+class PaceAssumption:
+    """An assumed travel pace, as a range. An assumption, never a measurement.
+
+    A time estimate is distance divided by pace and nothing more. Fixed delays
+    for crossings and steps used to be added — 20 s for every crossing, 2.5 s for
+    every step, the same for everybody — and they made a guess look like a
+    calculation: a signal can take a minute or nothing, and nobody walking
+    climbs a step in 2.5 s. A range says how rough the figure is, and a
+    traveller can see whose pace it assumes.
+    """
+
+    low_mps: float
+    high_mps: float
+    #: Whose pace, in words a time is shown with: "walking pace".
+    described_as: str
+
+    def seconds_for(self, distance_m: float) -> tuple[float, float]:
+        """Fastest and slowest time over a distance at this pace range."""
+        return distance_m / self.high_mps, distance_m / self.low_mps
+
+
+#: An ordinary pedestrian. 1.1 to 1.4 m/s spans a leisurely to a brisk adult walk;
+#: it is a planning assumption and nobody's measured pace.
+WALKING_PACE = PaceAssumption(1.1, 1.4, "walking pace")
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,11 +197,11 @@ class MobilityProfile:
     ignore_unknown_attributes: tuple[str, ...] = ()
 
     # --- Time estimates: never part of route selection --------------------
-    #: Assumed average pace, in metres per second, for duration estimates. A
-    #: rough planning figure, not a measurement of anybody — and carried on the
-    #: profile so a custom profile keeps its preset's pace instead of falling
-    #: back to a default that belongs to a different traveller.
-    walking_speed_mps: float = 1.0
+    #: Assumed pace range for duration estimates. A rough planning figure, not a
+    #: measurement of anybody — and carried on the profile so a custom profile
+    #: keeps its preset's pace instead of falling back to a default that belongs
+    #: to a different traveller.
+    pace: PaceAssumption = WALKING_PACE
     #: The preset a custom profile was derived from; None for a preset itself.
     base_profile_key: str | None = None
 
@@ -198,7 +228,8 @@ STANDARD = MobilityProfile(
     key=STANDARD_PROFILE_KEY,
     display_name="Standard walking",
     description="Shortest walking route, ignoring accessibility characteristics.",
-    walking_speed_mps=1.35,
+    # Standard walking is the default pace; stated here so it is plain.
+    pace=WALKING_PACE,
 )
 
 WHEELCHAIR = MobilityProfile(
@@ -237,7 +268,7 @@ WHEELCHAIR = MobilityProfile(
         KerbType.UNKNOWN: 90.0,
     },
     crossing_penalty_m=25.0,
-    walking_speed_mps=0.95,
+    pace=PaceAssumption(0.8, 1.2, "wheelchair pace"),
 )
 
 WALKER = MobilityProfile(
@@ -270,7 +301,7 @@ WALKER = MobilityProfile(
         KerbType.UNKNOWN: 60.0,
     },
     crossing_penalty_m=20.0,
-    walking_speed_mps=0.65,
+    pace=PaceAssumption(0.5, 0.8, "walker or rollator pace"),
 )
 
 CRUTCHES = MobilityProfile(
@@ -304,7 +335,7 @@ CRUTCHES = MobilityProfile(
         KerbType.UNKNOWN: 20.0,
     },
     crossing_penalty_m=15.0,
-    walking_speed_mps=0.75,
+    pace=PaceAssumption(0.6, 0.9, "crutches or cane pace"),
 )
 
 STROLLER = MobilityProfile(
@@ -334,7 +365,7 @@ STROLLER = MobilityProfile(
         KerbType.UNKNOWN: 40.0,
     },
     crossing_penalty_m=15.0,
-    walking_speed_mps=1.15,
+    pace=PaceAssumption(1.0, 1.3, "stroller pace"),
 )
 
 REDUCED_MOBILITY = MobilityProfile(
@@ -359,7 +390,7 @@ REDUCED_MOBILITY = MobilityProfile(
         KerbType.UNKNOWN: 12.0,
     },
     crossing_penalty_m=10.0,
-    walking_speed_mps=0.90,
+    pace=PaceAssumption(0.7, 1.1, "reduced-mobility pace"),
 )
 
 PROFILES: Final[Mapping[str, MobilityProfile]] = {

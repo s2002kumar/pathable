@@ -13,8 +13,11 @@ import pytest
 
 from pathable_api.geo.fixtures import NODES, build_synthetic_network
 from pathable_api.routing.ablation import build_variants, run_ablation, summarise_ablation
+from pathable_api.routing.benchmark import measure_corpus
 from pathable_api.routing.evaluation import (
+    CaseComparison,
     RouteCase,
+    RouteOutcome,
     as_records,
     compare_algorithms,
     evaluate,
@@ -211,3 +214,58 @@ class TestTheWaterlooCorpus:
             for longitude, latitude in (case.origin, case.destination):
                 assert min_lon <= longitude <= max_lon, case.key
                 assert min_lat <= latitude <= max_lat, case.key
+
+
+class TestEndsThatMoved:
+    def test_a_subject_route_that_ends_elsewhere_has_no_detour(self) -> None:
+        # Its length is a different journey's: a median detour over it would
+        # mix two kinds of number.
+
+        def outcome(profile: str, end: tuple[float, float]) -> RouteOutcome:
+            return RouteOutcome(
+                case="c",
+                profile=profile,
+                routed=True,
+                distance_m=100.0,
+                origin_point=(-80.53, 43.47),
+                destination_point=end,
+            )
+
+        same = CaseComparison(
+            "c", "", outcome("standard", (-80.53, 43.471)), outcome("x", (-80.53, 43.471))
+        )
+        moved = CaseComparison(
+            "c", "", outcome("standard", (-80.53, 43.471)), outcome("x", (-80.53, 43.4713))
+        )
+
+        assert same.ends_moved_m == {}
+        assert same.detour_m == 0.0
+        assert set(moved.ends_moved_m) == {"end"}
+        assert moved.ends_moved_m["end"] == pytest.approx(33.4, abs=0.5)
+        assert moved.detour_m is None
+        assert moved.detour_fraction is None
+        assert as_records([moved])[0]["ends_moved_m"] == moved.ends_moved_m
+
+
+class TestCorpusBenchmark:
+    def test_it_times_both_searches_and_counts_their_agreement(self, graph: RoutableGraph) -> None:
+        profiles = [get_profile("standard"), get_profile("wheelchair")]
+        report = measure_corpus(
+            graph,
+            [CROSS_THE_FIXTURE, NOWHERE],
+            profiles,
+            repeats=2,
+            compare_profile=get_profile("wheelchair"),
+        )
+
+        # Two journeys, two profiles: a journey neither search can route agrees
+        # too, and is not timed as if it were a route.
+        assert report["summary"]["cost_agreement"] == {"agree": 4, "disagree": 0}
+        routed = [run for run in report["runs"] if run["routed"]]
+        assert {run["case"] for run in routed} == {"a-to-d"}
+        assert all(len(run["runs_ms"]) == 2 for run in routed)
+        for profile in ("standard", "wheelchair"):
+            for algorithm in ("dijkstra", "astar"):
+                assert report["summary"]["by_profile"][profile][algorithm]["n"] == 1
+        assert [item["case"] for item in report["comparisons"]] == ["a-to-d", "off-network"]
+        assert "perf_counter" in report["method"]

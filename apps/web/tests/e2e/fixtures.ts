@@ -251,8 +251,16 @@ function comparisonFor(origin: Point, destination: Point) {
       distance_m: 483,
       effective_distance_m: 483,
       estimated_duration_seconds: 508,
-      // Both routes are timed at the traveller's pace, so the times compare.
-      pace_profile: 'wheelchair',
+      duration_estimate: {
+        low_seconds: 432,
+        high_seconds: 635,
+        pace_low_mps: 1.1,
+        pace_high_mps: 1.4,
+        pace_label: 'walking pace',
+        basis: 'assumed_pace',
+      },
+      // The shortest route is always timed at walking pace.
+      pace_profile: 'standard',
       coordinates: straight,
       segments: segments.standard,
       ...snapped,
@@ -283,6 +291,14 @@ function comparisonFor(origin: Point, destination: Point) {
       distance_m: 709,
       effective_distance_m: 980,
       estimated_duration_seconds: 746,
+      duration_estimate: {
+        low_seconds: 634,
+        high_seconds: 933,
+        pace_low_mps: 0.8,
+        pace_high_mps: 1.2,
+        pace_label: 'wheelchair pace',
+        basis: 'assumed_pace',
+      },
       pace_profile: 'wheelchair',
       coordinates: detour,
       segments: segments.accessible,
@@ -310,6 +326,7 @@ function comparisonFor(origin: Point, destination: Point) {
     },
     standard_failure: null,
     accessible_failure: null,
+    distance_comparable: true,
     extra_distance_m: 226,
     extra_distance_fraction: 0.468,
     explanations: [
@@ -350,8 +367,14 @@ function comparisonFor(origin: Point, destination: Point) {
       },
     ],
     dataset: DATASET,
-    routing_policy_version: 2,
+    routing_policy_version: 3,
     ml_predictions_used: false,
+    summary: {
+      kind: 'different_path',
+      headline: '+226 m to avoid 1 recorded stairway.',
+      primary_code: 'avoids_stairs',
+      primary_basis: 'recorded',
+    },
   };
 }
 
@@ -448,6 +471,45 @@ export async function stubRouteComparison(page: Page): Promise<void> {
   });
 }
 
+/**
+ * The comparison when the profile route had to start and end elsewhere: the
+ * longest headline the API writes, no length difference, and the caution that
+ * says how far each end moved.
+ */
+export async function stubMovedEndComparison(page: Page): Promise<void> {
+  await page.route(COMPARE_PATTERN, async (route) => {
+    const request = safeJson(route.request().postData());
+    const base = comparisonFor(
+      request?.origin ?? { longitude: -80.54, latitude: 43.47 },
+      request?.destination ?? { longitude: -80.534, latitude: 43.47 },
+    );
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...base,
+        distance_comparable: false,
+        extra_distance_m: null,
+        extra_distance_fraction: null,
+        summary: {
+          ...base.summary,
+          headline:
+            'Starts 12 m away and ends 52 m away: the map has no path for this profile to where the shortest route begins and ends.',
+        },
+        cautions: [
+          ...base.cautions,
+          {
+            code: 'profile_route_moved_endpoint',
+            summary:
+              'Your wheelchair route starts 12 m away and ends 52 m away from the shortest route’s: the path nearest the point you chose cannot be reached under this profile in the map data, so it uses the nearest one that can.',
+            evidence: { start_moved_m: 12, end_moved_m: 52 },
+          },
+        ],
+      }),
+    });
+  });
+}
+
 type Point = { longitude: number; latitude: number };
 
 function safeJson(text: string | null): { origin?: Point; destination?: Point } | null {
@@ -517,7 +579,15 @@ export const NO_ACCESSIBLE_ROUTE = {
     distance_m: 120,
     effective_distance_m: 120,
     estimated_duration_seconds: 126,
-    pace_profile: 'wheelchair',
+    duration_estimate: {
+      low_seconds: 107,
+      high_seconds: 158,
+      pace_low_mps: 1.1,
+      pace_high_mps: 1.4,
+      pace_label: 'walking pace',
+      basis: 'assumed_pace',
+    },
+    pace_profile: 'standard',
     coordinates: [
       [-80.54, 43.47],
       [-80.5385, 43.47],
@@ -563,6 +633,7 @@ export const NO_ACCESSIBLE_ROUTE = {
   accessible_route: null,
   standard_failure: null,
   accessible_failure: 'No route satisfies the wheelchair profile between these points.',
+  distance_comparable: false,
   extra_distance_m: null,
   extra_distance_fraction: null,
   explanations: [],
@@ -576,8 +647,14 @@ export const NO_ACCESSIBLE_ROUTE = {
     acquired_at: '2026-08-12T00:00:00+00:00',
     attribution: '© OpenStreetMap contributors, ODbL 1.0',
   },
-  routing_policy_version: 2,
+  routing_policy_version: 3,
   ml_predictions_used: false,
+  summary: {
+    kind: 'no_profile_route',
+    headline: 'No route found that meets the wheelchair profile.',
+    primary_code: null,
+    primary_basis: null,
+  },
 };
 
 /** Answer every comparison with no route for the profile, as above. */

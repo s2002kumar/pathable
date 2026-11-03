@@ -44,6 +44,14 @@ const CAMPUS_RESPONSE = {
   standard_route: {
     distance_m: 287.4,
     estimated_duration_seconds: 302.9,
+    duration_estimate: {
+      low_seconds: 257,
+      high_seconds: 379,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     gradient: {
       steepest_uphill: {
@@ -71,6 +79,14 @@ const CAMPUS_RESPONSE = {
   accessible_route: {
     distance_m: 354.1,
     estimated_duration_seconds: 372.7,
+    duration_estimate: {
+      low_seconds: 317,
+      high_seconds: 466,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     gradient: {
       steepest_uphill: {
@@ -134,6 +150,12 @@ const CAMPUS_RESPONSE = {
       'Contains information licensed under the Open Government Licence – Canada.',
   },
   ml_predictions_used: false,
+  summary: {
+    kind: 'different_path',
+    headline: '+226 m to avoid 1 recorded stairway.',
+    primary_code: 'avoids_stairs',
+    primary_basis: 'recorded',
+  },
 } as unknown as RouteCompareResponse;
 
 function jsonResponse(body: unknown) {

@@ -71,12 +71,15 @@ const round6 = (value) => Math.round(value * 1e6) / 1e6;
 // route
 // ---------------------------------------------------------------------------
 
-function segmentRecord(segment) {
+function segmentRecord(segment, stairway) {
   return {
     lengthM: segment.length_m,
     highway: segment.highway,
     steps: segment.steps,
     stepCount: segment.step_count,
+    // Which of the route's stairways this piece belongs to, by position in the
+    // response's units: one stairway can be drawn as several segments.
+    stairway,
     surface: segment.surface,
     smoothnessClass: segment.smoothness_class,
     widthM: segment.width_m,
@@ -99,14 +102,18 @@ function routeRecord(route) {
       );
     }
   });
+  // Stairways are the response's units, not segments: since routing policy 3
+  // one stairway drawn in two pieces is one stairway with one step count.
+  const stairways = (route.units ?? []).filter((unit) => unit.kind === 'stairway');
   const stairs = route.segments.filter((segment) => segment.steps === 'yes');
   return {
     distanceM: route.distance_m,
     stairways: route.stairway_count,
     recordedSteps: route.step_count,
-    stairwaysWithoutStepCount: stairs.filter((segment) => segment.step_count === null).length,
-    stairwaysRuledOut: route.segments.filter((segment) => segment.excluded_by_profile === 'steps')
-      .length,
+    stairwaysWithoutStepCount: stairways.filter((unit) => unit.step_count === null).length,
+    stairwaysRuledOut: stairways.filter((unit) =>
+      unit.segment_indexes.some((index) => route.segments[index].excluded_by_profile === 'steps'),
+    ).length,
     unknownDataFraction: route.unknown_data_fraction,
     gradientSource: route.gradient_source,
     crossingCount: route.crossing_count,
@@ -122,7 +129,14 @@ function routeRecord(route) {
     stairs: stairs.map((segment) =>
       segment.coordinates.map(([lng, lat]) => [round6(lng), round6(lat)]),
     ),
-    segments: route.segments.map(segmentRecord),
+    segments: route.segments.map((segment, index) =>
+      segmentRecord(
+        segment,
+        stairways.findIndex((unit) => unit.segment_indexes.includes(index)) >= 0
+          ? stairways.findIndex((unit) => unit.segment_indexes.includes(index))
+          : null,
+      ),
+    ),
   };
 }
 

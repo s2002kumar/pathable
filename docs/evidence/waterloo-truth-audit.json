@@ -1,0 +1,8386 @@
+{
+ "audit": {
+  "truth_audit_version": 1,
+  "corpus_version": 1,
+  "routing_policy_version": 3,
+  "profiles": [
+   "wheelchair",
+   "walker",
+   "crutches",
+   "stroller",
+   "reduced_mobility",
+   "custom"
+  ],
+  "custom_profile": "Based on wheelchair; cannot use steps, cannot manage uphill gradients above 5%."
+ },
+ "dataset": {
+  "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+  "region": "waterloo",
+  "checksum": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+  "source_type": "osm",
+  "source_name": "openstreetmap-pbf:waterloo",
+  "acquired_at": "2026-08-17T23:52:02.544930+00:00",
+  "source_timestamp": "2026-08-16T23:08:23+00:00",
+  "attribution": "© OpenStreetMap contributors, ODbL 1.0",
+  "elevation_attribution": "Contains information licensed under the Open Government Licence – Canada."
+ },
+ "run": {
+  "python": "3.13.2",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "git_commit": "43574b89375380cae317f7cfb16a442033b45acb",
+  "route_seconds": 149.2
+ },
+ "totals": {
+  "cases": 41,
+  "comparisons": 246,
+  "outcomes": {
+   "compared": 224,
+   "no_profile_route": 10,
+   "no_route": 12
+  },
+  "same_path": 60,
+  "different_path": 164,
+  "defects": {},
+  "flags": {
+   "large_detour": 1,
+   "snap_mismatch": 14
+  },
+  "standard_invariant_cases": 41
+ },
+ "cases": [
+  {
+   "case": "campus-dc-to-slc",
+   "description": "Davis Centre Library to the Student Life Centre",
+   "categories": [
+    "campus",
+    "stairs"
+   ],
+   "origin": [
+    -80.541997,
+    43.472428
+   ],
+   "destination": [
+    -80.545213,
+    43.471972
+   ],
+   "standard": {
+    "fingerprint": "09d4e076fdaac8f4c93b4d4f73ec2a161c7f9f949566db0613de9cde6421399f",
+    "distance_m": 401.3,
+    "stairways": 3,
+    "crossings": 0,
+    "duration_s": [
+     287,
+     365
+    ],
+    "snap_m": [
+     3.6,
+     1.2
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+102 m to avoid 3 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 503.8,
+     "extra_m": 102.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      420,
+      630
+     ],
+     "snap_m": [
+      3.6,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+102 m to avoid 3 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 503.8,
+     "extra_m": 102.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      630,
+      1008
+     ],
+     "snap_m": [
+      3.6,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+63 m to avoid 3 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 463.9,
+     "extra_m": 62.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      515,
+      773
+     ],
+     "snap_m": [
+      3.6,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+63 m to avoid 3 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 463.9,
+     "extra_m": 62.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      357,
+      464
+     ],
+     "snap_m": [
+      3.6,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+63 m to avoid 3 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 463.9,
+     "extra_m": 62.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      422,
+      663
+     ],
+     "snap_m": [
+      3.6,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+102 m to avoid 3 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 503.8,
+     "extra_m": 102.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      420,
+      630
+     ],
+     "snap_m": [
+      3.6,
+      1.2
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-mc-to-e5",
+   "description": "Mathematics & Computer to Engineering 5",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.543927,
+    43.472107
+   ],
+   "destination": [
+    -80.540083,
+    43.472922
+   ],
+   "standard": {
+    "fingerprint": "5817f74c22179b7bf7eaf62c0e5761515841cdc7478a5f25886ce052e51436da",
+    "distance_m": 393.7,
+    "stairways": 2,
+    "crossings": 1,
+    "duration_s": [
+     281,
+     358
+    ],
+    "snap_m": [
+     0.9,
+     18.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+169 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 562.5,
+     "extra_m": 168.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      469,
+      703
+     ],
+     "snap_m": [
+      0.9,
+      18.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+169 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 562.5,
+     "extra_m": 168.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      703,
+      1125
+     ],
+     "snap_m": [
+      0.9,
+      18.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+169 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 562.5,
+     "extra_m": 168.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      625,
+      938
+     ],
+     "snap_m": [
+      0.9,
+      18.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+169 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 562.5,
+     "extra_m": 168.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      433,
+      563
+     ],
+     "snap_m": [
+      0.9,
+      18.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+38 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_difference"
+     ],
+     "distance_m": 432.1,
+     "extra_m": 38.3,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      393,
+      617
+     ],
+     "snap_m": [
+      0.9,
+      18.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+169 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 562.5,
+     "extra_m": 168.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      469,
+      703
+     ],
+     "snap_m": [
+      0.9,
+      18.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-pac-to-dp",
+   "description": "Physical Activities Complex to Dana Porter Library",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.546114,
+    43.472406
+   ],
+   "destination": [
+    -80.542271,
+    43.469733
+   ],
+   "standard": {
+    "fingerprint": "967042f648c14a7c70785766b411d2f19d33652f748152534abc51745a026da5",
+    "distance_m": 585.3,
+    "stairways": 2,
+    "crossings": 1,
+    "duration_s": [
+     418,
+     532
+    ],
+    "snap_m": [
+     24.0,
+     24.5
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 52 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface_condition",
+      "distance_not_compared"
+     ],
+     "distance_m": 567.7,
+     "extra_m": -17.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      473,
+      710
+     ],
+     "snap_m": [
+      24.0,
+      28.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 52 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface_condition",
+      "distance_not_compared"
+     ],
+     "distance_m": 567.7,
+     "extra_m": -17.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      710,
+      1135
+     ],
+     "snap_m": [
+      24.0,
+      28.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+31 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 616.0,
+     "extra_m": 30.7,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      684,
+      1027
+     ],
+     "snap_m": [
+      24.0,
+      24.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 52 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface_condition",
+      "distance_not_compared"
+     ],
+     "distance_m": 567.7,
+     "extra_m": -17.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      437,
+      568
+     ],
+     "snap_m": [
+      24.0,
+      28.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+31 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 616.0,
+     "extra_m": 30.7,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      560,
+      880
+     ],
+     "snap_m": [
+      24.0,
+      24.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "No route satisfies the custom profile between these points."
+    }
+   ],
+   "findings": [
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "wheelchair",
+     "detail": "the destination snapped 52.2 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "walker",
+     "detail": "the destination snapped 52.2 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "stroller",
+     "detail": "the destination snapped 52.2 m from the shortest route's"
+    }
+   ]
+  },
+  {
+   "case": "campus-ev3-to-e3",
+   "description": "Environment 3 to Engineering 3",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.543251,
+    43.467993
+   ],
+   "destination": [
+    -80.540719,
+    43.471675
+   ],
+   "standard": {
+    "fingerprint": "d483ac85fa24299c87c2b4689c3afb9a5b98ff7f4ca8d3999a94cbd46ef0f606",
+    "distance_m": 629.6,
+    "stairways": 2,
+    "crossings": 0,
+    "duration_s": [
+     450,
+     572
+    ],
+    "snap_m": [
+     12.3,
+     10.7
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+54 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 683.1,
+     "extra_m": 53.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      569,
+      854
+     ],
+     "snap_m": [
+      12.3,
+      10.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+54 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 683.1,
+     "extra_m": 53.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      854,
+      1366
+     ],
+     "snap_m": [
+      12.3,
+      10.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+54 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 683.1,
+     "extra_m": 53.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      759,
+      1139
+     ],
+     "snap_m": [
+      12.3,
+      10.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+54 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 683.1,
+     "extra_m": 53.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      525,
+      683
+     ],
+     "snap_m": [
+      12.3,
+      10.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+54 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 683.1,
+     "extra_m": 53.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      621,
+      976
+     ],
+     "snap_m": [
+      12.3,
+      10.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+230 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 859.5,
+     "extra_m": 229.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      716,
+      1074
+     ],
+     "snap_m": [
+      12.3,
+      10.7
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-rev-to-mc",
+   "description": "Ron Eydt Village across Ring Road to Mathematics & Computer",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.552981,
+    43.469552
+   ],
+   "destination": [
+    -80.543927,
+    43.472107
+   ],
+   "standard": {
+    "fingerprint": "6fc49ee7f8f6a4d9801f6990c9b517609e52e5a6cd6d676f735ec9d47d3a2fa1",
+    "distance_m": 936.8,
+    "stairways": 1,
+    "crossings": 1,
+    "duration_s": [
+     669,
+     852
+    ],
+    "snap_m": [
+     21.2,
+     0.9
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+149 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1085.4,
+     "extra_m": 148.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      904,
+      1357
+     ],
+     "snap_m": [
+      21.2,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+149 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1085.4,
+     "extra_m": 148.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1357,
+      2171
+     ],
+     "snap_m": [
+      21.2,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+149 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1085.4,
+     "extra_m": 148.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1206,
+      1809
+     ],
+     "snap_m": [
+      21.2,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+149 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1085.4,
+     "extra_m": 148.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      835,
+      1085
+     ],
+     "snap_m": [
+      21.2,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+149 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1085.4,
+     "extra_m": 148.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      987,
+      1551
+     ],
+     "snap_m": [
+      21.2,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+149 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_gradient_above_limit",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1085.4,
+     "extra_m": 148.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      904,
+      1357
+     ],
+     "snap_m": [
+      21.2,
+      0.9
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-ml-to-sch",
+   "description": "Modern Languages to South Campus Hall",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.542737,
+    43.468984
+   ],
+   "destination": [
+    -80.540208,
+    43.469212
+   ],
+   "standard": {
+    "fingerprint": "d21d3f25c5263395ab937dccfb9a29f8648c40357ddaa1b50e69a3b0a03c8cc5",
+    "distance_m": 272.2,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     194,
+     247
+    ],
+    "snap_m": [
+     1.8,
+     2.4
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 272.2,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      227,
+      340
+     ],
+     "snap_m": [
+      1.8,
+      2.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 272.2,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      340,
+      544
+     ],
+     "snap_m": [
+      1.8,
+      2.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 272.2,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      302,
+      454
+     ],
+     "snap_m": [
+      1.8,
+      2.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 272.2,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      209,
+      272
+     ],
+     "snap_m": [
+      1.8,
+      2.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 272.2,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      247,
+      389
+     ],
+     "snap_m": [
+      1.8,
+      2.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+95 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 366.8,
+     "extra_m": 94.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      306,
+      458
+     ],
+     "snap_m": [
+      1.8,
+      2.4
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-stj-to-ren",
+   "description": "St. Jerome's to Renison, next door",
+   "categories": [
+    "campus",
+    "identical"
+   ],
+   "origin": [
+    -80.546234,
+    43.469428
+   ],
+   "destination": [
+    -80.547771,
+    43.468927
+   ],
+   "standard": {
+    "fingerprint": "6252137668e6ca8d29478097f460c00e6a82a93db5b4fd62b4309d85aaa3f91e",
+    "distance_m": 347.7,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     248,
+     316
+    ],
+    "snap_m": [
+     20.3,
+     19.8
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 347.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      290,
+      435
+     ],
+     "snap_m": [
+      20.3,
+      19.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 347.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      435,
+      695
+     ],
+     "snap_m": [
+      20.3,
+      19.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 347.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      386,
+      580
+     ],
+     "snap_m": [
+      20.3,
+      19.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 347.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      267,
+      348
+     ],
+     "snap_m": [
+      20.3,
+      19.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 347.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      316,
+      497
+     ],
+     "snap_m": [
+      20.3,
+      19.8
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 347.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      290,
+      435
+     ],
+     "snap_m": [
+      20.3,
+      19.8
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-cif-to-fed",
+   "description": "Columbia Icefield to Federation Hall",
+   "categories": [
+    "campus",
+    "missing_surface"
+   ],
+   "origin": [
+    -80.548455,
+    43.475448
+   ],
+   "destination": [
+    -80.548604,
+    43.473212
+   ],
+   "standard": {
+    "fingerprint": "e44bdf1e15b39b4e4b28d8736077e8644c1523e4f03383dff87919680ded2a90",
+    "distance_m": 515.8,
+    "stairways": 1,
+    "crossings": 2,
+    "duration_s": [
+     368,
+     469
+    ],
+    "snap_m": [
+     9.5,
+     26.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 43 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "distance_not_compared"
+     ],
+     "distance_m": 725.3,
+     "extra_m": 209.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      604,
+      907
+     ],
+     "snap_m": [
+      9.5,
+      26.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 43 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "distance_not_compared"
+     ],
+     "distance_m": 725.3,
+     "extra_m": 209.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      907,
+      1451
+     ],
+     "snap_m": [
+      9.5,
+      26.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+27 m to avoid 2 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 542.9,
+     "extra_m": 27.0,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      603,
+      905
+     ],
+     "snap_m": [
+      9.5,
+      26.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 43 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "distance_not_compared"
+     ],
+     "distance_m": 725.3,
+     "extra_m": 209.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      558,
+      725
+     ],
+     "snap_m": [
+      9.5,
+      26.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 515.8,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 1,
+     "crossings": 2,
+     "unknown_kerb_crossings": 2,
+     "duration_s": [
+      469,
+      737
+     ],
+     "snap_m": [
+      9.5,
+      26.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "No route satisfies the custom profile between these points."
+    }
+   ],
+   "findings": [
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "wheelchair",
+     "detail": "the destination snapped 43.4 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "walker",
+     "detail": "the destination snapped 43.4 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "stroller",
+     "detail": "the destination snapped 43.4 m from the shortest route's"
+    }
+   ]
+  },
+  {
+   "case": "campus-grebel-to-slc",
+   "description": "Conrad Grebel to the Student Life Centre",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.545385,
+    43.467074
+   ],
+   "destination": [
+    -80.545213,
+    43.471972
+   ],
+   "standard": {
+    "fingerprint": "7fb3012759ce08be0ff52aaddec83624f6e431128a1ba61958d52cabaeb3d5c8",
+    "distance_m": 623.6,
+    "stairways": 1,
+    "crossings": 1,
+    "duration_s": [
+     445,
+     567
+    ],
+    "snap_m": [
+     15.7,
+     1.2
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+40 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 663.5,
+     "extra_m": 39.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      553,
+      829
+     ],
+     "snap_m": [
+      15.7,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+40 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 663.5,
+     "extra_m": 39.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      829,
+      1327
+     ],
+     "snap_m": [
+      15.7,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+40 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 663.5,
+     "extra_m": 39.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      737,
+      1106
+     ],
+     "snap_m": [
+      15.7,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+40 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 663.5,
+     "extra_m": 39.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      510,
+      663
+     ],
+     "snap_m": [
+      15.7,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+29 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 652.2,
+     "extra_m": 28.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      593,
+      932
+     ],
+     "snap_m": [
+      15.7,
+      1.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+70 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 693.6,
+     "extra_m": 70.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      578,
+      867
+     ],
+     "snap_m": [
+      15.7,
+      1.2
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-station-to-dc",
+   "description": "University of Waterloo ION station to the Davis Centre",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.541278,
+    43.473362
+   ],
+   "destination": [
+    -80.541997,
+    43.472428
+   ],
+   "standard": {
+    "fingerprint": "a96f10e57a96a4689f959ca8053500914845062cb3928c46569e21071b778e3d",
+    "distance_m": 214.3,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     153,
+     195
+    ],
+    "snap_m": [
+     15.6,
+     3.6
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 37 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "same_distance"
+     ],
+     "distance_m": 228.7,
+     "extra_m": 14.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      191,
+      286
+     ],
+     "snap_m": [
+      15.6,
+      3.6
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 37 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "same_distance"
+     ],
+     "distance_m": 228.7,
+     "extra_m": 14.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      286,
+      457
+     ],
+     "snap_m": [
+      15.6,
+      3.6
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 37 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "same_distance"
+     ],
+     "distance_m": 228.7,
+     "extra_m": 14.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      254,
+      381
+     ],
+     "snap_m": [
+      15.6,
+      3.6
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 214.3,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      165,
+      214
+     ],
+     "snap_m": [
+      15.6,
+      3.6
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 214.3,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      195,
+      306
+     ],
+     "snap_m": [
+      15.6,
+      3.6
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 37 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "same_distance"
+     ],
+     "distance_m": 228.7,
+     "extra_m": 14.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      191,
+      286
+     ],
+     "snap_m": [
+      15.6,
+      3.6
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-phy-to-c2",
+   "description": "Physics to Chemistry 2",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.541544,
+    43.470848
+   ],
+   "destination": [
+    -80.542953,
+    43.472025
+   ],
+   "standard": {
+    "fingerprint": "1b03e783bb0a8eecf904fe4ad87a9ab451465d32cae9303cc343ab9ea393b07e",
+    "distance_m": 271.4,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     194,
+     247
+    ],
+    "snap_m": [
+     4.6,
+     21.5
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+59 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 330.2,
+     "extra_m": 58.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      275,
+      413
+     ],
+     "snap_m": [
+      4.6,
+      21.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+59 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 330.2,
+     "extra_m": 58.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      413,
+      660
+     ],
+     "snap_m": [
+      4.6,
+      21.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+59 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 330.2,
+     "extra_m": 58.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      367,
+      550
+     ],
+     "snap_m": [
+      4.6,
+      21.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 271.4,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      209,
+      271
+     ],
+     "snap_m": [
+      4.6,
+      21.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 271.4,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      247,
+      388
+     ],
+     "snap_m": [
+      4.6,
+      21.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+59 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 330.2,
+     "extra_m": 58.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      275,
+      413
+     ],
+     "snap_m": [
+      4.6,
+      21.5
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "campus-b1-to-cph",
+   "description": "Biology 1 to Carl A. Pollock Hall",
+   "categories": [
+    "campus"
+   ],
+   "origin": [
+    -80.54296,
+    43.470717
+   ],
+   "destination": [
+    -80.539282,
+    43.470966
+   ],
+   "standard": {
+    "fingerprint": "9d90aadb4c266b112ecfac9f92ffc2edcc988a504c8de3f63d9e8e6b902092e5",
+    "distance_m": 401.9,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     287,
+     365
+    ],
+    "snap_m": [
+     23.4,
+     9.7
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 401.9,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      335,
+      502
+     ],
+     "snap_m": [
+      23.4,
+      9.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 401.9,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      502,
+      804
+     ],
+     "snap_m": [
+      23.4,
+      9.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 401.9,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      447,
+      670
+     ],
+     "snap_m": [
+      23.4,
+      9.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 401.9,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      309,
+      402
+     ],
+     "snap_m": [
+      23.4,
+      9.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 401.9,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      365,
+      574
+     ],
+     "snap_m": [
+      23.4,
+      9.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "No route satisfies the custom profile between these points."
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-dc-to-laurier",
+   "description": "Davis Centre to Laurier's Fred Nichols Campus Centre",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.541997,
+    43.472428
+   ],
+   "destination": [
+    -80.528841,
+    43.473456
+   ],
+   "standard": {
+    "fingerprint": "726815796c85a0645e3d26d0adcec9e377d3c04302bc2478e78ab1c7bc057df9",
+    "distance_m": 1384.2,
+    "stairways": 1,
+    "crossings": 8,
+    "duration_s": [
+     989,
+     1258
+    ],
+    "snap_m": [
+     3.6,
+     27.7
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+338 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_intermediate_surface_condition",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1722.5,
+     "extra_m": 338.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1435,
+      2153
+     ],
+     "snap_m": [
+      3.6,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+338 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_intermediate_surface_condition",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1722.5,
+     "extra_m": 338.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      2153,
+      3445
+     ],
+     "snap_m": [
+      3.6,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+34 m to avoid 461 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface_condition",
+      "avoids_unrecorded_data",
+      "avoids_intermediate_surface_condition",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1417.7,
+     "extra_m": 33.5,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 4,
+     "unknown_kerb_crossings": 2,
+     "duration_s": [
+      1575,
+      2363
+     ],
+     "snap_m": [
+      3.6,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+311 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_intermediate_surface_condition",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1694.7,
+     "extra_m": 310.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1304,
+      1695
+     ],
+     "snap_m": [
+      3.6,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+31 m to avoid 469 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_surface_condition",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1415.2,
+     "extra_m": 31.0,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 4,
+     "unknown_kerb_crossings": 2,
+     "duration_s": [
+      1287,
+      2022
+     ],
+     "snap_m": [
+      3.6,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+338 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_intermediate_surface_condition",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1722.5,
+     "extra_m": 338.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1435,
+      2153
+     ],
+     "snap_m": [
+      3.6,
+      27.7
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-laurier-to-square",
+   "description": "Laurier down to Waterloo Public Square",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.528841,
+    43.473456
+   ],
+   "destination": [
+    -80.522803,
+    43.464186
+   ],
+   "standard": {
+    "fingerprint": "ff7fd7ce7e8a00bf20672356fac21d36ec3c5000568614f88106066eb132867c",
+    "distance_m": 1430.9,
+    "stairways": 1,
+    "crossings": 11,
+    "duration_s": [
+     1022,
+     1301
+    ],
+    "snap_m": [
+     27.7,
+     1.9
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+34 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1465.1,
+     "extra_m": 34.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1221,
+      1831
+     ],
+     "snap_m": [
+      27.7,
+      1.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+34 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1465.1,
+     "extra_m": 34.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1831,
+      2930
+     ],
+     "snap_m": [
+      27.7,
+      1.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+35 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 1466.2,
+     "extra_m": 35.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1629,
+      2444
+     ],
+     "snap_m": [
+      27.7,
+      1.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+34 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1464.7,
+     "extra_m": 33.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1127,
+      1465
+     ],
+     "snap_m": [
+      27.7,
+      1.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+34 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1464.7,
+     "extra_m": 33.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1332,
+      2092
+     ],
+     "snap_m": [
+      27.7,
+      1.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+34 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1465.1,
+     "extra_m": 34.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1221,
+      1831
+     ],
+     "snap_m": [
+      27.7,
+      1.9
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-square-to-park",
+   "description": "Waterloo Public Square to Waterloo Park",
+   "categories": [
+    "long",
+    "missing_surface"
+   ],
+   "origin": [
+    -80.522803,
+    43.464186
+   ],
+   "destination": [
+    -80.532477,
+    43.466896
+   ],
+   "standard": {
+    "fingerprint": "24ddf86dd0ed305c6395a532597af95c8a7bc585370ee71e5e95ed09411caf54",
+    "distance_m": 926.3,
+    "stairways": 0,
+    "crossings": 3,
+    "duration_s": [
+     662,
+     842
+    ],
+    "snap_m": [
+     1.9,
+     30.1
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+13 m for 1 fewer road crossing.",
+     "primary_code": "fewer_marked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 939.4,
+     "extra_m": 13.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      783,
+      1174
+     ],
+     "snap_m": [
+      1.9,
+      30.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+13 m for 1 fewer road crossing.",
+     "primary_code": "fewer_marked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 939.4,
+     "extra_m": 13.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1174,
+      1879
+     ],
+     "snap_m": [
+      1.9,
+      30.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 26 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "distance_difference"
+     ],
+     "distance_m": 941.7,
+     "extra_m": 15.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1046,
+      1569
+     ],
+     "snap_m": [
+      1.9,
+      30.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+13 m for 1 fewer road crossing.",
+     "primary_code": "fewer_marked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 939.4,
+     "extra_m": 13.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      723,
+      939
+     ],
+     "snap_m": [
+      1.9,
+      30.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+2 m to avoid path with missing records.",
+     "primary_code": "avoids_unrecorded_data",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 928.1,
+     "extra_m": 1.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      844,
+      1326
+     ],
+     "snap_m": [
+      1.9,
+      30.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+459 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_compacted_surface",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 1385.6,
+     "extra_m": 459.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1155,
+      1732
+     ],
+     "snap_m": [
+      1.9,
+      30.1
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-hospital-to-city-hall",
+   "description": "Grand River Hospital to Kitchener City Hall",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.511853,
+    43.457228
+   ],
+   "destination": [
+    -80.491076,
+    43.452026
+   ],
+   "standard": {
+    "fingerprint": "c1f7c4d657875ba0fbdacaeb6783e3e72a591dcb53a3a1e72199eb3ff2e318b8",
+    "distance_m": 1876.7,
+    "stairways": 0,
+    "crossings": 8,
+    "duration_s": [
+     1341,
+     1706
+    ],
+    "snap_m": [
+     8.1,
+     2.1
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 308 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 1890.8,
+     "extra_m": 14.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1576,
+      2363
+     ],
+     "snap_m": [
+      8.1,
+      2.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 308 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 1890.8,
+     "extra_m": 14.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2363,
+      3782
+     ],
+     "snap_m": [
+      8.1,
+      2.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+9 m to avoid 306 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 1886.1,
+     "extra_m": 9.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2096,
+      3143
+     ],
+     "snap_m": [
+      8.1,
+      2.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+4 m to avoid 298 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "same_distance"
+     ],
+     "distance_m": 1880.6,
+     "extra_m": 3.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1447,
+      1881
+     ],
+     "snap_m": [
+      8.1,
+      2.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+9 m to avoid 306 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 1886.1,
+     "extra_m": 9.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1715,
+      2694
+     ],
+     "snap_m": [
+      8.1,
+      2.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 308 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 1890.8,
+     "extra_m": 14.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1576,
+      2363
+     ],
+     "snap_m": [
+      8.1,
+      2.1
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-belmont-to-allen",
+   "description": "Belmont Village to Allen station",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.517957,
+    43.45334
+   ],
+   "destination": [
+    -80.519375,
+    43.460311
+   ],
+   "standard": {
+    "fingerprint": "4a7fefbd5b1c71bfa5d4801057bf0d5d23a1c817b19ea26baaef9411d8daf977",
+    "distance_m": 944.1,
+    "stairways": 0,
+    "crossings": 9,
+    "duration_s": [
+     674,
+     858
+    ],
+    "snap_m": [
+     4.3,
+     1.1
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m for 4 fewer unmarked road crossings.",
+     "primary_code": "fewer_unmarked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 958.2,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      798,
+      1198
+     ],
+     "snap_m": [
+      4.3,
+      1.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m for 4 fewer unmarked road crossings.",
+     "primary_code": "fewer_unmarked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 958.2,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1198,
+      1916
+     ],
+     "snap_m": [
+      4.3,
+      1.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m for 4 fewer unmarked road crossings.",
+     "primary_code": "fewer_unmarked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 958.2,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1065,
+      1597
+     ],
+     "snap_m": [
+      4.3,
+      1.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m for 4 fewer unmarked road crossings.",
+     "primary_code": "fewer_unmarked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 958.2,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      737,
+      958
+     ],
+     "snap_m": [
+      4.3,
+      1.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m for 4 fewer unmarked road crossings.",
+     "primary_code": "fewer_unmarked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 958.2,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      871,
+      1369
+     ],
+     "snap_m": [
+      4.3,
+      1.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m for 4 fewer unmarked road crossings.",
+     "primary_code": "fewer_unmarked_crossings",
+     "primary_basis": "recorded",
+     "explanations": [
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 958.2,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      798,
+      1198
+     ],
+     "snap_m": [
+      4.3,
+      1.1
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-northfield-to-icefield",
+   "description": "Northfield station to Columbia Icefield",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.544303,
+    43.497853
+   ],
+   "destination": [
+    -80.548455,
+    43.475448
+   ],
+   "standard": {
+    "fingerprint": "17a44b76db4f32ae6d4903bed72314939fddf7ab7a8314199f7e7b4cb929af5f",
+    "distance_m": 2925.0,
+    "stairways": 0,
+    "crossings": 6,
+    "duration_s": [
+     2089,
+     2659
+    ],
+    "snap_m": [
+     0.3,
+     9.5
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+12 m to avoid 4 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 2937.0,
+     "extra_m": 12.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2448,
+      3671
+     ],
+     "snap_m": [
+      0.3,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+20 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 2944.6,
+     "extra_m": 19.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      3681,
+      5889
+     ],
+     "snap_m": [
+      0.3,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+20 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 2944.6,
+     "extra_m": 19.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      3272,
+      4908
+     ],
+     "snap_m": [
+      0.3,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+18 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface_condition",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 2942.9,
+     "extra_m": 18.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      2264,
+      2943
+     ],
+     "snap_m": [
+      0.3,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+7 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface_condition",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 2931.6,
+     "extra_m": 6.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      2665,
+      4188
+     ],
+     "snap_m": [
+      0.3,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+137 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 3061.9,
+     "extra_m": 136.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2552,
+      3827
+     ],
+     "snap_m": [
+      0.3,
+      9.5
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-boardwalk-to-rev",
+   "description": "The Boardwalk to Ron Eydt Village, about four kilometres",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.560737,
+    43.43532
+   ],
+   "destination": [
+    -80.552981,
+    43.469552
+   ],
+   "standard": {
+    "fingerprint": "1b4e7e204a8531818d616ea32bca27a412a6fb808e4de6dcdda24d613d5506b8",
+    "distance_m": 5406.7,
+    "stairways": 0,
+    "crossings": 6,
+    "duration_s": [
+     3862,
+     4915
+    ],
+    "snap_m": [
+     0.8,
+     21.2
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+46 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 5452.5,
+     "extra_m": 45.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      4544,
+      6816
+     ],
+     "snap_m": [
+      0.8,
+      21.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+44 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 5451.2,
+     "extra_m": 44.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      6814,
+      10902
+     ],
+     "snap_m": [
+      0.8,
+      21.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+44 m to avoid 235 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 5451.2,
+     "extra_m": 44.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      6057,
+      9085
+     ],
+     "snap_m": [
+      0.8,
+      21.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+44 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 5451.2,
+     "extra_m": 44.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      4193,
+      5451
+     ],
+     "snap_m": [
+      0.8,
+      21.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+44 m to avoid 235 m of path with no recorded surface.",
+     "primary_code": "avoids_unrecorded_surface",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 5451.2,
+     "extra_m": 44.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      4956,
+      7787
+     ],
+     "snap_m": [
+      0.8,
+      21.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+46 m to avoid 3 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 5452.5,
+     "extra_m": 45.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      4544,
+      6816
+     ],
+     "snap_m": [
+      0.8,
+      21.2
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-square-to-hospital",
+   "description": "Waterloo Public Square to Grand River Hospital",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.522803,
+    43.464186
+   ],
+   "destination": [
+    -80.511853,
+    43.457228
+   ],
+   "standard": {
+    "fingerprint": "7b3b6944490182faefa8e57c04801622209f4ec7dbd13e8e2e935a3d7dce6d95",
+    "distance_m": 1272.5,
+    "stairways": 4,
+    "crossings": 6,
+    "duration_s": [
+     909,
+     1157
+    ],
+    "snap_m": [
+     1.9,
+     8.1
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 4 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 1287.1,
+     "extra_m": 14.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1073,
+      1609
+     ],
+     "snap_m": [
+      1.9,
+      8.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 4 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 1287.1,
+     "extra_m": 14.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1609,
+      2574
+     ],
+     "snap_m": [
+      1.9,
+      8.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 4 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 1287.1,
+     "extra_m": 14.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1430,
+      2145
+     ],
+     "snap_m": [
+      1.9,
+      8.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 4 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 1287.1,
+     "extra_m": 14.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      990,
+      1287
+     ],
+     "snap_m": [
+      1.9,
+      8.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 4 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_data",
+      "fewer_marked_crossings",
+      "fewer_unmarked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 1287.1,
+     "extra_m": 14.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1170,
+      1839
+     ],
+     "snap_m": [
+      1.9,
+      8.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 4 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "same_distance"
+     ],
+     "distance_m": 1287.1,
+     "extra_m": 14.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1073,
+      1609
+     ],
+     "snap_m": [
+      1.9,
+      8.1
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-victoria-park-to-market",
+   "description": "Victoria Park to Kitchener Market",
+   "categories": [
+    "long"
+   ],
+   "origin": [
+    -80.498274,
+    43.446418
+   ],
+   "destination": [
+    -80.483738,
+    43.446358
+   ],
+   "standard": {
+    "fingerprint": "bc83eae2960c377cc5c02a3b893ff772cf52a132107c9bfd8314b601f36b88b8",
+    "distance_m": 1512.6,
+    "stairways": 0,
+    "crossings": 7,
+    "duration_s": [
+     1080,
+     1375
+    ],
+    "snap_m": [
+     16.0,
+     1.7
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+38 m to avoid 2 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "distance_difference"
+     ],
+     "distance_m": 1551.0,
+     "extra_m": 38.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1293,
+      1939
+     ],
+     "snap_m": [
+      16.0,
+      1.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+38 m to avoid 2 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface_condition",
+      "distance_difference"
+     ],
+     "distance_m": 1551.0,
+     "extra_m": 38.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1939,
+      3102
+     ],
+     "snap_m": [
+      16.0,
+      1.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+20 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_kerbs",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1533.0,
+     "extra_m": 20.4,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 5,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1703,
+      2555
+     ],
+     "snap_m": [
+      16.0,
+      1.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+6 m to avoid 1 crossing without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "same_distance"
+     ],
+     "distance_m": 1518.5,
+     "extra_m": 5.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1168,
+      1519
+     ],
+     "snap_m": [
+      16.0,
+      1.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+13 m to avoid 398 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_kerbs",
+      "same_distance"
+     ],
+     "distance_m": 1525.5,
+     "extra_m": 12.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1387,
+      2179
+     ],
+     "snap_m": [
+      16.0,
+      1.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+68 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1580.2,
+     "extra_m": 67.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1317,
+      1975
+     ],
+     "snap_m": [
+      16.0,
+      1.7
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-downs-to-bechtel",
+   "description": "University Downs Park to Bechtel Park",
+   "categories": [
+    "long",
+    "missing_surface"
+   ],
+   "origin": [
+    -80.489416,
+    43.489872
+   ],
+   "destination": [
+    -80.492636,
+    43.481629
+   ],
+   "standard": {
+    "fingerprint": "a4a2e5d32cec64e80272ce5f93948134f28d1bc360d7f94fa262a14bb22b8ccf",
+    "distance_m": 1406.7,
+    "stairways": 0,
+    "crossings": 6,
+    "duration_s": [
+     1005,
+     1279
+    ],
+    "snap_m": [
+     7.2,
+     3.1
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+49 m to avoid 2 crossings with a kerb of unrecorded height.",
+     "primary_code": "avoids_unmeasured_kerbs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_unmeasured_kerbs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 1455.9,
+     "extra_m": 49.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1213,
+      1820
+     ],
+     "snap_m": [
+      7.2,
+      3.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+49 m to avoid 2 crossings with a kerb of unrecorded height.",
+     "primary_code": "avoids_unmeasured_kerbs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_unmeasured_kerbs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 1455.9,
+     "extra_m": 49.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1820,
+      2912
+     ],
+     "snap_m": [
+      7.2,
+      3.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+20 m to avoid 2 crossings with a kerb of unrecorded height.",
+     "primary_code": "avoids_unmeasured_kerbs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_unmeasured_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1427.0,
+     "extra_m": 20.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 3,
+     "duration_s": [
+      1586,
+      2378
+     ],
+     "snap_m": [
+      7.2,
+      3.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+50 m to avoid 2 crossings with a kerb of unrecorded height.",
+     "primary_code": "avoids_unmeasured_kerbs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_unmeasured_kerbs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_data",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 1457.2,
+     "extra_m": 50.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1121,
+      1457
+     ],
+     "snap_m": [
+      7.2,
+      3.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+20 m to avoid 2 crossings with a kerb of unrecorded height.",
+     "primary_code": "avoids_unmeasured_kerbs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_unmeasured_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1427.0,
+     "extra_m": 20.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 3,
+     "duration_s": [
+      1297,
+      2039
+     ],
+     "snap_m": [
+      7.2,
+      3.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+540 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_unmeasured_kerbs",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 1946.2,
+     "extra_m": 539.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      1622,
+      2433
+     ],
+     "snap_m": [
+      7.2,
+      3.1
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "long-park-to-laurier",
+   "description": "Waterloo Park to Laurier",
+   "categories": [
+    "long",
+    "missing_surface"
+   ],
+   "origin": [
+    -80.532477,
+    43.466896
+   ],
+   "destination": [
+    -80.528841,
+    43.473456
+   ],
+   "standard": {
+    "fingerprint": "33c3d9bf22984d4e3565dbbc56c05bf0c86e249d86ece13dfb536ccd685794b1",
+    "distance_m": 1147.5,
+    "stairways": 1,
+    "crossings": 2,
+    "duration_s": [
+     820,
+     1043
+    ],
+    "snap_m": [
+     30.1,
+     27.7
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+146 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_intermediate_surface_condition",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1293.3,
+     "extra_m": 145.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1078,
+      1617
+     ],
+     "snap_m": [
+      30.1,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+146 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_intermediate_surface_condition",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1293.3,
+     "extra_m": 145.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1617,
+      2587
+     ],
+     "snap_m": [
+      30.1,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+133 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_steep_gradient",
+      "avoids_rough_surface",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1280.5,
+     "extra_m": 133.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1423,
+      2134
+     ],
+     "snap_m": [
+      30.1,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+111 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_unrecorded_kerbs",
+      "avoids_rough_surface",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1258.5,
+     "extra_m": 111.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      968,
+      1259
+     ],
+     "snap_m": [
+      30.1,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+113 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1260.0,
+     "extra_m": 112.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1145,
+      1800
+     ],
+     "snap_m": [
+      30.1,
+      27.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+146 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "avoids_gradient_above_limit",
+      "avoids_rough_surface",
+      "avoids_unrecorded_kerbs",
+      "avoids_steep_gradient",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "avoids_intermediate_surface_condition",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 1293.3,
+     "extra_m": 145.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1078,
+      1617
+     ],
+     "snap_m": [
+      30.1,
+      27.7
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "stairs-700726011",
+   "description": "Campus stairway, 71 m, bottom to top",
+   "categories": [
+    "stairs",
+    "large_detour"
+   ],
+   "origin": [
+    -80.549346,
+    43.471175
+   ],
+   "destination": [
+    -80.549858,
+    43.471515
+   ],
+   "standard": {
+    "fingerprint": "eeb205ae1ae89cb40e72c025bd1729d5cb184e2101730f00b107ab431a80b301",
+    "distance_m": 71.4,
+    "stairways": 1,
+    "crossings": 0,
+    "duration_s": [
+     51,
+     65
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 11 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 353.2,
+     "extra_m": 281.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      294,
+      441
+     ],
+     "snap_m": [
+      0.1,
+      11.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 11 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 331.8,
+     "extra_m": 260.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      415,
+      664
+     ],
+     "snap_m": [
+      0.1,
+      11.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 71.4,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      79,
+      119
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 11 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 286.5,
+     "extra_m": 215.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      220,
+      286
+     ],
+     "snap_m": [
+      0.1,
+      11.2
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 71.4,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      65,
+      102
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 11 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 353.2,
+     "extra_m": 281.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      294,
+      441
+     ],
+     "snap_m": [
+      0.1,
+      11.2
+     ],
+     "failure": null
+    }
+   ],
+   "findings": [
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "wheelchair",
+     "detail": "the destination snapped 11.2 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "walker",
+     "detail": "the destination snapped 11.2 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "stroller",
+     "detail": "the destination snapped 11.2 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "custom",
+     "detail": "the destination snapped 11.2 m from the shortest route's"
+    }
+   ]
+  },
+  {
+   "case": "stairs-744204757",
+   "description": "Stairway by Kitchener City Hall, 6 recorded steps",
+   "categories": [
+    "stairs",
+    "large_detour"
+   ],
+   "origin": [
+    -80.492286,
+    43.452053
+   ],
+   "destination": [
+    -80.492607,
+    43.452188
+   ],
+   "standard": {
+    "fingerprint": "2df1ee252c3f0c2b75d85271b048220b78b222198624eb27394c7ccb97f8a2a3",
+    "distance_m": 30.1,
+    "stairways": 2,
+    "crossings": 0,
+    "duration_s": [
+     21,
+     27
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 10 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 54.5,
+     "extra_m": 24.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      45,
+      68
+     ],
+     "snap_m": [
+      0.0,
+      10.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 10 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 54.5,
+     "extra_m": 24.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      68,
+      109
+     ],
+     "snap_m": [
+      0.0,
+      10.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+9 m to avoid 1 recorded stairway.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "same_distance"
+     ],
+     "distance_m": 38.7,
+     "extra_m": 8.6,
+     "same_path": false,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      43,
+      64
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 10 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 54.5,
+     "extra_m": 24.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      42,
+      55
+     ],
+     "snap_m": [
+      0.0,
+      10.4
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 30.1,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 2,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      27,
+      43
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "Ends 10 m away: the map has no path for this profile to where the shortest route ends.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_not_compared"
+     ],
+     "distance_m": 54.5,
+     "extra_m": 24.5,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      45,
+      68
+     ],
+     "snap_m": [
+      0.0,
+      10.4
+     ],
+     "failure": null
+    }
+   ],
+   "findings": [
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "wheelchair",
+     "detail": "the destination snapped 10.5 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "walker",
+     "detail": "the destination snapped 10.5 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "stroller",
+     "detail": "the destination snapped 10.5 m from the shortest route's"
+    },
+    {
+     "check": "snap_mismatch",
+     "severity": "flag",
+     "profile": "custom",
+     "detail": "the destination snapped 10.5 m from the shortest route's"
+    }
+   ]
+  },
+  {
+   "case": "stairs-1536295321",
+   "description": "Stairway by Columbia Icefield, 29 m",
+   "categories": [
+    "stairs",
+    "large_detour"
+   ],
+   "origin": [
+    -80.545768,
+    43.475599
+   ],
+   "destination": [
+    -80.546097,
+    43.475488
+   ],
+   "standard": {
+    "fingerprint": "37985ecb813b0da94d07910ec88b4fa9723003fcbc48a0536e44688294c3a016",
+    "distance_m": 29.3,
+    "stairways": 1,
+    "crossings": 0,
+    "duration_s": [
+     21,
+     27
+    ],
+    "snap_m": [
+     0.0,
+     0.1
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the wheelchair profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that no step-free path joins, so the map data has no step-free route between them."
+    },
+    {
+     "profile": "walker",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the walker or rollator profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that no step-free path joins, so the map data has no step-free route between them."
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 29.3,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      33,
+      49
+     ],
+     "snap_m": [
+      0.0,
+      0.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the stroller or pram profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that no step-free path joins, so the map data has no step-free route between them."
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 29.3,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 1,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      27,
+      42
+     ],
+     "snap_m": [
+      0.0,
+      0.1
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that no step-free path joins, so the map data has no step-free route between them."
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "stairs-797093095",
+   "description": "Stairway in north-east Waterloo, 41 m",
+   "categories": [
+    "stairs",
+    "large_detour"
+   ],
+   "origin": [
+    -80.50879,
+    43.476875
+   ],
+   "destination": [
+    -80.508447,
+    43.4767
+   ],
+   "standard": {
+    "fingerprint": "a090d1e2b471536744321a1b8edc1d6d101fda0d06d73a10a4dc0f73249a8305",
+    "distance_m": 446.4,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     319,
+     406
+    ],
+    "snap_m": [
+     0.1,
+     12.9
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 1 crossing without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 461.7,
+     "extra_m": 15.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      385,
+      577
+     ],
+     "snap_m": [
+      0.1,
+      12.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 1 crossing without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 461.7,
+     "extra_m": 15.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      577,
+      923
+     ],
+     "snap_m": [
+      0.1,
+      12.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 1 crossing without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 461.7,
+     "extra_m": 15.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      513,
+      770
+     ],
+     "snap_m": [
+      0.1,
+      12.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+15 m to avoid 1 crossing without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 461.7,
+     "extra_m": 15.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      355,
+      462
+     ],
+     "snap_m": [
+      0.1,
+      12.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 446.4,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      406,
+      638
+     ],
+     "snap_m": [
+      0.1,
+      12.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "No route satisfies the custom profile between these points."
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "gradient-40585154-up",
+   "description": "Steep path in south Kitchener, one way",
+   "categories": [
+    "gradient"
+   ],
+   "origin": [
+    -80.531191,
+    43.438097
+   ],
+   "destination": [
+    -80.537267,
+    43.437598
+   ],
+   "standard": {
+    "fingerprint": "ba3059b5caee9716edb994f4413cc132bfdc392a3063a403adf194e522ea92d1",
+    "distance_m": 564.1,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     403,
+     513
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      665,
+      997
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      997,
+      1595
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      886,
+      1329
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      614,
+      798
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      725,
+      1140
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+3,255 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "distance_difference"
+     ],
+     "distance_m": 3818.9,
+     "extra_m": 3254.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 3,
+     "unknown_kerb_crossings": 2,
+     "duration_s": [
+      3182,
+      4774
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": [
+    {
+     "check": "large_detour",
+     "severity": "flag",
+     "profile": "custom",
+     "detail": "+3255 m (577%)"
+    }
+   ]
+  },
+  {
+   "case": "gradient-40585154-down",
+   "description": "The same steep path, the other way",
+   "categories": [
+    "gradient"
+   ],
+   "origin": [
+    -80.537267,
+    43.437598
+   ],
+   "destination": [
+    -80.531191,
+    43.438097
+   ],
+   "standard": {
+    "fingerprint": "4874d79d51ca39f8ae5bb4b6d9c6a0b32361d6b833b7ee5674c345c7ecd3e84f",
+    "distance_m": 564.1,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     403,
+     513
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      665,
+      997
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      997,
+      1595
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 564.1,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      627,
+      940
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+234 m for gentler gradients.",
+     "primary_code": "avoids_steep_gradient",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "distance_difference"
+     ],
+     "distance_m": 797.7,
+     "extra_m": 233.6,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      614,
+      798
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 564.1,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      513,
+      806
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "No route satisfies the custom profile between these points."
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "gradient-34149352",
+   "description": "Steep path in south-east Kitchener",
+   "categories": [
+    "gradient"
+   ],
+   "origin": [
+    -80.491571,
+    43.420131
+   ],
+   "destination": [
+    -80.493872,
+    43.42146
+   ],
+   "standard": {
+    "fingerprint": "2aeafea728ac4f31b2d120f1e45b43534239ba9f8985eea32bb13defe0e60ea8",
+    "distance_m": 312.5,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     223,
+     284
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 312.5,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      260,
+      391
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 312.5,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      391,
+      625
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 312.5,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      347,
+      521
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 312.5,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      240,
+      312
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 312.5,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      284,
+      446
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 312.5,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      260,
+      391
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "gradient-1369397887",
+   "description": "Steep path in west Waterloo",
+   "categories": [
+    "gradient"
+   ],
+   "origin": [
+    -80.587935,
+    43.456329
+   ],
+   "destination": [
+    -80.58533,
+    43.46091
+   ],
+   "standard": {
+    "fingerprint": "39059009bca0bfde24155412e8992c72b06fbdd5297b92a6bf51f829e9b7deba",
+    "distance_m": 591.1,
+    "stairways": 0,
+    "crossings": 0,
+    "duration_s": [
+     422,
+     537
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+188 m to avoid 544 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 778.8,
+     "extra_m": 187.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      649,
+      973
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+188 m to avoid 544 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 778.8,
+     "extra_m": 187.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      973,
+      1558
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+259 m to avoid 544 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 850.3,
+     "extra_m": 259.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      945,
+      1417
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+188 m to avoid 544 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 778.8,
+     "extra_m": 187.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      599,
+      779
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+259 m to avoid 544 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "distance_difference"
+     ],
+     "distance_m": 850.3,
+     "extra_m": 259.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      773,
+      1215
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_profile_route",
+     "summary_kind": "no_profile_route",
+     "headline": "No route found that meets the custom profile.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "No route satisfies the custom profile between these points."
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "crossing-648928668-two-kerbs",
+   "description": "Uptown crossing with both kerbs recorded",
+   "categories": [
+    "crossings"
+   ],
+   "origin": [
+    -80.524991,
+    43.46434
+   ],
+   "destination": [
+    -80.525191,
+    43.464224
+   ],
+   "standard": {
+    "fingerprint": "93f7794d7efe29880652fb6bc2e2b2152436d668ffbcbe9d72564333a6bddd12",
+    "distance_m": 20.7,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     15,
+     19
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 20.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      17,
+      26
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 20.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      26,
+      41
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 20.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      23,
+      34
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 20.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      16,
+      21
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 20.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      19,
+      30
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 20.7,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      17,
+      26
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "crossing-1105419114-no-kerbs",
+   "description": "Uptown crossing with no kerb recorded",
+   "categories": [
+    "crossings"
+   ],
+   "origin": [
+    -80.522704,
+    43.466072
+   ],
+   "destination": [
+    -80.522658,
+    43.465917
+   ],
+   "standard": {
+    "fingerprint": "8dc008d5f85931cd8d8f66795f493094c2dd39ac90b7f030d95c6f3514841cb2",
+    "distance_m": 17.6,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     13,
+     16
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 17.6,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      15,
+      22
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 17.6,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      22,
+      35
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 17.6,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      20,
+      29
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 17.6,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      14,
+      18
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 17.6,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      16,
+      25
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 17.6,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      15,
+      22
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "crossing-682330817-four-kerbs",
+   "description": "Uptown crossing in six pieces, four kerb records",
+   "categories": [
+    "crossings"
+   ],
+   "origin": [
+    -80.522905,
+    43.467551
+   ],
+   "destination": [
+    -80.523135,
+    43.46752
+   ],
+   "standard": {
+    "fingerprint": "3c7d250cd999f200b2d66bd30578a65ef4d5655b44102697b7c50dce1647d332",
+    "distance_m": 19.0,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     14,
+     17
+    ],
+    "snap_m": [
+     0.0,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 19.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      16,
+      24
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 19.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      24,
+      38
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 19.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      21,
+      32
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 19.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      15,
+      19
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 19.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      17,
+      27
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 19.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      16,
+      24
+     ],
+     "snap_m": [
+      0.0,
+      0.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "crossing-uptown-to-hub",
+   "description": "Uptown square to the transit hub, several crossings",
+   "categories": [
+    "crossings"
+   ],
+   "origin": [
+    -80.5222,
+    43.465
+   ],
+   "destination": [
+    -80.5228,
+    43.4664
+   ],
+   "standard": {
+    "fingerprint": "c8ab7cce0553e6701fb440e060a3542639cc2ff2c376265f7f284e1caaf44efd",
+    "distance_m": 182.3,
+    "stairways": 0,
+    "crossings": 4,
+    "duration_s": [
+     130,
+     166
+    ],
+    "snap_m": [
+     0.8,
+     0.7
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+1 m to avoid 12 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 183.0,
+     "extra_m": 0.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      152,
+      229
+     ],
+     "snap_m": [
+      0.8,
+      0.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+1 m to avoid 12 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 183.0,
+     "extra_m": 0.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      229,
+      366
+     ],
+     "snap_m": [
+      0.8,
+      0.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+1 m to avoid 12 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 183.0,
+     "extra_m": 0.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      203,
+      305
+     ],
+     "snap_m": [
+      0.8,
+      0.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+1 m to avoid 12 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 183.0,
+     "extra_m": 0.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      141,
+      183
+     ],
+     "snap_m": [
+      0.8,
+      0.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+1 m to avoid 12 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 183.0,
+     "extra_m": 0.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      166,
+      261
+     ],
+     "snap_m": [
+      0.8,
+      0.7
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+1 m to avoid 12 m of path with no recorded surface condition.",
+     "primary_code": "avoids_unrecorded_surface_condition",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 183.0,
+     "extra_m": 0.7,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 4,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      152,
+      229
+     ],
+     "snap_m": [
+      0.8,
+      0.7
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "foot-no-1204792959-ends",
+   "description": "End to end of a road where pedestrians are prohibited",
+   "categories": [
+    "foot_no"
+   ],
+   "origin": [
+    -80.566929,
+    43.482907
+   ],
+   "destination": [
+    -80.57227,
+    43.474894
+   ],
+   "standard": {
+    "fingerprint": "235d58566394f83d62d29067d26948f375865cecc031afceae1177325edf5a1d",
+    "distance_m": 1049.0,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     749,
+     954
+    ],
+    "snap_m": [
+     6.7,
+     0.0
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 1049.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      874,
+      1311
+     ],
+     "snap_m": [
+      6.7,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 1049.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1311,
+      2098
+     ],
+     "snap_m": [
+      6.7,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 1049.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1166,
+      1748
+     ],
+     "snap_m": [
+      6.7,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 1049.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      807,
+      1049
+     ],
+     "snap_m": [
+      6.7,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 1049.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      954,
+      1499
+     ],
+     "snap_m": [
+      6.7,
+      0.0
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 1049.0,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      874,
+      1311
+     ],
+     "snap_m": [
+      6.7,
+      0.0
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "foot-no-1204792959-on-it",
+   "description": "Starting on that road, to Columbia Icefield",
+   "categories": [
+    "foot_no",
+    "snapping"
+   ],
+   "origin": [
+    -80.570296,
+    43.479329
+   ],
+   "destination": [
+    -80.548455,
+    43.475448
+   ],
+   "standard": {
+    "fingerprint": "2223dc7dbf659d6cbb3a799389640dd22a2861db5dec28a8f4e57e71bc53d5aa",
+    "distance_m": 2672.5,
+    "stairways": 0,
+    "crossings": 1,
+    "duration_s": [
+     1909,
+     2430
+    ],
+    "snap_m": [
+     4.0,
+     9.5
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+68 m to avoid 530 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_compacted_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 2740.5,
+     "extra_m": 68.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2284,
+      3426
+     ],
+     "snap_m": [
+      4.0,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+68 m to avoid 530 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_compacted_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 2740.5,
+     "extra_m": 68.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      3426,
+      5481
+     ],
+     "snap_m": [
+      4.0,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+43 m to avoid 530 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_compacted_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 2715.3,
+     "extra_m": 42.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      3017,
+      4526
+     ],
+     "snap_m": [
+      4.0,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+83 m to avoid 530 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_compacted_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 2755.7,
+     "extra_m": 83.2,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 1,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2120,
+      2756
+     ],
+     "snap_m": [
+      4.0,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+43 m to avoid 530 m of recorded rough surface.",
+     "primary_code": "avoids_rough_surface",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_rough_surface",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "distance_difference"
+     ],
+     "distance_m": 2715.3,
+     "extra_m": 42.8,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 1,
+     "duration_s": [
+      2468,
+      3879
+     ],
+     "snap_m": [
+      4.0,
+      9.5
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+604 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_rough_surface",
+      "avoids_compacted_surface",
+      "fewer_marked_crossings",
+      "distance_difference"
+     ],
+     "distance_m": 3276.4,
+     "extra_m": 603.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 2,
+     "duration_s": [
+      2730,
+      4096
+     ],
+     "snap_m": [
+      4.0,
+      9.5
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "snap-mall-parking",
+   "description": "From the middle of Conestoga Mall's parking to Northfield",
+   "categories": [
+    "snapping"
+   ],
+   "origin": [
+    -80.5262,
+    43.4998
+   ],
+   "destination": [
+    -80.544303,
+    43.497853
+   ],
+   "standard": {
+    "fingerprint": "4af0ab21d73b790515e1bc0fa386d521ce69d2224e1fc2c119ff62755c3ffd80",
+    "distance_m": 1759.7,
+    "stairways": 0,
+    "crossings": 7,
+    "duration_s": [
+     1257,
+     1600
+    ],
+    "snap_m": [
+     2.1,
+     0.3
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+10 m to avoid 6 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 1770.0,
+     "extra_m": 10.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1475,
+      2212
+     ],
+     "snap_m": [
+      2.1,
+      0.3
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+10 m to avoid 6 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "fewer_marked_crossings",
+      "same_distance"
+     ],
+     "distance_m": 1770.0,
+     "extra_m": 10.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      2212,
+      3540
+     ],
+     "snap_m": [
+      2.1,
+      0.3
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 6 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 1773.7,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1971,
+      2956
+     ],
+     "snap_m": [
+      2.1,
+      0.3
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid 6 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 1773.7,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1364,
+      1774
+     ],
+     "snap_m": [
+      2.1,
+      0.3
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+10 m to avoid 6 crossings without a recorded kerb at both ends.",
+     "primary_code": "avoids_unrecorded_kerbs",
+     "primary_basis": "not_recorded",
+     "explanations": [
+      "avoids_unrecorded_kerbs",
+      "fewer_unmarked_crossings",
+      "avoids_steep_gradient",
+      "avoids_unrecorded_surface",
+      "avoids_unrecorded_surface_condition",
+      "avoids_unrecorded_data",
+      "same_distance"
+     ],
+     "distance_m": 1769.7,
+     "extra_m": 10.0,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1609,
+      2528
+     ],
+     "snap_m": [
+      2.1,
+      0.3
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+14 m to avoid climbs steeper than your 5% limit.",
+     "primary_code": "avoids_gradient_above_limit",
+     "primary_basis": "estimated",
+     "explanations": [
+      "avoids_gradient_above_limit",
+      "avoids_unrecorded_kerbs",
+      "avoids_unrecorded_surface",
+      "fewer_unmarked_crossings",
+      "avoids_unrecorded_data",
+      "avoids_unrecorded_surface_condition",
+      "same_distance"
+     ],
+     "distance_m": 1773.7,
+     "extra_m": 14.1,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 2,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      1478,
+      2217
+     ],
+     "snap_m": [
+      2.1,
+      0.3
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "snap-rim-park",
+   "description": "Conestoga Mall to RIM Park",
+   "categories": [
+    "snapping",
+    "long"
+   ],
+   "origin": [
+    -80.5262,
+    43.4998
+   ],
+   "destination": [
+    -80.479,
+    43.506
+   ],
+   "standard": {
+    "fingerprint": null,
+    "distance_m": null,
+    "stairways": null,
+    "crossings": null,
+    "duration_s": null,
+    "snap_m": null,
+    "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+    },
+    {
+     "profile": "walker",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+    },
+    {
+     "profile": "crutches",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+    },
+    {
+     "profile": "stroller",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "These two points are on parts of the mapped path network that do not connect, so the map data has no route between them for any traveller."
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "snap-inside-dc",
+   "description": "From the middle of the Davis Centre building to MC",
+   "categories": [
+    "snapping",
+    "campus"
+   ],
+   "origin": [
+    -80.542041,
+    43.472502
+   ],
+   "destination": [
+    -80.543927,
+    43.472107
+   ],
+   "standard": {
+    "fingerprint": "65d64bb411868b7f3eee7a9d8a0da6d0be366dd5e482eba2b0b680e0cfa29535",
+    "distance_m": 264.8,
+    "stairways": 2,
+    "crossings": 0,
+    "duration_s": [
+     189,
+     241
+    ],
+    "snap_m": [
+     0.6,
+     0.9
+    ],
+    "failure": null
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+136 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_difference"
+     ],
+     "distance_m": 400.7,
+     "extra_m": 135.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      334,
+      501
+     ],
+     "snap_m": [
+      0.6,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "walker",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+136 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_difference"
+     ],
+     "distance_m": 400.7,
+     "extra_m": 135.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      501,
+      801
+     ],
+     "snap_m": [
+      0.6,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "crutches",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+109 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_difference"
+     ],
+     "distance_m": 374.1,
+     "extra_m": 109.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      416,
+      623
+     ],
+     "snap_m": [
+      0.6,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "stroller",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+109 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_difference"
+     ],
+     "distance_m": 374.1,
+     "extra_m": 109.3,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      288,
+      374
+     ],
+     "snap_m": [
+      0.6,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "compared",
+     "summary_kind": "same_path",
+     "headline": "Same path as shortest route.",
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [
+      "same_distance"
+     ],
+     "distance_m": 264.8,
+     "extra_m": 0.0,
+     "same_path": true,
+     "stairways": 2,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      241,
+      378
+     ],
+     "snap_m": [
+      0.6,
+      0.9
+     ],
+     "failure": null
+    },
+    {
+     "profile": "custom",
+     "outcome": "compared",
+     "summary_kind": "different_path",
+     "headline": "+136 m to avoid 2 recorded stairways.",
+     "primary_code": "avoids_stairs",
+     "primary_basis": "recorded",
+     "explanations": [
+      "avoids_stairs",
+      "distance_difference"
+     ],
+     "distance_m": 400.7,
+     "extra_m": 135.9,
+     "same_path": false,
+     "stairways": 0,
+     "crossings": 0,
+     "unknown_kerb_crossings": 0,
+     "duration_s": [
+      334,
+      501
+     ],
+     "snap_m": [
+      0.6,
+      0.9
+     ],
+     "failure": null
+    }
+   ],
+   "findings": []
+  },
+  {
+   "case": "snap-open-field",
+   "description": "From open farmland at the region's north-west edge",
+   "categories": [
+    "snapping"
+   ],
+   "origin": [
+    -80.585,
+    43.51
+   ],
+   "destination": [
+    -80.544303,
+    43.497853
+   ],
+   "standard": {
+    "fingerprint": null,
+    "distance_m": null,
+    "stairways": null,
+    "crossings": null,
+    "duration_s": null,
+    "snap_m": null,
+    "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+   },
+   "profiles": [
+    {
+     "profile": "wheelchair",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+    },
+    {
+     "profile": "walker",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+    },
+    {
+     "profile": "crutches",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+    },
+    {
+     "profile": "stroller",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+    },
+    {
+     "profile": "reduced_mobility",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+    },
+    {
+     "profile": "custom",
+     "outcome": "no_route",
+     "summary_kind": null,
+     "headline": null,
+     "primary_code": null,
+     "primary_basis": null,
+     "explanations": [],
+     "distance_m": null,
+     "extra_m": null,
+     "same_path": null,
+     "stairways": null,
+     "crossings": null,
+     "unknown_kerb_crossings": null,
+     "duration_s": null,
+     "snap_m": null,
+     "failure": "The origin is more than 150 m from the nearest mapped path, which is further than PathAble will guess. Choose a point closer to a street or footpath."
+    }
+   ],
+   "findings": []
+  }
+ ]
+}

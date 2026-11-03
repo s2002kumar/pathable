@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pathable_api.geo.enums import KerbType, SmoothnessClass, SurfaceClass, TriState
+from pathable_api.geo.geometry import geodesic_distance_m
 from pathable_api.routing.cost import (
     MARKED_CROSSING_TYPES,
     BlockReason,
@@ -64,6 +65,11 @@ _MATERIAL_COST_M = 1.0
 #: complete; the list is a sample for tracing a statement back to the map.
 _CITED_SEGMENTS = 10
 
+#: Two routes whose ends are further apart than this did not start or end at
+#: the same point, and the comparison says so. Their lengths are then lengths of
+#: different journeys, and no difference between them is reported.
+MOVED_ENDPOINT_M = 5.0
+
 #: What a statement rests on:
 #:
 #: * ``recorded`` — attributes a mapper recorded in OpenStreetMap;
@@ -82,6 +88,27 @@ class Explanation:
     summary: str
     basis: EvidenceBasis
     evidence: dict[str, Any] = field(default_factory=dict)
+    #: Every segment of the shortest route the statement is about, by position,
+    #: that the chosen route does not use: what a map can point at. Complete,
+    #: unlike the sample of identities in `evidence["segments"]`.
+    shortest_route_segments: tuple[int, ...] = ()
+
+
+#: What a comparison came to, in one line a person reads first.
+SummaryKind = Literal["same_path", "different_path", "no_profile_route", "no_shortest_route"]
+
+
+@dataclass(frozen=True, slots=True)
+class DifferenceSummary:
+    """The comparison in one sentence, and the explanation it leads with."""
+
+    kind: SummaryKind
+    headline: str
+    #: The explanation the headline summarises: the first hard limit the
+    #: shortest route breaks, otherwise the penalty that differed most. None
+    #: when the routes are the same path, or one of them is missing.
+    primary_code: str | None = None
+    primary_basis: EvidenceBasis | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,19 +140,46 @@ class RouteComparison:
     #: is no standard route to compare.
     standard_exclusions: tuple[BlockReason | None, ...] = ()
 
+    summary: DifferenceSummary = field(
+        default_factory=lambda: DifferenceSummary("no_shortest_route", "")
+    )
+
+    @property
+    def same_path(self) -> bool:
+        """Whether both routes are the very same path. See `routes_share_path`."""
+        return routes_share_path(self.standard_route, self.accessible_route)
+
+    @property
+    def distance_comparable(self) -> bool:
+        """Whether the two lengths are lengths of the same journey.
+
+        Only when both routes exist and start and end at the same points. A
+        profile route that ends 25 m away walked to somewhere else, and "43 m
+        shorter" beside it compared a different journey's length.
+        """
+        if self.standard_route is None or self.accessible_route is None:
+            return False
+        return not moved_ends(self.standard_route, self.accessible_route)
+
     @property
     def extra_distance_m(self) -> float | None:
-        if self.standard_route is None or self.accessible_route is None:
+        """How much further the profile route is, when the two can be compared.
+
+        None when either route is missing or the ends moved: a figure that is
+        absent cannot be read as a detour.
+        """
+        if not self.distance_comparable:
             return None
+        assert self.standard_route is not None  # noqa: S101 - distance_comparable
+        assert self.accessible_route is not None  # noqa: S101 - distance_comparable
         return self.accessible_route.distance_m - self.standard_route.distance_m
 
     @property
     def extra_distance_fraction(self) -> float | None:
-        if self.standard_route is None or self.accessible_route is None:
+        extra = self.extra_distance_m
+        if extra is None or self.standard_route is None or self.standard_route.distance_m <= 0:
             return None
-        if self.standard_route.distance_m <= 0:
-            return None
-        return self.extra_distance_m / self.standard_route.distance_m  # type: ignore[operator]
+        return extra / self.standard_route.distance_m
 
     @property
     def routes_are_equivalent(self) -> bool:
@@ -165,22 +219,174 @@ def compare_routes(
         except RoutingError as error:
             accessible_failure = str(error)
 
+    # The shortest route is computed, and timed, for standard walking whichever
+    # profile it is shown beside: it is the baseline, and a baseline that moved
+    # with the selection would not be one. It used to be re-timed at the chosen
+    # profile's pace, so switching profile changed the shortest route's time.
     shortest: tuple[_Costed, ...] = ()
     if standard_route is not None and not profile.is_standard:
-        # Both routes are timed at the traveller's assumed pace, so the two
-        # estimates differ only because the routes do. See Route.with_pace_of.
-        standard_route = standard_route.with_pace_of(profile)
         shortest = _cost_under(standard_route, profile)
 
+    explanations = _explain(standard_route, accessible_route, profile)
     return RouteComparison(
         profile=profile,
         standard_route=standard_route,
         accessible_route=accessible_route,
         standard_failure=standard_failure,
         accessible_failure=accessible_failure,
-        explanations=_explain(standard_route, accessible_route, profile),
+        explanations=explanations,
         cautions=_cautions(standard_route, accessible_route, profile),
         standard_exclusions=tuple(item.cost.blocked_reason for item in shortest),
+        summary=summarise(standard_route, accessible_route, explanations, profile),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Whether two routes are the same path, and the comparison in one line
+# ---------------------------------------------------------------------------
+
+
+def routes_share_path(first: Route | None, second: Route | None) -> bool:
+    """True only when both routes travel the same segments in the same order
+    and draw the same line.
+
+    Never from distance: two routes can measure the same and be different
+    paths, and a distance threshold is a statement about numbers, not about
+    where somebody walks. The line is compared too, because two routes on the
+    same segments can still start and end at different points along them.
+    """
+    if first is None or second is None:
+        return False
+    return [segment.edge_identity for segment in first.segments] == [
+        segment.edge_identity for segment in second.segments
+    ] and first.coordinates == second.coordinates
+
+
+def _metres(value: float) -> str:
+    return f"{round(value):,} m"
+
+
+def _phrase(explanation: Explanation) -> str:
+    """The explanation as the reason clause of a one-line summary."""
+    evidence = explanation.evidence
+    code = explanation.code
+
+    def count_of(key: str, noun: str) -> str:
+        count = int(evidence.get(key, 0))
+        return f"{count} {_plural(count, noun)}"
+
+    if code == "avoids_stairs":
+        return f"to avoid {count_of('stairway_count', 'recorded stairway')}"
+    if code == "avoids_gradient_above_limit":
+        return f"to avoid climbs steeper than your {plain_number(evidence['limit_percent'])}% limit"
+    if code == "avoids_width_below_limit":
+        return f"to avoid paths narrower than the {plain_number(evidence['limit_m'])} m you need"
+    if code == "avoids_excluded_surface":
+        return "to avoid recorded unpaved surfaces you excluded"
+    kerbs = {
+        "avoids_raised_kerbs": "with a recorded raised kerb",
+        "avoids_rolled_kerbs": "with a recorded rolled kerb",
+        "avoids_unmeasured_kerbs": "with a kerb of unrecorded height",
+        "avoids_unrecorded_kerbs": "without a recorded kerb at both ends",
+    }
+    if code in kerbs:
+        return f"to avoid {count_of('crossing_count', 'crossing')} {kerbs[code]}"
+    if code in ("fewer_unmarked_crossings", "fewer_marked_crossings"):
+        fewer = int(evidence["shortest_route_count"]) - int(evidence["route_count"])
+        kind = "unmarked " if code == "fewer_unmarked_crossings" else ""
+        return f"for {fewer} fewer {kind}road {_plural(fewer, 'crossing')}"
+    lengths = {
+        "avoids_rough_surface": "of recorded rough surface",
+        "avoids_compacted_surface": "of recorded gravel or compacted surface",
+        "avoids_unrecorded_surface": "of path with no recorded surface",
+        "avoids_bad_surface_condition": "of path recorded in bad condition",
+        "avoids_intermediate_surface_condition": "of path recorded in intermediate condition",
+        "avoids_unrecorded_surface_condition": "of path with no recorded surface condition",
+    }
+    if code in lengths:
+        return f"to avoid {_metres(float(evidence['length_m']))} {lengths[code]}"
+    if code == "avoids_steep_gradient":
+        return "for gentler gradients"
+    if code == "avoids_narrow_paths":
+        return "to avoid recorded narrow stretches"
+    if code == "avoids_unrecorded_data":
+        return "to avoid path with missing records"
+    return "for this profile's preferences"
+
+
+def moved_ends(standard: Route, accessible: Route) -> dict[str, int]:
+    """How far the profile route starts and ends from the shortest route's, where it does.
+
+    Keyed "starts" and "ends", in whole metres; empty when both ends are within
+    `MOVED_ENDPOINT_M` of the shortest route's.
+    """
+    return {
+        verb: round(apart)
+        for verb, ours, theirs in (
+            ("starts", accessible.origin, standard.origin),
+            ("ends", accessible.destination, standard.destination),
+        )
+        if (apart := geodesic_distance_m(ours.point, theirs.point)) > MOVED_ENDPOINT_M
+    }
+
+
+def summarise(
+    standard: Route | None,
+    accessible: Route | None,
+    explanations: Sequence[Explanation],
+    profile: MobilityProfile,
+) -> DifferenceSummary:
+    """The comparison in one line: the same path, or how far and why.
+
+    The reason is the first explanation, which `_explain` orders with every hard
+    limit first and then the penalty that differed most. The headline never
+    states a reason the explanations do not, and it names the evidence the
+    reason rests on through `primary_basis`.
+    """
+    if accessible is None:
+        return DifferenceSummary(
+            "no_profile_route",
+            f"No route found that meets the {profile.display_name.lower()} profile.",
+        )
+    if standard is None:
+        return DifferenceSummary(
+            "no_shortest_route", "No shortest pedestrian route could be computed."
+        )
+    if routes_share_path(standard, accessible):
+        return DifferenceSummary("same_path", "Same path as shortest route.")
+
+    primary = next(
+        (item for item in explanations if item.basis != "profile_rule"),
+        None,
+    )
+    # Two routes that do not start and end at the same points are not one
+    # journey made two ways, so their lengths are not set against each other:
+    # where the profile route goes instead is the first thing to say.
+    moved = moved_ends(standard, accessible)
+
+    extra = accessible.distance_m - standard.distance_m
+    if moved:
+        where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
+        return DifferenceSummary(
+            "different_path",
+            f"{where.capitalize()}: the map has no path for this profile to where the "
+            f"shortest route {' and '.join('begins' if verb == 'starts' else 'ends' for verb in moved)}.",
+            primary_code=primary.code if primary is not None else None,
+            primary_basis=primary.basis if primary is not None else None,
+        )
+    if round(extra) > 0:
+        lead = f"+{_metres(extra)}"
+    elif round(extra) < 0:
+        lead = f"{_metres(-extra)} shorter"
+    else:
+        lead = "Same length, different path"
+    if primary is None:
+        return DifferenceSummary("different_path", f"{lead}, on a different path.")
+    return DifferenceSummary(
+        "different_path",
+        f"{lead} {_phrase(primary)}." if round(extra) > 0 else f"{lead}, {_phrase(primary)}.",
+        primary_code=primary.code,
+        primary_basis=primary.basis,
     )
 
 
@@ -195,6 +401,13 @@ class _Costed:
 
     segment: RouteSegment
     cost: EdgeCost
+    #: Position in the route's segments.
+    index: int
+
+    @property
+    def unit(self) -> str:
+        """The crossing or stairway this piece belongs to, or the piece itself."""
+        return self.segment.features.unit_ref or f"#{self.index}"
 
     def spent(self, code: CostCode) -> float:
         """Effective metres this segment cost under one constraint."""
@@ -212,8 +425,8 @@ def _cost_under(route: Route, profile: MobilityProfile) -> tuple[_Costed, ...]:
     same computation the search minimised — not a reconstruction of it.
     """
     return tuple(
-        _Costed(segment, evaluate_edge(segment.features, segment.length_m, profile))
-        for segment in route.segments
+        _Costed(segment, evaluate_edge(segment.features, segment.length_m, profile), index)
+        for index, segment in enumerate(route.segments)
     )
 
 
@@ -250,6 +463,29 @@ def _cited(items: Iterable[_Costed], used: set[str]) -> list[str]:
         if len(cited) == _CITED_SEGMENTS:
             break
     return cited
+
+
+def _positions(items: Iterable[_Costed], used: set[str]) -> tuple[int, ...]:
+    """Every position `_cited` samples from: complete, for pointing at on a map."""
+    return tuple(sorted({item.index for item in items if item.segment.edge_identity not in used}))
+
+
+def _units(items: Iterable[_Costed]) -> list[list[_Costed]]:
+    """Pieces grouped into the crossings or stairways they are, in route order.
+
+    A crossing split into three segments is one crossing; counting segments is
+    how "4 stairways" came to describe three on the Davis Centre journey.
+    """
+    grouped: dict[str, list[_Costed]] = {}
+    for item in items:
+        grouped.setdefault(item.unit, []).append(item)
+    return list(grouped.values())
+
+
+def _unit_steps(unit: Sequence[_Costed]) -> int | None:
+    """A stairway's recorded step count, once, or None when nobody recorded it."""
+    counts = [item.segment.step_count for item in unit if item.segment.step_count is not None]
+    return max(counts) if counts else None
 
 
 def _length(items: Iterable[_Costed]) -> float:
@@ -359,10 +595,11 @@ def _step_detail(counted: int, unrecorded: int) -> str:
 
 
 def _hard_stairs(items: list[_Costed], used: set[str]) -> Explanation:
-    segments = [item.segment for item in items]
-    counted = sum(segment.step_count for segment in segments if segment.step_count)
-    unrecorded = sum(1 for segment in segments if segment.step_count is None)
-    count = len(segments)
+    stairways = _units(items)
+    steps = [_unit_steps(stairway) for stairway in stairways]
+    counted = sum(count for count in steps if count)
+    unrecorded = sum(1 for count in steps if count is None)
+    count = len(stairways)
     return Explanation(
         code="avoids_stairs",
         summary=(
@@ -377,6 +614,7 @@ def _hard_stairs(items: list[_Costed], used: set[str]) -> Explanation:
             "stairways_without_step_count": unrecorded,
             "segments": _cited(items, used),
         },
+        shortest_route_segments=_positions(items, used),
     )
 
 
@@ -407,6 +645,7 @@ def _hard_gradient(items: list[_Costed], used: set[str], profile: MobilityProfil
             "steepest_source": steepest_source,
             "segments": _cited(items, used),
         },
+        shortest_route_segments=_positions(items, used),
     )
 
 
@@ -430,6 +669,7 @@ def _hard_width(items: list[_Costed], used: set[str], profile: MobilityProfile) 
             "narrowest_m": min(widths),
             "segments": _cited(items, used),
         },
+        shortest_route_segments=_positions(items, used),
     )
 
 
@@ -450,6 +690,7 @@ def _hard_surface(items: list[_Costed], used: set[str]) -> Explanation:
             "surfaces": values,
             "segments": _cited(items, used),
         },
+        shortest_route_segments=_positions(items, used),
     )
 
 
@@ -464,6 +705,7 @@ def _hard_other(reason: BlockReason, items: list[_Costed], used: set[str]) -> Ex
         ),
         basis="recorded",
         evidence={"hard_limit": True, "segment_count": count, "segments": _cited(items, used)},
+        shortest_route_segments=_positions(items, used),
     )
 
 
@@ -484,12 +726,16 @@ def _penalty_stairs(
     if difference <= _MATERIAL_COST_M:
         return []
 
-    theirs = _usable(shortest, stairway)
-    ours = _usable(chosen, stairway)
-    avoided = [item for item in theirs if item.segment.edge_identity not in used]
-    counted = sum(item.segment.step_count or 0 for item in avoided)
-    unrecorded = sum(1 for item in avoided if item.segment.step_count is None)
-    count = len(avoided)
+    theirs = _units(_usable(shortest, stairway))
+    ours = _units(_usable(chosen, stairway))
+    avoided_units = [
+        unit for unit in theirs if not all(item.segment.edge_identity in used for item in unit)
+    ]
+    avoided = [item for unit in avoided_units for item in unit]
+    steps = [_unit_steps(unit) for unit in avoided_units]
+    counted = sum(count for count in steps if count)
+    unrecorded = sum(1 for count in steps if count is None)
+    count = len(avoided_units)
     return [
         (
             difference,
@@ -512,6 +758,7 @@ def _penalty_stairs(
                     "cost_difference_effective_m": round(difference, 1),
                     "segments": _cited(avoided, used),
                 },
+                shortest_route_segments=_positions(avoided, used),
             ),
         )
     ]
@@ -531,7 +778,7 @@ _KERB_STATEMENTS: tuple[tuple[KerbType, str, str, EvidenceBasis], ...] = (
     (
         KerbType.UNKNOWN,
         "avoids_unrecorded_kerbs",
-        "where no kerb has been recorded, so nobody has confirmed it is dropped",
+        "without a recorded kerb at both ends, so nobody has confirmed both are dropped",
         "not_recorded",
     ),
 )
@@ -551,7 +798,9 @@ def _penalty_kerbs(
             continue
         theirs = _usable(shortest, at)
         ours = _usable(chosen, at)
-        fewer = len(theirs) - len(ours)
+        their_count = len(_units(theirs))
+        our_count = len(_units(ours))
+        fewer = their_count - our_count
         results.append(
             (
                 difference,
@@ -559,17 +808,18 @@ def _penalty_kerbs(
                     code=code,
                     summary=(
                         f"Avoids {fewer} {_plural(fewer, 'crossing')} {described} "
-                        f"({len(ours)} on this route, {len(theirs)} on the shortest route)."
+                        f"({our_count} on this route, {their_count} on the shortest route)."
                     ),
                     basis=basis,
                     evidence={
                         "hard_limit": False,
                         "crossing_count": fewer,
-                        "shortest_route_count": len(theirs),
-                        "route_count": len(ours),
+                        "shortest_route_count": their_count,
+                        "route_count": our_count,
                         "cost_difference_effective_m": round(difference, 1),
                         "segments": _cited(theirs, used),
                     },
+                    shortest_route_segments=_positions(theirs, used),
                 ),
             )
         )
@@ -600,23 +850,26 @@ def _penalty_crossings(
             continue
         theirs = _usable(shortest, where)
         ours = _usable(chosen, where)
+        their_count = len(_units(theirs))
+        our_count = len(_units(ours))
         results.append(
             (
                 difference,
                 Explanation(
                     code=code,
                     summary=(
-                        f"Has {_count_of(len(ours), f'{described} road crossing')}, against "
-                        f"{len(theirs)} on the shortest route."
+                        f"Has {_count_of(our_count, f'{described} road crossing')}, against "
+                        f"{their_count} on the shortest route."
                     ),
                     basis="recorded",
                     evidence={
                         "hard_limit": False,
-                        "shortest_route_count": len(theirs),
-                        "route_count": len(ours),
+                        "shortest_route_count": their_count,
+                        "route_count": our_count,
                         "cost_difference_effective_m": round(difference, 1),
                         "segments": _cited(theirs, used),
                     },
+                    shortest_route_segments=_positions(theirs, used),
                 ),
             )
         )
@@ -754,6 +1007,7 @@ def _length_statement(
                     "cost_difference_effective_m": round(difference, 1),
                     "segments": _cited(theirs, used),
                 },
+                shortest_route_segments=_positions(theirs, used),
             ),
         )
     ]
@@ -848,6 +1102,9 @@ def _penalty_gradient(
                         (item for item in shortest if item.spent(CostCode.INCLINE) > 0), used
                     ),
                 },
+                shortest_route_segments=_positions(
+                    (item for item in shortest if item.spent(CostCode.INCLINE) > 0), used
+                ),
             ),
         )
     ]
@@ -900,6 +1157,7 @@ def _penalty_width(
                     "cost_difference_effective_m": round(difference, 1),
                     "segments": _cited(theirs, used),
                 },
+                shortest_route_segments=_positions(theirs, used),
             ),
         )
     ]
@@ -962,6 +1220,9 @@ def _penalty_missing_data(
                         (item for item in shortest if item.spent(CostCode.UNCERTAINTY) > 0), used
                     ),
                 },
+                shortest_route_segments=_positions(
+                    (item for item in shortest if item.spent(CostCode.UNCERTAINTY) > 0), used
+                ),
             ),
         )
     ]
@@ -981,6 +1242,28 @@ _PENALTY_EXPLAINERS: tuple[
 
 
 def _explain_distance(standard: Route, accessible: Route) -> Explanation:
+    moved = moved_ends(standard, accessible)
+    if moved:
+        # Said instead of a difference, which would compare two journeys'
+        # lengths as if they were one journey's two ways.
+        where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
+        return Explanation(
+            code="distance_not_compared",
+            summary=(
+                f"This route {where} from the shortest route's, so the two lengths are of "
+                f"different journeys and are not compared."
+            ),
+            basis="profile_rule",
+            evidence={
+                "standard_distance_m": round(standard.distance_m),
+                "accessible_distance_m": round(accessible.distance_m),
+                **{
+                    f"{'start' if verb == 'starts' else 'end'}_moved_m": metres
+                    for verb, metres in moved.items()
+                },
+            },
+        )
+
     extra = accessible.distance_m - standard.distance_m
 
     if abs(extra) < _MATERIAL_DIFFERENCE_M:
@@ -1074,6 +1357,31 @@ def _cautions(
                         f"have no recorded kerb."
                     ),
                     evidence={"crossing_count": route.unknown_kerb_crossing_count},
+                )
+            )
+
+    # The profile route may start or end somewhere other than the shortest route
+    # does: the path nearest the point chosen can be one this traveller cannot
+    # reach (a terrace reachable only by stairs, a corridor behind a private
+    # door). Said in words, so a difference in where the routes begin is never
+    # read as a difference in the way between.
+    if standard is not None and accessible is not None:
+        moved = moved_ends(standard, accessible)
+        if moved:
+            where = " and ".join(f"{verb} {metres} m away" for verb, metres in moved.items())
+            cautions.append(
+                Caution(
+                    code="profile_route_moved_endpoint",
+                    summary=(
+                        f"Your {profile.display_name.lower()} route {where} from the shortest "
+                        f"route's: the path nearest the point you chose cannot be reached "
+                        f"under this profile in the map data, so it uses the nearest one "
+                        f"that can."
+                    ),
+                    evidence={
+                        f"{'start' if verb == 'starts' else 'end'}_moved_m": metres
+                        for verb, metres in moved.items()
+                    },
                 )
             )
 

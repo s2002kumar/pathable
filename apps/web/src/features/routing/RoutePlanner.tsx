@@ -6,7 +6,8 @@ import { shortRegionName } from '@/lib/region';
 import { EndpointField } from './EndpointField';
 import { MobileComparison } from './MobileComparison';
 import { PROFILE_OPTIONS, ProfileChooser } from './ProfileChooser';
-import { RouteCards } from './RouteCards';
+import { ComparisonSummary } from './ComparisonSummary';
+import { RouteCards, profileRouteName } from './RouteCards';
 import { UphillLimitControl, limitText } from './UphillLimitControl';
 import type { ProfilesState } from './mobility-profiles';
 import {
@@ -100,6 +101,9 @@ export type RoutePlannerProps = {
   readonly onShowLayout?: (layout: 'compare' | 'evidence') => void;
   /** From the no-route panel: go back to the controls, focused where asked. */
   readonly onEditJourney?: (target: 'profile' | 'destination') => void;
+  /** Whether the segments behind the comparison's one-line reason are drawn. */
+  readonly evidenceHighlighted?: boolean;
+  readonly onToggleEvidenceHighlight?: () => void;
   readonly fetchImpl?: typeof fetch;
 };
 
@@ -140,6 +144,10 @@ export function RoutePlanner(props: RoutePlannerProps) {
               onViewEvidence={props.onOpenEvidence ?? (() => {})}
               editorOpen={props.editorOpen ?? false}
               onEditorToggle={props.onEditorToggle ?? (() => {})}
+              evidenceHighlighted={props.evidenceHighlighted ?? false}
+              {...(props.onToggleEvidenceHighlight
+                ? { onToggleEvidenceHighlight: props.onToggleEvidenceHighlight }
+                : {})}
               editor={
                 <>
                   <CompareControls {...props} />
@@ -514,12 +522,21 @@ function ComparePanel(props: RoutePlannerProps) {
     <>
       <StatusRegion state={state} points={points} onRetry={onRetry}>
         {comparison === null ? null : comparison.standard_route && comparison.accessible_route ? (
-          <RouteCards
-            comparison={comparison}
-            profileName={profileName ?? comparison.profile_display_name}
-            selectedRoute={selectedRoute}
-            onSelectRoute={onSelectRoute}
-          />
+          <>
+            <ComparisonSummary
+              comparison={comparison}
+              highlighted={props.evidenceHighlighted ?? false}
+              {...(props.onToggleEvidenceHighlight
+                ? { onToggleHighlight: props.onToggleEvidenceHighlight }
+                : {})}
+            />
+            <RouteCards
+              comparison={comparison}
+              profileName={profileName ?? comparison.profile_display_name}
+              selectedRoute={selectedRoute}
+              onSelectRoute={onSelectRoute}
+            />
+          </>
         ) : (
           <SingleRouteNote comparison={comparison} profileName={profileName} />
         )}
@@ -654,9 +671,16 @@ function EvidencePanel({
   const isShortest = comparison !== null && route !== null && route === comparison.standard_route;
   const routeName = comparison
     ? isShortest
-      ? 'Shortest walking route'
-      : `${profileName ?? comparison.profile_display_name} route`
+      ? 'Shortest pedestrian route'
+      : profileRouteName(profileName ?? comparison.profile_display_name)
     : 'Route';
+  // Both routes and the same path: say so in so many words, before anything
+  // about gaps, so nobody wonders where the other line went.
+  const samePath = Boolean(
+    comparison?.standard_route &&
+      comparison.accessible_route &&
+      comparison.summary?.kind === 'same_path',
+  );
   const gaps = route ? hasEvidenceGaps(route) : false;
   const canCompare = Boolean(
     comparison?.standard_route &&
@@ -710,6 +734,7 @@ function EvidencePanel({
       </div>
 
       <StatusRegion state={state} points={points} onRetry={onRetry}>
+        {samePath && comparison ? <ComparisonSummary comparison={comparison} /> : null}
         {route ? (
           <div className={styles.gapBanner} data-complete={!gaps} data-testid="gap-banner">
             {/* The design's own two-tone warning glyph, used as drawn. */}
@@ -785,7 +810,7 @@ function requirementsOf(
   const standard = comparison.standard_route ?? null;
   if (standard === null) return [];
   return exclusionsOf(standard).map((exclusion: RouteExclusion) => {
-    const count = exclusion.segmentIndexes.length;
+    const count = exclusion.count;
     if (exclusion.reason === 'steps') {
       return {
         key: exclusion.reason,

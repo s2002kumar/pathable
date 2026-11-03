@@ -27,6 +27,14 @@ function route(overrides: Overrides = {}) {
     distance_m: 412,
     effective_distance_m: 690,
     estimated_duration_seconds: 471,
+    duration_estimate: {
+      low_seconds: 400,
+      high_seconds: 589,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     coordinates: [
       [-80.54, 43.47],
@@ -65,6 +73,14 @@ function comparison(overrides: Overrides = {}): RouteCompareResponse {
       profile_display_name: 'Standard walking',
       distance_m: 318,
       estimated_duration_seconds: 380,
+      duration_estimate: {
+        low_seconds: 323,
+        high_seconds: 475,
+        pace_low_mps: 1.1,
+        pace_high_mps: 1.4,
+        pace_label: 'walking pace',
+        basis: 'assumed_pace',
+      },
       stairway_count: 1,
       step_count: 12,
     }),
@@ -117,6 +133,12 @@ function comparison(overrides: Overrides = {}): RouteCompareResponse {
     },
     routing_policy_version: 2,
     ml_predictions_used: false,
+    summary: {
+      kind: 'different_path',
+      headline: '+226 m to avoid 1 recorded stairway.',
+      primary_code: 'avoids_stairs',
+      primary_basis: 'recorded',
+    },
     ...overrides,
   } as unknown as RouteCompareResponse;
 }
@@ -229,18 +251,21 @@ describe('where a gradient came from (D1)', () => {
   });
 });
 
-describe('comparable times (D5)', () => {
-  it('shows both times, and the pace they share, when they were estimated alike', () => {
+describe('each route timed at its own pace, never subtracted (Core v2)', () => {
+  it('shows each route’s range with the pace it assumes', () => {
     render(<RouteComparisonView comparison={comparison()} />);
 
-    expect(screen.getByTestId('difference-accessible-time')).toHaveTextContent('Est. 8 min');
-    expect(screen.getByTestId('difference-shortest-time')).toHaveTextContent('Est. 6 min');
-    expect(screen.getByTestId('difference-pace')).toHaveTextContent('same assumed wheelchair pace');
+    expect(screen.getByTestId('difference-accessible-time')).toHaveTextContent(
+      /^About \d+–\d+ min at an assumed wheelchair pace$/,
+    );
+    expect(screen.getByTestId('difference-pace')).toHaveTextContent(
+      'the two paces differ, so the times are not subtracted',
+    );
   });
 
-  it('withholds the shortest route’s time when it was estimated at another pace', () => {
-    // An older backend timed the shortest route at a standard walking pace,
-    // and the page put the two figures side by side as if they compared.
+  it('times the shortest route at walking pace, whatever the profile', () => {
+    // Regression: the shortest route was re-timed at the chosen profile's pace,
+    // so switching profile changed its time although it had not moved.
     render(
       <RouteComparisonView
         comparison={comparison({
@@ -248,15 +273,24 @@ describe('comparable times (D5)', () => {
             profile: 'standard',
             distance_m: 318,
             estimated_duration_seconds: 236,
+            duration_estimate: {
+              low_seconds: 201,
+              high_seconds: 295,
+              pace_low_mps: 1.1,
+              pace_high_mps: 1.4,
+              pace_label: 'walking pace',
+              basis: 'assumed_pace',
+            },
             pace_profile: 'standard',
           }),
         })}
       />,
     );
 
-    expect(screen.getByTestId('difference-accessible-time')).toHaveTextContent('Est. 8 min');
-    expect(screen.getByTestId('difference-shortest-time')).toHaveTextContent('Time not comparable');
-    expect(screen.queryByTestId('difference-pace')).not.toBeInTheDocument();
+    expect(screen.getByTestId('difference-shortest-time')).toHaveTextContent(
+      'About 3–5 min at walking pace',
+    );
+    expect(screen.getByTestId('difference-pace')).toHaveTextContent('walking pace (1.1–1.4 m/s)');
   });
 
   it('refuses a response that does not say whose pace its times use', async () => {
@@ -275,19 +309,80 @@ describe('comparable times (D5)', () => {
   });
 });
 
-describe('a route the profile cannot use has no time (PA-UX-03B)', () => {
-  it('shows “Time unavailable for this profile” instead of a time, and says why', () => {
+describe('routes that end in different places are not set against each other (Core v2)', () => {
+  const moved = (evidence: Record<string, number>, extra: number) =>
+    comparison({
+      extra_distance_m: extra,
+      extra_distance_fraction: extra / 412,
+      cautions: [
+        {
+          code: 'profile_route_moved_endpoint',
+          summary: 'Your wheelchair route ends 25 m away from the shortest route’s.',
+          evidence,
+        },
+      ],
+    });
+
+  it('says where the profile route ends instead of how much shorter it is', () => {
+    // Regression: Physical Activities Complex to the Dana Porter Library,
+    // walker. The summary said "Ends 25 m away" and the card "43 m shorter".
+    render(<RouteComparisonView comparison={moved({ end_moved_m: 25 }, -43)} />);
+
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent('Ends 25 m away');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'route ends 25 m away from the shortest walking route’s',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Their lengths are not compared.');
+    expect(document.body).not.toHaveTextContent(/43 m shorter/);
+  });
+
+  it('shows where it ends when the API sends no difference, as it does', () => {
+    // The API sends no figure for routes that end in different places:
+    // distance_comparable is false and extra_distance_m is null.
+    render(
+      <RouteComparisonView
+        comparison={comparison({
+          distance_comparable: false,
+          extra_distance_m: null,
+          extra_distance_fraction: null,
+          cautions: [
+            {
+              code: 'profile_route_moved_endpoint',
+              summary: 'Your wheelchair route ends 25 m away from the shortest route’s.',
+              evidence: { end_moved_m: 25 },
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent('Ends 25 m away');
+    expect(screen.queryByText(/(distance|difference) not reported/i)).toBeNull();
+  });
+
+  it('names both ends when both moved, as the API words it', () => {
+    render(<RouteComparisonView comparison={moved({ start_moved_m: 12, end_moved_m: 25 }, 30)} />);
+
+    expect(screen.getByTestId('difference-extra')).toHaveTextContent(
+      'Starts 12 m away and ends 25 m away',
+    );
+    expect(document.body).not.toHaveTextContent(/\+30 m longer/);
+  });
+});
+
+describe('a walking time beside a barrier says whose time it is', () => {
+  it('labels the shortest route’s time as walking pace, beside what rules it out', () => {
     render(<RouteComparisonView comparison={fixtureComparison()} />);
 
     const shortest = screen.getByTestId('difference-shortest');
     const time = screen.getByTestId('difference-shortest-time');
-    expect(time).toHaveTextContent('Time unavailable for this profile');
-    expect(time).not.toHaveTextContent(/\d+\s*min/);
+    expect(time).toHaveTextContent(/^About \d+(–\d+)? min at walking pace$/);
     expect(within(shortest).getByTestId('route-blocked')).toHaveTextContent(
       'Ruled out: 1 stairway',
     );
-    // The profile's own route keeps its estimate.
-    expect(screen.getByTestId('difference-accessible-time')).toHaveTextContent(/^Est\. \d+ min$/);
+    expect(screen.getByTestId('difference-accessible-time')).toHaveTextContent(
+      'at an assumed wheelchair pace',
+    );
   });
 
   it('keeps the time when the stairway is only a cost, as for crutches', () => {
@@ -303,12 +398,12 @@ describe('a route the profile cannot use has no time (PA-UX-03B)', () => {
     });
     render(<RouteComparisonView comparison={priced} />);
 
-    expect(screen.getByTestId('difference-shortest-time')).toHaveTextContent(/^Est\. \d+ min$/);
+    expect(screen.getByTestId('difference-shortest-time')).toHaveTextContent('at walking pace');
     expect(screen.getByTestId('difference-shortest')).toHaveTextContent('1 stairway');
     expect(screen.queryByTestId('route-blocked')).not.toBeInTheDocument();
   });
 
-  it('withholds the time from the shortest route shown alone when no route fits', () => {
+  it('times the shortest route shown alone at walking pace when no route fits', () => {
     render(
       <RouteComparisonView
         comparison={fixtureComparison({
@@ -320,9 +415,7 @@ describe('a route the profile cannot use has no time (PA-UX-03B)', () => {
       />,
     );
 
-    expect(screen.getByTestId('route-card-standard-time')).toHaveTextContent(
-      'Time unavailable for this profile',
-    );
+    expect(screen.getByTestId('route-card-standard-time')).toHaveTextContent('at walking pace');
   });
 });
 

@@ -65,6 +65,14 @@ function route(overrides: Record<string, unknown> = {}): Route {
     distance_m: 300,
     effective_distance_m: 300,
     estimated_duration_seconds: 250,
+    duration_estimate: {
+      low_seconds: 213,
+      high_seconds: 313,
+      pace_low_mps: 0.8,
+      pace_high_mps: 1.2,
+      pace_label: 'wheelchair pace',
+      basis: 'assumed_pace',
+    },
     pace_profile: 'wheelchair',
     coordinates: DIRECT,
     segments: [],
@@ -119,6 +127,12 @@ function comparison(
     },
     routing_policy_version: 'test',
     ml_predictions_used: false,
+    summary: {
+      kind: 'different_path',
+      headline: '+226 m to avoid 1 recorded stairway.',
+      primary_code: 'avoids_stairs',
+      primary_basis: 'recorded',
+    },
   } as unknown as RouteCompareResponse;
 }
 

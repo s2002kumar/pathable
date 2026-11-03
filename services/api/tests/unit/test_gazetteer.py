@@ -23,6 +23,8 @@ from pathable_api.geo.gazetteer import (
     extract_timestamp,
     import_gazetteer,
     place_category,
+    place_codes,
+    place_initialisms,
     read_places,
     way_point,
 )
@@ -101,7 +103,7 @@ NODES: dict[int, tuple[float, float, Tags]] = {
 
 WAYS: list[tuple[int, Tags, list[int]]] = [
     (100, {"building": "university", "name": "Davis Centre"}, [10, 11, 12, 13, 10]),
-    (101, {"building": "university", "name": "Engineering 7"}, [20, 21, 22, 23, 20]),
+    (101, {"building": "university", "name": "Engineering 7", "ref": "E7"}, [20, 21, 22, 23, 20]),
     (
         102,
         {
@@ -431,3 +433,29 @@ class TestDeduplication:
         park = only(entries, "Waterloo Park")
 
         assert (park.osm_type, park.category) == ("relation", "park")
+
+
+class TestCodesAndInitials:
+    """Gazetteer version 2: what people type for a campus building, kept by provenance."""
+
+    def test_a_recorded_code_reaches_the_entry(self, entries: list[PlaceEntry]) -> None:
+        building = only(entries, "Engineering 7")
+
+        assert building.codes == ("e7",)
+        assert building.initialisms == ("e7",)
+
+    def test_recorded_codes_come_from_ref_and_short_name(self) -> None:
+        tags = {"name": "University of Waterloo", "ref": "UW;DC", "short_name": "UW"}
+
+        assert place_codes(tags) == ("uw", "dc")
+
+    def test_a_value_that_is_not_shaped_like_a_code_is_not_one(self) -> None:
+        # A road number, a stop number, a lone letter and a phrase.
+        for ref in ("85", "1234", "A", "Highway 7", "Student Life Centre"):
+            assert place_codes({"ref": ref}) == (), ref
+
+    def test_initials_are_generated_from_the_name_and_official_name(self) -> None:
+        tags = {"official_name": "Mike & Ophelia Lazaridis Quantum-Nano Centre"}
+
+        assert place_initialisms("Student Life Centre", tags) == ("slc", "molqnc")
+        assert place_initialisms("Davis", {}) == ()

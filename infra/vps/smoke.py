@@ -16,12 +16,19 @@ What it checks, each recorded as passed or failed with the reason:
   (3000) must refuse or time out.
 * The landing page and planner render; the web server's security headers arrive.
 * Liveness reports the expected revision; readiness says the database, PostGIS
-  and the Waterloo graph are all ready.
+  and the Waterloo graph are all ready, and that the place index is the version
+  this release reads (gazetteer version 2).
+* Searching "DC" puts the William G. Davis Computer Research Centre first,
+  matched on the short code OpenStreetMap records for it. An index built before
+  gazetteer version 2 has no codes, so it cannot pass this however the rest of
+  search behaves.
 * Place search finds both ends of the journey recorded in
   docs/evidence/waterloo-place-search.json, and routing that journey with the
-  wheelchair profile reproduces the recorded answer exactly: 406.4 m with
-  4 stairways on the shortest route, 490.2 m with none on the accessible one,
-  from dataset 51585450 and with no model predictions.
+  wheelchair profile reproduces the recorded answer exactly: 401.3 m with
+  3 stairways on the shortest route, 503.7 m with none on the accessible one,
+  from dataset 51585450 and with no model predictions. Those are routing
+  policy 3's figures as of the Waterloo Core v2 acceptance pass (policy 2
+  answered 4 stairways and 490.2 m).
 
 Then latency: the route repeated sequentially, then the same with N clients in
 parallel, recording the client's round trip and the server's own
@@ -62,14 +69,20 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-#: The searched journey recorded by PA-SEARCH-01 against the same dataset.
+#: The searched journey recorded by PA-SEARCH-01 against the same dataset,
+#: as routing policy 3 answers it after the Waterloo Core v2 acceptance pass
+#: (2026-11-02): snapping now ranks paths by metres, not degrees.
 JOURNEY_START_QUERY = "Davis Centre"
 JOURNEY_START_LABEL = "Davis Centre Library"
 JOURNEY_END_QUERY = "Student Life Centre"
 JOURNEY_END_LABEL = "Student Life Centre"
 EXPECTED_DATASET = "51585450-8ff5-409d-a02e-66d5a3c5e260"
-EXPECTED_STANDARD = (406.4, 4)
-EXPECTED_ACCESSIBLE = (490.2, 0)
+EXPECTED_STANDARD = (401.3, 3)
+EXPECTED_ACCESSIBLE = (503.7, 0)
+#: The place index this release reads, and what a code search must find in it.
+EXPECTED_GAZETTEER_VERSION = 2
+CODE_QUERY = "DC"
+CODE_FIRST_LABEL = "William G. Davis Computer Research Centre"
 PRIVATE_PORTS = (5432, 8000, 3000)
 
 
@@ -203,6 +216,9 @@ def main() -> int:
             error.code in (301, 302, 307, 308) and location.startswith("https://"),
             f"{error.code} -> {location}",
         )
+    except (urllib.error.URLError, OSError) as error:
+        # Nothing on port 80 is a failed check, not a reason to stop checking.
+        report.record("http redirects to https", False, f"no answer on port 80: {error}")
     check_ports(report, host)
 
     status, headers, body, ms = request(f"{base}/")
@@ -235,6 +251,16 @@ def main() -> int:
     report.record(
         "readiness", status == 200 and ready.get("status") == "ready", f"{status}, {checks}"
     )
+    # Reported beside readiness, never as part of it: a stale index degrades
+    # search, not routing, and would otherwise pass every other check.
+    place_index = ready.get("place_index") or {}
+    report.record(
+        "place index version",
+        place_index.get("status") == "current"
+        and place_index.get("stored_version") == EXPECTED_GAZETTEER_VERSION,
+        f"{place_index.get('status')}: {place_index.get('detail')} "
+        f"(expected version {EXPECTED_GAZETTEER_VERSION})",
+    )
 
     status, _, body, _ = request(f"{base}/api/v1/routes/profiles")
     keys = [p["key"] for p in json.loads(body).get("profiles", [])] if status == 200 else []
@@ -259,6 +285,21 @@ def main() -> int:
             status == 200 and result.get("provider") == "local" and match is not None,
             f"{status}, {len(result.get('matches', []))} matches, found {label!r}: {match is not None}, {ms:.0f} ms",
         )
+    status, _, body, ms = request(
+        f"{base}/api/v1/geocode/search", {"region": "waterloo", "query": CODE_QUERY}
+    )
+    search_ms.append(ms)
+    matches = (json.loads(body) if status == 200 else {}).get("matches", [])
+    first = matches[0] if matches else {}
+    report.record(
+        f"search '{CODE_QUERY}' by code",
+        status == 200
+        and first.get("label") == CODE_FIRST_LABEL
+        and first.get("matched_on") == "code",
+        f"{status}, first {first.get('label')!r} matched on {first.get('matched_on')!r}, "
+        f"{ms:.0f} ms",
+    )
+
     if len(ends) != 2:
         report.record("route", False, "search did not return both ends of the journey")
         return finish(report, args.json)

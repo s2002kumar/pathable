@@ -12,6 +12,9 @@ import {
   FIT_PADDING,
   GAPS_LAYER_ID,
   GAPS_SOURCE_ID,
+  HIGHLIGHT_HALO_LAYER_ID,
+  HIGHLIGHT_LAYER_ID,
+  HIGHLIGHT_SOURCE_ID,
   type LineFeatureCollection,
   type Padding,
   POINTS_HALO_LAYER_ID,
@@ -31,6 +34,8 @@ import {
   boundsOf,
   cameraDuration,
   gapsLineLayer,
+  highlightHaloLayer,
+  highlightLineLayer,
   lineOpacity,
   pointCircleLayer,
   pointHaloLayer,
@@ -86,6 +91,8 @@ export type UseRouteLayersOptions = {
   readonly fitScope?: string;
   /** Unrecorded stretches of the shown route, drawn over it; paint and data only. */
   readonly gaps?: LineFeatureCollection | null;
+  /** What the comparison's reason is about, when a viewer asked to see it. */
+  readonly highlight?: LineFeatureCollection | null;
 };
 
 /**
@@ -109,6 +116,7 @@ export function useRouteLayers({
   fitRequest = 0,
   fitScope = '',
   gaps = null,
+  highlight = null,
 }: UseRouteLayersOptions): void {
   // The last bounds we fitted to, and the view they were fitted for. Refitting
   // on every render would fight the user for control of the viewport;
@@ -185,6 +193,13 @@ export function useRouteLayers({
     setData(map, GAPS_SOURCE_ID, gaps ?? EMPTY_LINES);
   }, [map, gaps]);
 
+  // And what a reason is about: shown or not, the camera stays where it is.
+  useEffect(() => {
+    if (map === null) return;
+    ensureLayers(map);
+    setData(map, HIGHLIGHT_SOURCE_ID, highlight ?? EMPTY_LINES);
+  }, [map, highlight]);
+
   // Focus is paint only. It never touches the sources and never moves the
   // camera, so bringing one route forward cannot undo a viewer's pan or zoom.
   useEffect(() => {
@@ -209,6 +224,7 @@ function ensureLayers(map: MapInstance): void {
   addEmptySource(map, ACCESSIBLE_SOURCE_ID, EMPTY_LINES);
   addEmptySource(map, STAIRS_SOURCE_ID, EMPTY_LINES);
   addEmptySource(map, GAPS_SOURCE_ID, EMPTY_LINES);
+  addEmptySource(map, HIGHLIGHT_SOURCE_ID, EMPTY_LINES);
   addEmptySource(map, POINTS_SOURCE_ID, EMPTY_POINTS);
 
   // Order matters: the standard route is a reference line and must sit beneath
@@ -223,6 +239,9 @@ function ensureLayers(map: MapInstance): void {
   addLayerOnce(map, STAIRS_CASING_LAYER_ID, stairsCasingLayer());
   addLayerOnce(map, STAIRS_LAYER_ID, stairsLineLayer());
   addLayerOnce(map, GAPS_LAYER_ID, gapsLineLayer());
+  // Over everything a route carries, under the endpoint markers.
+  addLayerOnce(map, HIGHLIGHT_HALO_LAYER_ID, highlightHaloLayer());
+  addLayerOnce(map, HIGHLIGHT_LAYER_ID, highlightLineLayer());
   addLayerOnce(map, POINTS_HALO_LAYER_ID, pointHaloLayer());
   addLayerOnce(map, POINTS_LAYER_ID, pointCircleLayer());
   addLayerOnce(map, POINTS_LABEL_LAYER_ID, pointLabelLayer());

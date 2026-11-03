@@ -378,7 +378,7 @@ class TestCustomProfile:
         # pace whatever preset it was built on.
         for base in SELECTABLE_PROFILE_KEYS:
             custom = build_custom_profile(base=base, max_incline_percent=6.0)
-            assert custom.walking_speed_mps == get_profile(base).walking_speed_mps
+            assert custom.pace == get_profile(base).pace
             assert custom.pace_profile_key == base
 
 

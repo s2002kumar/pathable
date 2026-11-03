@@ -7,6 +7,7 @@ import {
   runExample,
   stubHealthyApi,
   stubNoRoute,
+  stubMovedEndComparison,
   stubRouteComparison,
   waitForMapReady,
 } from './fixtures';
@@ -274,7 +275,7 @@ test.describe('layout', () => {
       'difference-accessible',
       'difference-shortest',
       'difference-extra',
-      'main-difference',
+      'comparison-summary',
       'evidence-dock',
       'dock-stairs',
       'dock-grade',
@@ -454,7 +455,7 @@ test.describe('reflow', () => {
         'difference-accessible',
         'difference-shortest',
         'difference-extra',
-        'main-difference',
+        'comparison-summary',
         'evidence-dock',
       ] as const;
       expect(await visibleIn(page, ids)).toEqual(Object.fromEntries(ids.map((id) => [id, true])));
@@ -464,6 +465,49 @@ test.describe('reflow', () => {
           .evaluate((panel) => panel.scrollTop),
       ).toBe(0);
 
+      const panel = await page.getByRole('complementary', { name: /route planner/i }).boundingBox();
+      const dock = await page.getByTestId('evidence-dock').boundingBox();
+      expect(panel).not.toBeNull();
+      expect(dock).not.toBeNull();
+      if (panel !== null && dock !== null) expect(overlapArea(panel, dock)).toBe(0);
+      expect(await fullyInViewport(page, 'evidence-dock')).toBe(true);
+    });
+  }
+
+  for (const size of [
+    { width: 1280, height: 800 },
+    { width: 1366, height: 768 },
+  ]) {
+    test(`a ${size.width} × ${size.height} laptop shows both routes when the profile route ends elsewhere`, async ({
+      page,
+    }) => {
+      // Regression, Waterloo Core v2 acceptance: a moved-end headline runs to
+      // three lines or more, and at 1366 × 768 it pushed the shortest route's
+      // card 47 px below a panel the dock beneath had cut to 460 px. The dock
+      // now sits beside the panel on a short window, as it does for evidence.
+      await stubMovedEndComparison(page);
+      await page.setViewportSize(size);
+      await page.goto(PLANNER);
+      await waitForMapReady(page);
+      await runExample(page);
+      await expect(page.getByTestId('comparison-headline')).toContainText('ends 52 m away');
+
+      const ids = [
+        'comparison-summary',
+        'difference-accessible',
+        'difference-shortest',
+        'difference-extra',
+        'evidence-dock',
+      ] as const;
+      expect(await visibleIn(page, ids)).toEqual(Object.fromEntries(ids.map((id) => [id, true])));
+      await expect(page.getByTestId('difference-extra')).toHaveText(
+        'Starts 12 m away and ends 52 m away',
+      );
+      expect(
+        await page
+          .getByRole('complementary', { name: /route planner/i })
+          .evaluate((panel) => panel.scrollTop),
+      ).toBe(0);
       const panel = await page.getByRole('complementary', { name: /route planner/i }).boundingBox();
       const dock = await page.getByTestId('evidence-dock').boundingBox();
       expect(panel).not.toBeNull();

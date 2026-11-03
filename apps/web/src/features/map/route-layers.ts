@@ -24,6 +24,9 @@ export const STAIRS_CASING_LAYER_ID = 'pathable-recorded-stairs-casing';
 export const STAIRS_LAYER_ID = 'pathable-recorded-stairs-line';
 export const GAPS_SOURCE_ID = 'pathable-evidence-gaps';
 export const GAPS_LAYER_ID = 'pathable-evidence-gaps-line';
+export const HIGHLIGHT_SOURCE_ID = 'pathable-difference-evidence';
+export const HIGHLIGHT_HALO_LAYER_ID = 'pathable-difference-evidence-halo';
+export const HIGHLIGHT_LAYER_ID = 'pathable-difference-evidence-line';
 export const POINTS_SOURCE_ID = 'pathable-route-points';
 export const POINTS_HALO_LAYER_ID = 'pathable-route-points-halo';
 export const POINTS_LAYER_ID = 'pathable-route-points-circle';
@@ -60,6 +63,13 @@ export const STAIRS_COLOUR = '#ff6b5e';
 export const GAP_COLOUR = '#ffb783';
 /** The map's ink, so a cased line reads as drawn on the map rather than floating. */
 export const CASING_COLOUR = '#060e20';
+/**
+ * What the comparison's one-line reason is about, when a viewer asks to see it:
+ * a white core in a wide glow, so it reads over either route's colour and over
+ * the stairway and gap marks without borrowing any of their meanings.
+ */
+export const HIGHLIGHT_COLOUR = '#ffffff';
+export const HIGHLIGHT_HALO_COLOUR = '#ff6b5e';
 
 /**
  * Camera movement is the one animation on the page longer than a transition,
@@ -326,13 +336,21 @@ export function recordedStairs(route: Route | null | undefined): RecordedStairs 
     (segment) => segment.steps === 'yes' && (segment.coordinates?.length ?? 0) >= 2,
   );
 
+  // A stairway the network split into pieces is one stairway with one step
+  // count: counted from the response's units where it lists them.
+  const stairways = (route.units ?? []).filter((unit) => unit.kind === 'stairway');
+  const counted = stairways.length > 0;
   return {
     segments,
-    stairways: segments.length,
-    recordedSteps: segments.reduce((total, segment) => total + (segment.step_count ?? 0), 0),
-    unknownStepCount: segments.filter(
-      (segment) => segment.step_count === null || segment.step_count === undefined,
-    ).length,
+    stairways: counted ? stairways.length : segments.length,
+    recordedSteps: counted
+      ? stairways.reduce((total, unit) => total + (unit.step_count ?? 0), 0)
+      : segments.reduce((total, segment) => total + (segment.step_count ?? 0), 0),
+    unknownStepCount: counted
+      ? stairways.filter((unit) => unit.step_count === null || unit.step_count === undefined).length
+      : segments.filter(
+          (segment) => segment.step_count === null || segment.step_count === undefined,
+        ).length,
     unknownSegments: (route.segments ?? []).filter((segment) => segment.steps === 'unknown').length,
   };
 }
@@ -615,6 +633,64 @@ export function stairsLineLayer(): Record<string, unknown> {
       'line-width': 9,
       'line-opacity': 1,
       'line-dasharray': [0.9, 0.7],
+    },
+  };
+}
+
+/**
+ * The segments of the shortest route a reason is about, by position, as
+ * drawable geometry. Positions the route does not have are skipped rather than
+ * guessed at.
+ */
+export function highlightToGeoJson(
+  route: Route | null | undefined,
+  segmentIndexes: readonly number[],
+): LineFeatureCollection {
+  if (!route || segmentIndexes.length === 0) return EMPTY_LINES;
+  const features = segmentIndexes.flatMap((index) => {
+    const segment = route.segments?.[index];
+    if (!segment || (segment.coordinates?.length ?? 0) < 2) return [];
+    return [
+      {
+        type: 'Feature' as const,
+        properties: { index, edge_identity: segment.edge_identity },
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: segment.coordinates.map(
+            ([longitude, latitude]) => [longitude, latitude] as [number, number],
+          ),
+        },
+      },
+    ];
+  });
+  return features.length === 0 ? EMPTY_LINES : { type: 'FeatureCollection', features };
+}
+
+export function highlightHaloLayer(): Record<string, unknown> {
+  return {
+    id: HIGHLIGHT_HALO_LAYER_ID,
+    type: 'line',
+    source: HIGHLIGHT_SOURCE_ID,
+    layout: ROUND_LINE,
+    paint: {
+      'line-color': HIGHLIGHT_HALO_COLOUR,
+      'line-width': 18,
+      'line-opacity': 0.45,
+      'line-blur': 4,
+    },
+  };
+}
+
+export function highlightLineLayer(): Record<string, unknown> {
+  return {
+    id: HIGHLIGHT_LAYER_ID,
+    type: 'line',
+    source: HIGHLIGHT_SOURCE_ID,
+    layout: ROUND_LINE,
+    paint: {
+      'line-color': HIGHLIGHT_COLOUR,
+      'line-width': 5,
+      'line-opacity': 1,
     },
   };
 }

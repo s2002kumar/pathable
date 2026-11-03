@@ -72,16 +72,18 @@ distance while distinguishing nothing.
 
 Ablated over the twenty-journey Waterloo corpus on the 180,554-segment dataset:
 
-| Variant                            | Routes changed | Median cost / real distance |
-| ---------------------------------- | -------------- | --------------------------- |
-| Penalties as shipped               | —              | 1.55×                       |
-| No penalty for a missing gradient  | 3 / 20         | 1.51×                       |
-| No penalty for missing data at all | 3 / 20         | 1.51×                       |
+| Variant                            | Routes changed, policy 2 | policy 3 | Median cost / real distance, policy 2 | policy 3 |
+| ---------------------------------- | ------------------------ | -------- | ------------------------------------- | -------- |
+| Penalties as shipped               | —                        | —        | 1.55×                                 | 1.51×    |
+| No penalty for a missing gradient  | 3 / 20                   | 7 / 20   | 1.51×                                 | 1.46×    |
+| No penalty for missing data at all | 3 / 20                   | 8 / 20   | 1.51×                                 | 1.46×    |
 
-The penalty is **not** saturated: it still changes the route on 3 of 20 real
-journeys. But removing only the gradient term has exactly the same effect as
-removing every term, so on this data the gradient penalty is doing all the work
-and the others are along for the ride. That is worth knowing before tuning any
+The penalty is **not** saturated: it changes the route on 8 of 20 real journeys
+under policy 3 (3 under policy 2). Removing only the gradient term changes 7 of
+them, so on this data the gradient penalty still does most of the work; one
+journey (`laurel-creek-to-campus`) moves only when the other unknown terms go
+too. Under policy 2 the gradient term alone had exactly the same effect as
+removing every term. The change has not been attributed journey by journey. That is worth knowing before tuning any
 of them, and it is why elevation mattered: gradient was recorded on 46 of
 180,554 segments before HRDEM sampling and is derivable on 97,131 after.
 
@@ -125,6 +127,80 @@ not charge is never claimed.
 Every statement also carries its `basis` — recorded in OpenStreetMap, estimated
 from the elevation model, both, not recorded, or the profile's own rule — so an
 absence of data is never labelled as an observation.
+
+### One crossing is one crossing _(routing policy 3, Waterloo Core v2, 2026-11-02)_
+
+The network keeps every vertex of an OpenStreetMap way, so a crossing drawn from
+kerb to kerb through the road's centreline arrives as two or more segments
+(5,430 of Waterloo's 5,682 crossing ways), and so do 41 of 374 stairways. Flat
+penalties were charged per piece. The middle of a crossing touched no kerb node
+and read as "no kerb recorded", which applied to 424 crossings recorded as
+dropped at both ends. Counts shown to people counted pieces. On a real journey
+(uptown Waterloo to the transit hub) the wheelchair route detoured 97 m around a
+signalised crossing recorded as dropped at both ends, because it was charged two
+phantom unrecorded-kerb penalties.
+
+Each crossing or stairway way is now one unit (`routing/units.py`). Its flat
+penalties are spread over its pieces in proportion to length, so walking the
+whole unit pays each once, and every segment still costs at least its length,
+which keeps A\* admissible. A crossing's kerb is read from every kerb recorded
+along it:
+
+- two or more recorded kerbs give the worst of them;
+- one recorded kerb leaves the crossing unknown, because a kerb nobody recorded
+  is not a dropped one;
+- none is unknown.
+
+Policy 2 read one recorded kerb two ways, depending on how many segments the
+crossing happened to be drawn in. Counts are of units. Evidence and the
+before/after on twenty real journeys are in
+[`WATERLOO_CORE_V2.md`](../evidence/WATERLOO_CORE_V2.md).
+
+A route that starts or ends on a crossing or stairway walks part of one. The
+piece it walks carries the share of the unit that its length covers, so the
+pieces of a segment add up to the segment. Two ends on one segment are joined
+by the stretch between them. Before the acceptance pass, a piece kept its whole
+segment's share. Half a crossing then paid for all of it, and two ends on one
+crossing paid for it twice, after walking out to a kerb and back. Hard limits
+read what a piece is, never its share: a piece of a stairway is a stairway.
+These corrections move routes, but policy 3 had never been released, so the
+version stays 3 and every committed policy 3 figure was regenerated on the
+corrected code.
+
+### The shortest route is the baseline, timed at walking pace _(2026-11-02)_
+
+The comparison is "shortest pedestrian route" against "your profile's route".
+The shortest route was always computed for standard walking, but it was
+re-timed at the chosen profile's pace, so switching profile changed the
+baseline's time. It is now timed at walking pace whatever profile it is shown
+beside. Time is distance over an assumed pace range (walking 1.1–1.4 m/s; each
+profile its own), with no fixed allowance for crossings or steps. The two
+routes' times are at different paces and are never subtracted. Time does not
+take part in route selection.
+
+### Both ends snap to paths that connect _(2026-11-02)_
+
+Connected parts are numbered when the graph loads, over walkable segments and,
+separately, step-free ones. When the paths nearest the two ends never meet, one
+end moves to the nearest connecting path within the same 150 m, preferring the
+larger part, and the comparison says so in a caution. A moved end must still be
+nearer the point it stands for than the other end is: moved to the foot of a
+stairway somebody asked to climb, the nearest step-free path was the start
+itself, a route of 0 m. When an end has moved, the summary leads with where the
+profile route ends, not with how much shorter it is, because two routes that end
+in different places are not one journey made two ways. No length difference is
+reported for them anywhere: the response's `distance_comparable` is false and
+`extra_distance_m` null, and the route evaluation gives such a journey no
+detour. Otherwise the request fails at once with that reason.
+
+Candidates are ranked by geodesic metres. The spatial index works in degrees,
+and a degree east is about 73% of a degree north here, so it only gathers
+candidates. A window's best is trusted only within the window's own radius;
+otherwise the window widens, up to the 150 m limit. Stopping at the first
+window that held any segment let closed paths within 60 m hide an open one
+100 m away. This replaces a "no route" for a building whose
+nearest path is behind a private door or reachable only by stairs, and a search
+of the whole network for two points that cannot be joined.
 
 ## Consequences
 

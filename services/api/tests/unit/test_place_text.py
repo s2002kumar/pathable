@@ -8,7 +8,14 @@ from __future__ import annotations
 
 import re
 
-from pathable_api.geo.place_text import MAX_QUERY_TERMS, normalise_text, query_terms
+from pathable_api.geo.place_text import (
+    MAX_QUERY_TERMS,
+    code_of,
+    compact_query,
+    initialism,
+    normalise_text,
+    query_terms,
+)
 
 
 class TestNormalisation:
@@ -51,3 +58,46 @@ class TestQueryTerms:
 
     def test_punctuation_alone_has_no_terms(self) -> None:
         assert query_terms("!!! ???") == ()
+
+
+class TestSpellings:
+    def test_center_and_centre_meet(self) -> None:
+        # "Davis Center" found the library and the taxi stand but not the
+        # Davis Centre building itself.
+        assert normalise_text("Davis Center") == normalise_text("Davis Centre") == "davis centre"
+        assert normalise_text("Theater") == normalise_text("Theatre")
+
+
+class TestCodes:
+    def test_building_codes_are_recognised_as_written(self) -> None:
+        assert [code_of(value) for value in ("DC", "slc", "E5", "EV3", "P.A.C.")] == [
+            "dc",
+            "slc",
+            "e5",
+            "ev3",
+            "pac",
+        ]
+
+    def test_things_that_are_not_codes_are_not(self) -> None:
+        assert [code_of(value) for value in ("85", "A", "Highway 7", "ABCDE1", None, "")] == [
+            None
+        ] * 6
+
+    def test_a_query_compacts_as_typed_without_expanding_abbreviations(self) -> None:
+        # "St" is a street suffix in a name and could be a code as typed.
+        assert compact_query("St") == "st"
+        assert compact_query("P.A.C.") == "pac"
+        assert compact_query("E 5") == "e5"
+        assert compact_query("Café") == "cafe"
+
+
+class TestInitialisms:
+    def test_initials_skip_small_words_and_keep_numbers(self) -> None:
+        assert initialism("Student Life Centre") == "slc"
+        assert initialism("Faculty of Mathematics") == "fm"
+        assert initialism("Mathematics & Computer") == "mc"
+        assert initialism("Engineering 5") == "e5"
+
+    def test_a_single_word_or_a_very_long_name_has_none(self) -> None:
+        assert initialism("Davis") is None
+        assert initialism("one two three four five six seven") is None

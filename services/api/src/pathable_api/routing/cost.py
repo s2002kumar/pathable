@@ -313,6 +313,8 @@ def _steps_cost(features: EdgeFeatures, profile: MobilityProfile) -> list[CostCo
     if not profile.step_penalty_m and not profile.per_step_penalty_m:
         return []
 
+    # The step count is the whole stairway's, so the charge is the stairway's,
+    # spread over its pieces: climbing all of it pays once (see routing.units).
     count = features.step_count
     counted = count if count is not None else profile.assumed_step_count
     detail = (
@@ -323,10 +325,21 @@ def _steps_cost(features: EdgeFeatures, profile: MobilityProfile) -> list[CostCo
     return [
         CostComponent(
             CostCode.STEPS,
-            profile.step_penalty_m + profile.per_step_penalty_m * counted,
+            (profile.step_penalty_m + profile.per_step_penalty_m * counted) * features.unit_share,
             detail,
         )
     ]
+
+
+def _kerb_detail(features: EdgeFeatures) -> str:
+    kerb = features.kerb_at_crossing
+    if kerb is KerbType.UNKNOWN:
+        if features.crossing_kerb_ends == 1:
+            return (
+                "A kerb is recorded at only one end of this crossing; the other may not be dropped."
+            )
+        return "No kerb has been recorded at this crossing, so it may not be dropped."
+    return f"Kerb recorded as {kerb.value}."
 
 
 def _kerb_cost(features: EdgeFeatures, profile: MobilityProfile) -> list[CostComponent]:
@@ -336,16 +349,12 @@ def _kerb_cost(features: EdgeFeatures, profile: MobilityProfile) -> list[CostCom
     if not features.is_crossing:
         return []
 
-    penalty = profile.kerb_penalty_m.get(features.kerb, 0.0)
+    penalty = profile.kerb_penalty_m.get(features.kerb_at_crossing, 0.0)
     if not penalty:
         return []
 
-    detail = (
-        "No kerb has been recorded at this crossing, so it may not be dropped."
-        if features.kerb is KerbType.UNKNOWN
-        else f"Kerb recorded as {features.kerb.value}."
-    )
-    return [CostComponent(CostCode.KERB, penalty, detail)]
+    # Charged per crossing, not per piece of one (see routing.units).
+    return [CostComponent(CostCode.KERB, penalty * features.unit_share, _kerb_detail(features))]
 
 
 #: Crossing types charged at the reduced rate. Shared with the comparison, so the
@@ -364,7 +373,7 @@ def _crossing_cost(features: EdgeFeatures, profile: MobilityProfile) -> list[Cos
     return [
         CostComponent(
             CostCode.CROSSING,
-            profile.crossing_penalty_m * factor,
+            profile.crossing_penalty_m * factor * features.unit_share,
             f"Road crossing ({described}).",
         )
     ]

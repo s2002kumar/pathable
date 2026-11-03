@@ -13,6 +13,13 @@
 # RECREATE=1 with `up` restarts the API even if the revision is unchanged, which
 # is how a cold start is measured.
 #
+# The place index is data, restored rather than rebuilt here, so a release that
+# reads a newer place-index version than the database holds would serve search
+# from the old one while passing every other check. `up` asks the release's own
+# code first and refuses, unless PLACE_INDEX_ARTIFACT names an artifact built
+# from the network's own extract (`pathable gazetteer export`): that is verified
+# before the switch and installed, in one transaction, right after it.
+#
 # <ref> is anything `git rev-parse` resolves (origin/main, a tag, a SHA). It must
 # be reachable from origin/main — the public pilot serves merged code only —
 # unless ALLOW_UNMERGED=1.
@@ -64,6 +71,20 @@ compose() {
 }
 
 release_value() { sed -n "s/^$2=//p" "$1" 2>/dev/null | head -n 1; }
+
+PATHABLE_REGION="${PATHABLE_REGION:-waterloo}"
+
+# `pathable gazetteer <action>` with a release's own code, against the live
+# database as the application role. --entrypoint skips the image's
+# migrate-on-start, so asking, before a switch, writes nothing.
+place_index() {
+    sha="$1"; shift
+    # shellcheck disable=SC1090
+    password="$(. "$SECRETS"; printf '%s' "$PATHABLE_DB_PASSWORD")"
+    docker run --rm -i --network pathable_data --memory 1g --entrypoint pathable \
+        -e DATABASE_URL="postgresql+psycopg://pathable_app:${password}@db:5432/pathable" \
+        "pathable-api:$sha" gazetteer "$@" --region "$PATHABLE_REGION"
+}
 
 resolve() {
     git -C "$REPO" fetch --quiet --tags origin
@@ -247,6 +268,17 @@ case "${1:-}" in
         [ -n "${2:-}" ] || die "usage: $0 up <ref>"
         sha="$(resolve "$2")"
         build "$sha"
+        # Is the stored place index the one this release reads? Asked before
+        # anything switches, so a stale one is refused rather than served.
+        index_upgrade=0
+        if db_running && ! place_index "$sha" status; then
+            [ -n "${PLACE_INDEX_ARTIFACT:-}" ] \
+                || die "refusing: the place index is not the one $sha reads. Build the artifact (docs/deployment/VPS.md, 'Upgrading the place index'), then: PLACE_INDEX_ARTIFACT=<file> $0 up $2"
+            [ -f "$PLACE_INDEX_ARTIFACT" ] || die "no such artifact: $PLACE_INDEX_ARTIFACT"
+            place_index "$sha" import --check --file - < "$PLACE_INDEX_ARTIFACT" \
+                || die "refusing: $PLACE_INDEX_ARTIFACT does not fit $sha or this database's network"
+            index_upgrade=1
+        fi
         # Never switch a live database without a backup taken just before it.
         if db_running; then
             [ -n "$(db_revision)" ] \
@@ -254,6 +286,14 @@ case "${1:-}" in
             "$HERE/backup.sh" "pre-deploy"
         fi
         switch_to "$sha"
+        if [ "$index_upgrade" = "1" ]; then
+            log "installing the place index from $PLACE_INDEX_ARTIFACT"
+            place_index "$sha" import --file - < "$PLACE_INDEX_ARTIFACT" \
+                || die "the place index was NOT replaced; the old one still serves (one transaction). Retry with the same command, or restore the pre-deploy backup and $0 rollback"
+        fi
+        # Searches answer from an old index too, so nothing else would notice.
+        place_index "$sha" status \
+            || die "$sha is serving, but the place index is not the one it reads: search is not this release's. See docs/deployment/VPS.md"
         ;;
     rollback)
         [ -f "$RELEASE.previous" ] || die "no previous release recorded"
