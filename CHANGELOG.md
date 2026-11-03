@@ -32,6 +32,23 @@ The repository has been public and source-visible since 2026-09-14
   17 of 20 wheelchair routes differ (18 under policy 2), median detour 51.5 m
   (86.1 m).
 
+- **A place-index upgrade path for the pilot.** Gazetteer version 2 needs
+  migration `0008` and a rebuilt index, but the pilot restores its index rather
+  than rebuilding it. Without this, a deploy would have served version 1 rows,
+  and `DC` would have found a restaurant, while every check passed.
+  - `pathable gazetteer export` and `import` carry an index between databases
+    as a 0.9 MB self-verifying artifact. `import` swaps the index in one
+    transaction, and only accepts an artifact read from the active network's
+    extract.
+  - `pathable gazetteer status` reports whether the stored index is the version
+    the release reads. Readiness reports the same as `place_index`.
+  - `deploy.sh up` asks the new release before switching, and refuses a stale
+    index unless `PLACE_INDEX_ARTIFACT` is given.
+  - `smoke.py` checks the version and that `DC` is found by code.
+  - Rehearsed on a scratch copy of the production database
+    (`docs/evidence/place-index-upgrade-rehearsal.json`). Runbook:
+    `docs/deployment/VPS.md`, "Upgrading the place index".
+
 - **`pathable benchmark corpus`** times Dijkstra, A\* and the whole comparison
   on the twenty-journey corpus, checks the two searches agree on cost, and
   writes the machine, memory, commit and policy beside the numbers. Under

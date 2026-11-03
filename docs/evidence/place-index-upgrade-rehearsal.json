@@ -1,0 +1,110 @@
+{
+  "what": "The one-time place-index upgrade, gazetteer version 1 to 2, rehearsed against a scratch copy of the production database, in the order deploy.sh runs it, then rolled back as the runbook says. Nothing here touched the public host.",
+  "date": "2026-11-03",
+  "codes": {
+    "release": "e603872a8a140a2d314949c566160b2655d2121b",
+    "release_image": "pathable-api:e603872a8a140a2d314949c566160b2655d2121b, built from `git archive` of it as deploy.sh builds (services/api/Dockerfile, target runtime)",
+    "previous_release": "e62b7e83341d82c1415c3d2aeb31f5281a91cba7 (main; what the pilot serves), run from `git archive e62b7e8 services/api`"
+  },
+  "source_extract": {
+    "file": "ontario-latest.osm.pbf (Geofabrik), kept git-ignored in services/api/.osm-data/",
+    "bytes": 969572077,
+    "sha256": "cee90e3725139c41ef939f726730b4dfb6fd45e624d2797dac4be38a69145ef3",
+    "matches": [
+      "dataset 51585450's ingestion_configuration.file_sha256 (the active Waterloo network)",
+      "the place index production serves (vps-deployment.json: place_index_extract_sha256)"
+    ],
+    "data_as_of": "2026-08-16T20:21:06+00:00, from the extract's header",
+    "substituted": false
+  },
+  "artifact": {
+    "file": "waterloo-place-index-v2.jsonl.gz (not committed: ODbL data, rebuildable from the extract)",
+    "bytes": 941578,
+    "sha256": "8a1dd24bcc249fdbeff359f9009d05bb9b14576ae652de08f317c876380dcabd",
+    "entries_sha256": "eb67add879edace1db8c7eef2e32aaf471e964f1a6656b0b5d407f1c2708d7ad",
+    "gazetteer_version": 2,
+    "entries": {
+      "place": 5232,
+      "address": 26201,
+      "street": 1792,
+      "total": 33225
+    },
+    "built_by": "`pathable gazetteer build` at the release's code from the extract above (read 1746.8 s), then `pathable gazetteer export`",
+    "reproducibility": "The index the committed search-quality evidence was measured on (built 2026-11-02T17:41Z) exports with the same entries_sha256, eb67add8…d7ad: a fresh build from the same extract gives the same entries."
+  },
+  "scratch_copy": {
+    "database": "postgis/postgis:17-3.5, the production image, initialised by infra/vps/db-init/20-pathable.sh: database `pathable`, role pathable_app (not a superuser), postgis and pg_trgm",
+    "schema": "migrated to 0007_place_search by main's own migrations",
+    "map_rows": "pilot_regions, dataset_versions, ingestion_runs, graph_nodes, graph_edges from the local production-smoke database (the source of production's bootstrap archive), restored with infra/production-smoke/restore-dataset.sh as pathable_app; every check passed",
+    "routing_checksum": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00, computed by main's code and equal to the one recorded on the host (vps-deployment.json)",
+    "place_index": "built by main's code from the extract above: gazetteer version 1, 5232 places, 26201 addresses, 1792 streets, data as of 2026-08-16T20:21:06Z, as production records (read 1227.2 s)",
+    "production_search_DC": "main's search for 'DC' on it: DC BYTES, DC Foods, Turnkey@DC, Desi Chatt Room, Donald Choi Canada Limited; no Davis Centre"
+  },
+  "steps": [
+    {
+      "step": "preflight: the release image's `gazetteer status`, --entrypoint pathable, before anything switches",
+      "result": "exit 1: stored version 1, this release expects 2. Alembic still 0007_place_search afterwards: the image's migrate-on-start did not run."
+    },
+    {
+      "step": "`gazetteer import --check` with the release image, artifact on standard input",
+      "result": "exit 0: fits this release and the active network; nothing written (same build id, 0007)."
+    },
+    {
+      "step": "pre-deploy backup, as backup.sh takes it",
+      "result": "32584247 bytes, sha256 cb4f1d364fbd8fd13b290dc1a205740bc5ece116a7c31202fdf54d0df0862f65, 12 tables of data"
+    },
+    {
+      "step": "switch: the release image started with production's environment; its entrypoint migrated, the graph loaded",
+      "result": "ready after 86 s; alembic 0008_place_codes; readiness `ready` with place_index {status: stale, stored_version 1, expected_version 2}; search 'DC' answered 'DC BYTES', matched on name"
+    },
+    {
+      "step": "`gazetteer import` with the release image",
+      "result": "exit 0: replaced in one transaction in 18.2 s (49.7 s wall clock including the container); `gazetteer status` exit 0, current"
+    },
+    {
+      "step": "after the import",
+      "result": "readiness place_index current, version 2. Search via the API: DC, SLC, MC, E5 and PAC each first by code (William G. Davis Computer Research Centre, Student Life Centre, Mathematics & Computer, Engineering 5, Physical Activities Complex); 'Davis Center' and 'Dana Porter' by name."
+    },
+    {
+      "step": "`pathable gazetteer evaluate` at e603872 (clean tree) against the installed index",
+      "result": "37 of 40 within the allowed rank, 34 first. Index description, summary and all 40 queries' ranks and results identical to the committed waterloo-search-quality.json; only the latency figures differ."
+    },
+    {
+      "step": "routing dataset",
+      "result": "`pathable datasets checksum 51585450`: rows hash 4a179dc0…bc5238f00, matches the recorded checksum. 155732 nodes and 180580 segments across the database before and after (the Waterloo dataset's 155714 and 180554 plus the synthetic fixtures)."
+    },
+    {
+      "step": "rollback: the pre-deploy backup restored as restore.sh does (database dropped and recreated, single-transaction pg_restore), then the previous release's code",
+      "result": "pg_restore 25 s; alembic 0007_place_search; place index version 1, same build id as before the upgrade; routing checksum matches; main's search works as before; the release's `gazetteer status` refuses it again (exit 1)."
+    },
+    {
+      "step": "roll forward again",
+      "result": "status exit 1 before the switch; release API ready after 256 s; import exit 0 in one transaction, 21.0 s."
+    }
+  ],
+  "smoke": {
+    "how": "infra/vps/smoke.py --url http://127.0.0.1:8012 --runs 2 --concurrency 1 --skip-rate-limit-check, against the release image serving the scratch copy. TLS, the HTTP redirect, the pages and their headers, and port 5432 fail here because no Caddy or web server runs and this laptop has its own databases; those checks are not part of this rehearsal.",
+    "upgraded": {
+      "readiness": "pass",
+      "place index version": "pass: current, version 2",
+      "search 'Davis Centre'": "pass",
+      "search 'Student Life Centre'": "pass",
+      "search 'DC' by code": "pass: William G. Davis Computer Research Centre, matched on code",
+      "searched journey, wheelchair": "pass: standard (401.3, 3), accessible (503.7, 0), dataset 51585450"
+    },
+    "stale": {
+      "how": "the pre-deploy backup restored, and the release started on it without the artifact: what a normal deploy would have left",
+      "readiness": "pass",
+      "place index version": "FAIL: stale: waterloo: version 1; this release reads version 2",
+      "search 'Davis Centre'": "pass",
+      "search 'Student Life Centre'": "pass",
+      "search 'DC' by code": "FAIL: first 'DC BYTES' matched on name",
+      "searched journey, wheelchair": "pass: standard (401.3, 3), accessible (503.7, 0)",
+      "note": "Every check the smoke test had before this change passes on the stale index; the two added checks fail."
+    }
+  },
+  "not_rehearsed": [
+    "deploy.sh itself, which needs the host's layout (/srv/pathable, Compose project `pathable`); its place_index() docker run line was run verbatim, on a local network named pathable_rehearsal instead of pathable_data",
+    "the public host: nothing was deployed"
+  ]
+}
