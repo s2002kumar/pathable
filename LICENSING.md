@@ -20,9 +20,9 @@ it. If a different person or legal entity should hold the copyright, that is a
 correction for the founder to make; nothing here should be treated as
 establishing it.
 
-> **Status.** The repository is **private today.** Public visibility is a
-> separate, deliberate step, planned as its own release gate. Publishing this
-> policy does not publish the repository.
+> **Status.** The repository is **public and source-visible**. That does not
+> make the code open source or grant permission to copy, modify, redistribute,
+> or deploy it. The source-code licensing policy below remains unchanged.
 
 ---
 
