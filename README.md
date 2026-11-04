@@ -22,10 +22,10 @@ recorded stairways, beside the shortest route, 287 m with four recorded stairway
 Labels on the map mark the stairways, recorded in OpenStreetMap, and the steepest climb, derived from elevation
 data.](docs/evidence/media/pathable-ux04-demo-comparison.png)
 
-*The October 2026 recording uses routing policy 2 and counts four step segments. The
+_The October 2026 recording uses routing policy 2 and counts four step segments. The
 November 2026 example in the table below uses policy 3, which counts the same physical
 stairways as three after grouping adjacent segments. The distances are unchanged; these are
-two policy versions, not conflicting observations.*
+two policy versions, not conflicting observations._
 
 One frame of [`pathable-ux04-demo.webm`](docs/evidence/media/pathable-ux04-demo.webm): 63.7 seconds of a real
 browser driving the production images against the real Waterloo network, recorded by Playwright in one session and
