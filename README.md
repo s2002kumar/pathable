@@ -7,7 +7,7 @@ map — and a mobility profile. PathAble returns the ordinary shortest walking r
 that profile, and explains the difference using what OpenStreetMap actually records: steps, surfaces, gradients,
 kerbs. Where nothing has been recorded, it says so.
 
-**Quick tour:** [Try the Waterloo pilot](https://51.222.36.79) · [Recorded browser demo](docs/evidence/media/pathable-ux04-demo.webm) · [System architecture](docs/ARCHITECTURE.md) · [Measured results](docs/CLAIMS_LEDGER.md). The pilot is limited to Waterloo and has no availability guarantee.
+**Quick tour:** [Try the Waterloo pilot](https://51.222.36.79) · [Recorded browser demo](docs/evidence/media/pathable-ux04-demo.webm) · [System architecture](#how-it-fits-together) · [Measured results](docs/CLAIMS_LEDGER.md). The pilot is limited to Waterloo and has no availability guarantee.
 
 [![CI](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml)
 [![Security](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml)
