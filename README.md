@@ -9,7 +9,7 @@ kerbs. Where nothing has been recorded, it says so.
 
 **Explore:** [Public Waterloo pilot](https://51.222.36.79) (availability not guaranteed) ·
 [Recorded walkthrough](docs/evidence/media/pathable-ux04-demo.webm) ·
-[Architecture](docs/architecture/OVERVIEW.md) · [Claims and evidence](docs/CLAIMS_LEDGER.md).
+[Engineering review](docs/ENGINEERING_REVIEW.md) · [Claims and evidence](docs/CLAIMS_LEDGER.md).
 **Limit:** no mobility-aid user validation or manual screen-reader pass; routes are advice,
 not accessibility certification.
 
