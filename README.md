@@ -7,6 +7,8 @@ map — and a mobility profile. PathAble returns the ordinary shortest walking r
 that profile, and explains the difference using what OpenStreetMap actually records: steps, surfaces, gradients,
 kerbs. Where nothing has been recorded, it says so.
 
+**Quick tour:** [Try the Waterloo pilot](https://51.222.36.79) · [Recorded browser demo](docs/evidence/media/pathable-ux04-demo.webm) · [System architecture](docs/ARCHITECTURE.md) · [Measured results](docs/CLAIMS_LEDGER.md). The pilot is limited to Waterloo and has no availability guarantee.
+
 [![CI](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml)
 [![Security](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml)
 
@@ -16,6 +18,8 @@ kerbs. Where nothing has been recorded, it says so.
 recorded stairways, beside the shortest route, 287 m with four recorded stairways that the profile rules out.
 Labels on the map mark the stairways, recorded in OpenStreetMap, and the steepest climb, derived from elevation
 data.](docs/evidence/media/pathable-ux04-demo-comparison.png)
+
+*The October 2026 recording uses routing policy 2 and counts four step segments. The November 2026 example in the table below uses policy 3, which counts the same physical stairways as three after grouping adjacent segments. The distances are unchanged; these are two policy versions, not conflicting observations.*
 
 One frame of [`pathable-ux04-demo.webm`](docs/evidence/media/pathable-ux04-demo.webm): 63.7 seconds of a real
 browser driving the production images against the real Waterloo network, recorded by Playwright in one session and
@@ -31,7 +35,7 @@ containers before it existed; [running the demo](docs/evidence/DEMO.md) reproduc
 
 ## What the comparison actually says
 
-One press loads `campus-library-to-student-life` from the committed twenty-journey corpus and the engine answers
+Under routing policy 3, one press loads `campus-library-to-student-life` from the committed twenty-journey corpus and the engine answers
 live:
 
 |                        | Distance    | Stairways |
