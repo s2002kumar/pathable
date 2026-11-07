@@ -30,8 +30,9 @@ type Match = { label: string; longitude: number; latitude: number; category: str
 type SearchAnswer = { enabled: boolean; matches: Match[]; attribution: string | null };
 
 /**
- * The index is built from a 970 MB extract, and CI has only the nine-node
- * synthetic network — so, like the demo suite, this skips there and says so.
+ * CI builds the index from the sealed campus extract the network comes from
+ * (services/api/tests/data/README.md), so this runs there on real
+ * OpenStreetMap places. With no index at all it skips, and says so.
  */
 let indexed = false;
 

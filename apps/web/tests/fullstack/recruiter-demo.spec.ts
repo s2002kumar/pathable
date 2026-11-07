@@ -34,18 +34,23 @@ type Answer = {
   accessible_route: { distance_m: number; stairway_count: number };
   extra_distance_m: number;
   ml_predictions_used: boolean;
+  dataset: { elevation_attribution: string | null };
 };
 
 /**
- * This suite needs the real Waterloo network, which is a 970 MB extract and
- * hours of ingestion. CI loads the nine-node synthetic fixture instead, so
- * these tests skip there rather than failing — and say so, because a silent
- * skip would let the demo rot unnoticed.
+ * This suite needs real OpenStreetMap data around the University of Waterloo.
+ * CI routes on a sealed campus extract (services/api/tests/data/README.md):
+ * real tagging and topology, no elevation model. The assertions that need the
+ * elevation model check, without it, that none is claimed instead. Against the
+ * full Waterloo network — the production-smoke stack, where the demo is given
+ * (docs/evidence/DEMO.md) — every assertion runs as written.
  *
- * Where they do run: locally, against the production-smoke stack, which is the
- * environment the demo is actually given in. See docs/evidence/DEMO.md.
+ * With no routable Waterloo network at all, the tests skip rather than fail,
+ * and say so, because a silent skip would let the demo rot unnoticed.
  */
 let waterlooLoaded = false;
+/** Whether the network carries grades from the elevation model (HRDEM). */
+let hasElevation = false;
 
 test.beforeAll(async ({ request }) => {
   const response = await request.post(`${API_BASE_URL}${COMPARE_PATH}`, {
@@ -53,6 +58,10 @@ test.beforeAll(async ({ request }) => {
     failOnStatusCode: false,
   });
   waterlooLoaded = response.status() === 200;
+  if (waterlooLoaded) {
+    const answer = (await response.json()) as Answer;
+    hasElevation = answer.dataset.elevation_attribution !== null;
+  }
   if (!waterlooLoaded) {
     console.warn(
       `[recruiter-demo] skipping: ${API_BASE_URL} has no routable Waterloo dataset ` +
@@ -150,7 +159,11 @@ test.describe('the recruiter demo', () => {
     await page.getByTestId('view-evidence').click();
     await expect(page.getByTestId('gap-stairs')).toContainText('Recorded · OSM');
     await expect(page.getByTestId('gap-stairs')).toContainText('Your profile rule');
-    await expect(page.getByTestId('gap-grade')).toContainText(/Recorded · OSM|Derived · HRDEM/);
+    // Without the elevation model, no grade can be derived, so it is recorded
+    // or it is unknown — never derived.
+    await expect(page.getByTestId('gap-grade')).toContainText(
+      hasElevation ? /Recorded · OSM|Derived · HRDEM/ : /Recorded · OSM|Not recorded/,
+    );
     const dock = page.getByTestId('gap-dock');
     await expect(dock).not.toContainText(/\b(verified|safe|guaranteed|confident)\b/i);
 
@@ -228,9 +241,15 @@ test.describe('the recruiter demo', () => {
     await expect(credit).toContainText('ODbL');
     await expect(credit).toContainText('Open Government Licence – Canada');
     await page.getByTestId('open-route-details').click();
-    await expect(page.getByTestId('elevation-attribution')).toContainText(
-      /Open Government Licence/i,
-    );
+    if (hasElevation) {
+      await expect(page.getByTestId('elevation-attribution')).toContainText(
+        /Open Government Licence/i,
+      );
+    } else {
+      // A network with no elevation model owes it no credit in the answer.
+      await expect(page.getByTestId('route-difference')).toBeVisible();
+      await expect(page.getByTestId('elevation-attribution')).toHaveCount(0);
+    }
   });
 
   test('a person can still place their own points afterwards', async ({ page }) => {

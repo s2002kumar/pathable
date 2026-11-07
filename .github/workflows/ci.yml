@@ -326,6 +326,30 @@ jobs:
         run: uv run pathable ingest synthetic
         working-directory: services/api
 
+      # Real OpenStreetMap data, small and sealed in the repository: the
+      # University of Waterloo campus, without elevation (provenance and ODbL
+      # terms in services/api/tests/data/README.md). Loaded through the same
+      # gated lifecycle an operator uses, with the acceptance it needs recorded,
+      # and the place index built from the same file. This is what lets the
+      # place-search and demo suites run here instead of skipping.
+      - name: Load the campus extract and its place index
+        working-directory: services/api
+        run: |
+          set -eu
+          fixture=tests/data/uw-campus.osm.pbf
+          uv run pathable ingest pbf --region waterloo --file "$fixture" \
+            --provider overpass-api.de --source-timestamp 2026-11-07T02:48:06Z \
+            --no-elevation-required | tee "$RUNNER_TEMP/ingest.txt"
+          dataset="$(sed -n 's/^Dataset \([0-9a-f-]*\) .*/\1/p' "$RUNNER_TEMP/ingest.txt" | head -n 1)"
+          uv run pathable datasets seal "$dataset"
+          uv run pathable datasets evaluate "$dataset" | tee "$RUNNER_TEMP/evaluate.txt"
+          run="$(sed -n 's/^Regression run \([0-9a-f-]*\).*/\1/p' "$RUNNER_TEMP/evaluate.txt" | head -n 1)"
+          uv run pathable datasets accept "$run" --reason \
+            "CI only: the sealed campus extract in services/api/tests/data is the region's first dataset, so there is nothing live to compare with, and most corpus journeys lie outside it."
+          uv run pathable datasets activate "$dataset"
+          uv run pathable gazetteer build --region waterloo --file "$fixture" \
+            --provider overpass-api.de
+
       - name: Install Chromium
         run: pnpm --filter @pathable/web exec playwright install --with-deps chromium
 
