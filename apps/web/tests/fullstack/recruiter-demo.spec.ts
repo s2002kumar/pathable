@@ -34,6 +34,7 @@ type Answer = {
   accessible_route: { distance_m: number; stairway_count: number };
   extra_distance_m: number;
   ml_predictions_used: boolean;
+  summary: { headline: string };
   dataset: { elevation_attribution: string | null };
 };
 
@@ -130,9 +131,10 @@ test.describe('the recruiter demo', () => {
     await expect(page.getByTestId('difference-extra')).toHaveText(
       `+${Math.round(answer.extra_distance_m)} m`,
     );
-    await expect(page.getByTestId('main-difference')).toContainText(
-      `Avoids ${stairways} recorded stairways`,
-    );
+    // The comparison in one line is the API's own sentence, shown as sent, and
+    // it names the stairways the shortest route crosses.
+    expect(answer.summary.headline).toContain(`to avoid ${stairways} recorded stairways`);
+    await expect(page.getByTestId('comparison-headline')).toHaveText(answer.summary.headline);
 
     // The shortest route is a fixed baseline, timed at walking pace whatever
     // the profile (Waterloo Core v2); the stairs it crosses are what is marked.
