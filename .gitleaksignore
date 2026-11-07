@@ -26,3 +26,11 @@ dd7db76e630e024a7c77e275388f62b7c03bb559:docs/evidence/waterloo-truth-audit.json
 dd7db76e630e024a7c77e275388f62b7c03bb559:docs/evidence/waterloo-truth-audit.json:generic-api-key:6091
 dd7db76e630e024a7c77e275388f62b7c03bb559:docs/evidence/waterloo-truth-audit.json:generic-api-key:6280
 dd7db76e630e024a7c77e275388f62b7c03bb559:docs/evidence/waterloo-truth-audit.json:generic-api-key:7233
+
+# In bf15db6 the metrics privacy tests named their invented sentinel values
+# SECRET_REQUEST_ID and SECRET_EXCEPTION, and the generic-api-key rule read them
+# as credentials. They are made-up strings the tests search the exposition for.
+# Renamed TELLTALE_* in the next change, so the rule cannot match current code;
+# these lines cover only the history.
+bf15db6ac13a6a2b2b1e41a9d95ac06b54545bd6:services/api/tests/unit/test_metrics.py:generic-api-key:61
+bf15db6ac13a6a2b2b1e41a9d95ac06b54545bd6:services/api/tests/unit/test_metrics.py:generic-api-key:62

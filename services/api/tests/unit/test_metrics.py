@@ -54,18 +54,18 @@ VERSION = "0.1.0+metricstest"
 #: Values that would identify a person, a place or a request if they reached a
 #: label. Each is distinctive enough that finding it in the exposition can only
 #: mean it leaked.
-SECRET_LATITUDE = 43.4712345678
-SECRET_LONGITUDE = -80.5398765432
-SECRET_QUERY = "SECRETQUERY31415 Erb Street West"
-SECRET_FORWARDED_FOR = "203.0.113.77"
-SECRET_REQUEST_ID = "req-SECRETID-271828"
-SECRET_EXCEPTION = "SECRETEXCEPTION-161803 connection to db:5432 refused"
+TELLTALE_LATITUDE = 43.4712345678
+TELLTALE_LONGITUDE = -80.5398765432
+TELLTALE_QUERY = "TELLTALEQUERY31415 Erb Street West"
+TELLTALE_FORWARDED_FOR = "203.0.113.77"
+TELLTALE_REQUEST_ID = "req-TELLTALEID-271828"
+TELLTALE_EXCEPTION = "TELLTALEEXCEPTION-161803 connection to db:5432 refused"
 
 
 def route_body(**overrides: Any) -> dict[str, Any]:
     body: dict[str, Any] = {
         "region": "waterloo",
-        "origin": {"latitude": SECRET_LATITUDE, "longitude": SECRET_LONGITUDE},
+        "origin": {"latitude": TELLTALE_LATITUDE, "longitude": TELLTALE_LONGITUDE},
         "destination": {"latitude": 43.4729, "longitude": -80.5422},
         "profile": "wheelchair",
     }
@@ -201,14 +201,14 @@ class TestHttpMetrics:
     def test_an_unhandled_failure_is_a_counted_500_whose_message_goes_nowhere(
         self, app: FastAPI, client: TestClient
     ) -> None:
-        app.state.geocoder = _Provider(RuntimeError(SECRET_EXCEPTION))
+        app.state.geocoder = _Provider(RuntimeError(TELLTALE_EXCEPTION))
 
         response = client.post(SEARCH, json={"query": "anything"})
 
         assert response.status_code == 500
         assert value(app, "pathable_http_requests_total", route=SEARCH, status="500") == 1
         assert value(app, "pathable_place_searches_total", outcome="error") == 1
-        assert "SECRETEXCEPTION" not in exposition(app)
+        assert "TELLTALEEXCEPTION" not in exposition(app)
 
 
 class TestBoundedCardinality:
@@ -315,14 +315,17 @@ class TestPrivacy:
     """Nothing about who asked, or where, reaches a label."""
 
     def _send_everything(self, app: FastAPI, client: TestClient) -> None:
-        identifying = {"X-Forwarded-For": SECRET_FORWARDED_FOR, "X-Request-ID": SECRET_REQUEST_ID}
+        identifying = {
+            "X-Forwarded-For": TELLTALE_FORWARDED_FOR,
+            "X-Request-ID": TELLTALE_REQUEST_ID,
+        }
         app.state.geocoder = _Provider(FOUND)
-        client.post(SEARCH, json={"query": SECRET_QUERY}, headers=identifying)
-        client.post(SEARCH, json={"query": SECRET_QUERY, "autocomplete": True})
+        client.post(SEARCH, json={"query": TELLTALE_QUERY}, headers=identifying)
+        client.post(SEARCH, json={"query": TELLTALE_QUERY, "autocomplete": True})
         client.post(COMPARE, json=route_body(), headers=identifying)
         client.post(COMPARE, json=route_body(profile="custom"))
-        client.post(f"{COMPARE}?lat={SECRET_LATITUDE}", json=route_body())
-        client.get(f"/api/v1/places/{SECRET_QUERY}")
+        client.post(f"{COMPARE}?lat={TELLTALE_LATITUDE}", json=route_body())
+        client.get(f"/api/v1/places/{TELLTALE_QUERY}")
 
     def test_no_coordinate_query_address_or_request_id_is_exported(
         self, app: FastAPI, client: TestClient
@@ -330,18 +333,18 @@ class TestPrivacy:
         self._send_everything(app, client)
         text = exposition(app)
 
-        for secret in (
-            str(SECRET_LATITUDE),
-            str(SECRET_LONGITUDE),
+        for telltale in (
+            str(TELLTALE_LATITUDE),
+            str(TELLTALE_LONGITUDE),
             "4712345678",
-            "SECRETQUERY",
+            "TELLTALEQUERY",
             "Erb Street",
-            SECRET_FORWARDED_FOR,
+            TELLTALE_FORWARDED_FOR,
             "203.0.113",
-            "SECRETID",
+            "TELLTALEID",
             "testclient",
         ):
-            assert secret not in text, f"{secret!r} reached the exposition"
+            assert telltale not in text, f"{telltale!r} reached the exposition"
 
     def test_every_label_value_comes_from_a_closed_vocabulary(
         self, app: FastAPI, client: TestClient
