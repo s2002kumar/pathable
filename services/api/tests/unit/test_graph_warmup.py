@@ -15,7 +15,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from prometheus_client import generate_latest
 
+from pathable_api.core.metrics import Metrics
 from pathable_api.routing.graph import NoActiveDatasetError
 from pathable_api.routing.warmup import GraphWarmup
 
@@ -25,6 +27,7 @@ class _FakeGraph:
     dataset_id: str = "0c9d1b3a-0000-4000-8000-000000000000"
     node_count: int = 9
     segment_count: int = 13
+    load_seconds: float = 4.25
 
 
 class _FakeDatabase:
@@ -127,6 +130,32 @@ class TestLoading:
         await _settle(warmup)
 
         assert repository.calls == ["waterloo"]
+
+    async def test_each_load_publishes_what_this_process_measured(self) -> None:
+        # The whole step readiness waited for, and the loader's own time within
+        # it: production measured 44.1 s and 35.2 s, and the gap is where the
+        # database read and connected-part work goes.
+        metrics = Metrics(version="test")
+        warmup = GraphWarmup.for_regions(("waterloo",), metrics=metrics)
+
+        warmup.start(_FakeDatabase(), _FakeRepository({"waterloo": _FakeGraph()}, delay=0.05))  # type: ignore[arg-type]
+        await _settle(warmup)
+
+        text = generate_latest(metrics.registry).decode()
+        assert 'pathable_graph_load_seconds{region="waterloo",stage="load"} 4.25' in text
+        preload = warmup.regions["waterloo"].seconds
+        assert preload is not None
+        assert preload >= 0.05
+        assert f'pathable_graph_load_seconds{{region="waterloo",stage="preload"}} {preload}' in text
+
+    async def test_a_failed_load_publishes_no_time(self) -> None:
+        metrics = Metrics(version="test")
+        warmup = GraphWarmup.for_regions(("waterloo",), metrics=metrics)
+
+        warmup.start(_FakeDatabase(), _FakeRepository({"waterloo": RuntimeError("boom")}))  # type: ignore[arg-type]
+        await _settle(warmup)
+
+        assert "pathable_graph_load_seconds{" not in generate_latest(metrics.registry).decode()
 
 
 class TestFailure:

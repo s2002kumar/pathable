@@ -111,6 +111,12 @@ class Settings(BaseSettings):
     # --- Observability ----------------------------------------------------
     log_level: LogLevel = "INFO"
     log_format: LogFormat = "json"
+    #: Port the Prometheus exposition is served on, on the same interface as
+    #: the API (core/metrics.py). Unset, the default, collects metrics but
+    #: serves them nowhere. A deployment must keep this port unpublished: the
+    #: exposition has no authentication, by design, because nothing outside
+    #: the host's container network should be able to reach it.
+    metrics_port: Annotated[int | None, Field(ge=1, le=65535)] = None
 
     # ------------------------------------------------------------------
     # Field validation
@@ -241,6 +247,16 @@ class Settings(BaseSettings):
 
         if problems:
             raise ValueError("; ".join(problems))
+        return self
+
+    @model_validator(mode="after")
+    def _keep_metrics_off_the_api_port(self) -> Self:
+        if self.metrics_port is not None and self.metrics_port == self.api_port:
+            msg = (
+                f"METRICS_PORT must differ from API_PORT ({self.api_port}); the metrics "
+                "listener is separate so that only the API port is ever proxied publicly"
+            )
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="after")

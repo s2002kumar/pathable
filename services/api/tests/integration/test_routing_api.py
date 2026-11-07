@@ -28,6 +28,7 @@ from pathable_api.geo.models import DatasetVersion
 from pathable_api.main import create_app
 from pathable_api.routing.activation import promote
 from pathable_api.routing.graph import GraphRepository, RoutableGraph
+from tests.metrics_scrape import exposition, samples, value
 
 pytestmark = pytest.mark.integration
 
@@ -629,3 +630,112 @@ async def _load_then_switch(database_url: str) -> RoutableGraph:
             return served
     finally:
         await engine.dispose()
+
+
+def _app(client: TestClient) -> FastAPI:
+    app = client.app
+    assert isinstance(app, FastAPI)
+    return app
+
+
+class TestMetrics:
+    """What a scrape says about real comparisons, and what it never says."""
+
+    def test_a_found_route_is_a_success_with_both_searches_timed(self, client: TestClient) -> None:
+        compare(client)
+        app = _app(client)
+
+        assert (
+            value(app, "pathable_route_comparisons_total", profile="wheelchair", outcome="success")
+            == 1
+        )
+        assert (
+            value(app, "pathable_route_comparison_duration_seconds_count", profile="wheelchair")
+            == 1
+        )
+        assert value(app, "pathable_route_search_duration_seconds_count", kind="shortest") == 1
+        assert value(app, "pathable_route_search_duration_seconds_count", kind="profile") == 1
+
+    def test_no_route_is_its_own_outcome_and_was_still_computed(self, client: TestClient) -> None:
+        response = client.post(
+            COMPARE,
+            json={
+                "region": SYNTHETIC_REGION_SLUG,
+                "origin": {"longitude": -80.60, "latitude": 43.40},
+                "destination": D,
+                "profile": "wheelchair",
+            },
+        )
+        app = _app(client)
+
+        assert response.json()["code"] == "no_route"
+        assert (
+            value(app, "pathable_route_comparisons_total", profile="wheelchair", outcome="no_route")
+            == 1
+        )
+        assert (
+            value(app, "pathable_route_comparison_duration_seconds_count", profile="wheelchair")
+            == 1
+        )
+        # No route was found, so no search produced one to time.
+        assert samples(app, "pathable_route_search_duration_seconds_count") == []
+
+    def test_requests_that_cannot_be_routed_as_given_are_invalid(self, client: TestClient) -> None:
+        client.post(
+            COMPARE,
+            json={
+                "region": SYNTHETIC_REGION_SLUG,
+                "origin": A,
+                "destination": D,
+                "profile": "custom",
+            },
+        )
+        client.post(
+            COMPARE,
+            json={"region": "atlantis", "origin": A, "destination": D, "profile": "wheelchair"},
+        )
+        app = _app(client)
+
+        assert (
+            value(app, "pathable_route_comparisons_total", profile="custom", outcome="invalid") == 1
+        )
+        assert (
+            value(app, "pathable_route_comparisons_total", profile="wheelchair", outcome="invalid")
+            == 1
+        )
+
+    def test_no_coordinate_or_segment_identity_reaches_the_exposition(
+        self, client: TestClient
+    ) -> None:
+        body = compare(client)
+        text = exposition(_app(client))
+
+        identities = {
+            segment["edge_identity"]
+            for route in (body["standard_route"], body["accessible_route"])
+            for segment in route["segments"]
+        }
+        assert identities
+        for identity in identities:
+            assert identity not in text
+        for point in (A, D, body["accessible_route"]["origin"]):
+            assert str(point["longitude"]) not in text
+            assert str(point["latitude"]) not in text
+        assert body["dataset"]["dataset_id"] not in text
+
+    def test_a_broken_collector_costs_the_metric_not_the_route(self, client: TestClient) -> None:
+        class Broken:
+            def labels(self, **_: str) -> Any:
+                msg = "collector is broken"
+                raise RuntimeError(msg)
+
+        metrics = _app(client).state.metrics
+        metrics.route_comparisons = Broken()
+        metrics.route_comparison_duration = Broken()
+        metrics.route_search_duration = Broken()
+        metrics.http_requests = Broken()
+
+        body = compare(client)
+
+        assert body["standard_route"]["stairway_count"] == 1
+        assert body["accessible_route"]["stairway_count"] == 0

@@ -44,6 +44,7 @@ SETTINGS_ENV_VARS = (
     "RATE_LIMIT_ROUTES_PER_MINUTE",
     "RATE_LIMIT_SEARCHES_PER_MINUTE",
     "TRUSTED_PROXY_HOPS",
+    "METRICS_PORT",
 )
 
 
@@ -90,6 +91,7 @@ def build_settings(
     rate_limit_routes_per_minute: int = 30,
     rate_limit_searches_per_minute: int = 60,
     trusted_proxy_hops: int = 0,
+    metrics_port: int | None = None,
 ) -> Settings:
     """Construct settings for a test, ignoring the ambient environment."""
     return Settings(
@@ -111,6 +113,7 @@ def build_settings(
         rate_limit_routes_per_minute=rate_limit_routes_per_minute,
         rate_limit_searches_per_minute=rate_limit_searches_per_minute,
         trusted_proxy_hops=trusted_proxy_hops,
+        metrics_port=metrics_port,
     )
 
 

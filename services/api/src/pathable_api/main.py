@@ -18,7 +18,12 @@ from pathable_api.core.config import Settings, get_settings
 from pathable_api.core.errors import register_exception_handlers
 from pathable_api.core.event_loop import configure_event_loop_policy
 from pathable_api.core.logging import configure_logging, get_logger
-from pathable_api.core.middleware import RequestContextMiddleware, RequestSizeLimitMiddleware
+from pathable_api.core.metrics import Metrics, MetricsServer, serve_metrics
+from pathable_api.core.middleware import (
+    MetricsMiddleware,
+    RequestContextMiddleware,
+    RequestSizeLimitMiddleware,
+)
 from pathable_api.core.rate_limit import RETRY_AFTER_HEADER, RateLimitMiddleware, RateLimitPolicy
 from pathable_api.core.request_context import REQUEST_ID_HEADER
 from pathable_api.db.session import Database, build_database
@@ -116,10 +121,22 @@ def _build_lifespan(
             extra={"provider": app.state.geocoder.name, "enabled": app.state.geocoder.enabled},
         )
 
+        # On its own port, so the public API port never serves it. Started before
+        # the graph loads, so a scrape during a slow start sees the process is up.
+        metrics_server: MetricsServer | None = None
+        if settings.metrics_port is not None:
+            metrics_server = serve_metrics(
+                app.state.metrics, host=settings.api_host, port=settings.metrics_port
+            )
+            logger.info(
+                "Serving metrics",
+                extra={"metrics_host": metrics_server.host, "metrics_port": metrics_server.port},
+            )
+
         # Preloading runs in the background so liveness answers at once; readiness
         # reports "loading" until every configured region is routable. See
         # routing/warmup.py for why a deployment wants this and development does not.
-        warmup = GraphWarmup.for_regions(settings.graph_preload_regions)
+        warmup = GraphWarmup.for_regions(settings.graph_preload_regions, metrics=app.state.metrics)
         app.state.graph_warmup = warmup
         if warmup.configured:
             if app.state.database is None:
@@ -135,6 +152,8 @@ def _build_lifespan(
             yield
         finally:
             await warmup.stop()
+            if metrics_server is not None:
+                metrics_server.close()
             database: Database | None = getattr(app.state, "database", None)
             if database is not None:
                 await database.dispose()
@@ -194,6 +213,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.state.settings = resolved
+    # Created with the application, not in the lifespan, because the middleware
+    # below needs it before the first request and handlers record into it.
+    app.state.metrics = Metrics(version=resolved.app_version)
 
     # Registered before CORS, so it runs inside it: a refusal still carries the
     # CORS headers a browser on an allowed origin needs to read it, and a
@@ -222,6 +244,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # a refusal with no way to report it does not.
     app.add_middleware(RequestSizeLimitMiddleware)
     app.add_middleware(RequestContextMiddleware)
+    # Last registered, so outermost: it counts every refusal the middleware
+    # inside it produces, each against the endpoint it was refused at.
+    app.add_middleware(MetricsMiddleware, metrics=app.state.metrics, application=app)
     register_exception_handlers(app)
     app.include_router(api_router)
 

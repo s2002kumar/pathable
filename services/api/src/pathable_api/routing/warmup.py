@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from pathable_api.core.logging import get_logger
+from pathable_api.core.metrics import Metrics
 from pathable_api.db.session import Database
 from pathable_api.routing.graph import GraphRepository, NoActiveDatasetError
 from pathable_api.schemas.health import DependencyCheck
@@ -57,11 +58,13 @@ class GraphWarmup:
     """Tracks the startup preload of every configured region."""
 
     regions: dict[str, RegionWarmup] = field(default_factory=dict)
+    #: Where each region's measured load time is published, if anywhere.
+    metrics: Metrics | None = None
     _task: asyncio.Task[None] | None = None
 
     @classmethod
-    def for_regions(cls, slugs: tuple[str, ...]) -> GraphWarmup:
-        return cls(regions={slug: RegionWarmup(slug=slug) for slug in slugs})
+    def for_regions(cls, slugs: tuple[str, ...], *, metrics: Metrics | None = None) -> GraphWarmup:
+        return cls(regions={slug: RegionWarmup(slug=slug) for slug in slugs}, metrics=metrics)
 
     @property
     def configured(self) -> bool:
@@ -125,6 +128,14 @@ class GraphWarmup:
 
         region.seconds = round(time.perf_counter() - started, 3)
         region.state = "ready"
+        if self.metrics is not None:
+            # The startup step readiness waited for, and the graph build inside it,
+            # each as this process measured it.
+            self.metrics.record_graph_load(
+                region=region.slug,
+                preload_seconds=region.seconds,
+                load_seconds=graph.load_seconds,
+            )
         region.detail = (
             f"{region.slug}: {graph.node_count} nodes, {graph.segment_count} segments "
             f"loaded in {region.seconds:.1f} s"
