@@ -1,0 +1,28 @@
+# PathAble AI — the availability alert for the public pilot, in Prometheus rule
+# format. Complete as it stands: it needs no threshold, so load-alerts.sh loads
+# it whenever it runs. Tested with promtool in CI (alerts.test.yaml).
+#
+# Series names are the probe Alloy runs (infra/vps/alloy/config.alloy). A unit
+# test fails if either side renames one.
+#
+# Load it only once Alloy is running on the host: with no probe data at all,
+# the absence branch fires, exactly as it would for a host that is down.
+
+groups:
+  - name: pathable-availability
+    interval: 1m
+    rules:
+      # Every readiness probe through Caddy has failed for two minutes — or no
+      # probe result has arrived for two minutes, which is what a host, Docker or
+      # Alloy outage looks like from Grafana Cloud. A deploy's ~60 s readiness
+      # gap is shorter than the window, so a routine release does not page.
+      - alert: PathAbleApiUnavailable
+        expr: |
+          max_over_time(probe_success{probe="pathable-public-readiness"}[2m]) == 0
+          or
+          absent_over_time(probe_success{probe="pathable-public-readiness"}[2m])
+        labels:
+          severity: critical
+        annotations:
+          summary: "The public pilot has not answered readiness for over two minutes."
+          description: "No readiness probe through Caddy succeeded for two minutes, or no probe result arrived (host, Docker or Alloy down). See docs/deployment/VPS.md."

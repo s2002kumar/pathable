@@ -1,0 +1,173 @@
+{
+  "what": "Production observability activation on the public pilot: deploy of main c020398 and verification of everything that does not need Grafana Cloud read access. Alloy did not run; see alloy.",
+  "captured_at": "2026-11-07T17:15:00Z",
+  "public_url": "https://51.222.36.79",
+  "deployment": {
+    "sha": "c020398d0c1f88de79c07903a5c6b7bd94c20195",
+    "is": "main after PR #122 (production observability), unmodified",
+    "reported_version": "0.1.0+c020398d0c1f",
+    "previous": "629a67a8fb6d1e9003ae50d6f5243c2d7353970b",
+    "tooling": "infra/vps/deploy.sh up <sha>, run detached; log /srv/pathable/evidence/deploy-c020398-20261107.log on the host",
+    "build_seconds": {
+      "api": 89.4,
+      "web": 98.2
+    },
+    "live_seconds": 21.5,
+    "ready_seconds": 66.1,
+    "graph_seconds": {
+      "preload": 46.07,
+      "load": 36.65,
+      "source": "pathable_graph_load_seconds on the new process"
+    },
+    "database_revision": "0008_place_codes, unchanged (no migration in this release)",
+    "place_index": "current: version 2, 33,225 entries, extract and network sha256 cee90e37…5ef3"
+  },
+  "rollback_point": {
+    "backup": "/var/backups/pathable/pathable-20261107T170715Z-pre-deploy-629a67a8fb6d.dump",
+    "bytes": 32611561,
+    "tables_with_data": 12,
+    "sha256_check": "OK (sha256sum -c against the .sha256 written beside it)",
+    "holds": "the database as 629a67a served it, at 0008_place_codes; the same revision c020398 uses, so plain deploy.sh rollback needs no restore"
+  },
+  "routing_dataset": {
+    "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+    "content_checksum_recorded": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00",
+    "content_checksum_recomputed": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00",
+    "how": "pathable datasets checksum, release image, after the switch; 22.47 s",
+    "matches": true
+  },
+  "smoke": {
+    "external": {
+      "started_at": "2026-11-07T17:10:52+00:00",
+      "client": "s23kumar",
+      "checks_passed": 19,
+      "checks_total": 19,
+      "searched_journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 646 ms",
+      "sequential_routes": {
+        "round_trip_ms": {
+          "n": 10,
+          "min": 299.9,
+          "p50": 321.7,
+          "p95": 358.6,
+          "max": 358.6,
+          "mean": 323.9
+        },
+        "server_computation_ms": {
+          "n": 10,
+          "min": 131.9,
+          "p50": 138.4,
+          "p95": 155.8,
+          "max": 155.8,
+          "mean": 140.7
+        }
+      }
+    },
+    "vps": {
+      "started_at": "2026-11-07T17:11:57+00:00",
+      "client": "vps-29fc3e47",
+      "checks_passed": 19,
+      "checks_total": 19,
+      "searched_journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 219 ms",
+      "sequential_routes": {
+        "round_trip_ms": {
+          "n": 10,
+          "min": 173.7,
+          "p50": 175.9,
+          "p95": 199.5,
+          "max": 199.5,
+          "mean": 178.5
+        },
+        "server_computation_ms": {
+          "n": 10,
+          "min": 131.1,
+          "p50": 136.6,
+          "p95": 153.2,
+          "max": 153.2,
+          "mean": 138.1
+        }
+      }
+    }
+  },
+  "metrics_listener": {
+    "inside_api_container": "http://127.0.0.1:9464/metrics answered 200, 222 samples (206 pathable_*)",
+    "from_edge_network": "http://api:9464/metrics answered from a container on pathable_edge, the path Alloy scrapes",
+    "host": "no listener on 9464 or 12345; only Caddy publishes ports",
+    "from_outside": "TCP 9464, 12345 and 8000 timed out from the internet; GET /metrics and /api/v1/metrics return 404 with no exposition"
+  },
+  "privacy_check": {
+    "how": "a standard-library script run in the API container against its own listener, after both smoke runs had searched and routed; checks every label against its closed vocabulary and every value for coordinate-like decimals, IP addresses, UUIDs, 32-hex ids, query strings and the exact search text and coordinates the smoke test sent",
+    "samples": 239,
+    "pathable_samples": 223,
+    "label_values": {
+      "generation": [
+        "0",
+        "1",
+        "2"
+      ],
+      "implementation": [
+        "CPython"
+      ],
+      "kind": [
+        "profile",
+        "shortest"
+      ],
+      "method": [
+        "GET",
+        "POST"
+      ],
+      "mode": [
+        "submit"
+      ],
+      "outcome": [
+        "success"
+      ],
+      "profile": [
+        "wheelchair"
+      ],
+      "region": [
+        "waterloo"
+      ],
+      "route": [
+        "/api/v1/geocode/search",
+        "/api/v1/health/live",
+        "/api/v1/health/ready",
+        "/api/v1/routes/compare",
+        "/api/v1/routes/profiles",
+        "/openapi.json",
+        "unmatched"
+      ],
+      "stage": [
+        "load",
+        "preload"
+      ],
+      "status": [
+        "200",
+        "404",
+        "429",
+        "503"
+      ],
+      "status_class": [
+        "2xx",
+        "4xx",
+        "5xx"
+      ]
+    },
+    "violations": [],
+    "note": "A first run flagged python_info{version}, the interpreter version, against the release-version pattern; a checker false positive, corrected and rerun."
+  },
+  "alloy": {
+    "started_by": "deploy.sh, observability profile enabled by /srv/pathable/secrets/grafana-cloud.env (mode 0600; keys and the non-secret URL and user verified without printing the file)",
+    "result": "crash loop: 11 restarts, every one 'failed to create the remotecfg service: mkdir /var/lib/alloy/data: permission denied'. Stopped with docker stop; nothing was scraped or remote-written.",
+    "cause": "grafana/alloy:v1.21.2 runs as root; /var/lib/alloy is uid 473, mode 0770; compose drops every capability, so root cannot enter it",
+    "fix": "run as the image's own user, user: \"473:473\" (fix/alloy-run-as-its-user)",
+    "fix_proven_on_host": "throwaway containers with the same flags and a minimal config: root exited 1 with the same error; uid 473 stayed running. Both removed.",
+    "memory": "not measured: Alloy never ran"
+  },
+  "not_done": {
+    "grafana_ingestion": "not verified: Alloy never ran",
+    "dashboard": "not imported: needs Grafana Cloud access this session does not have",
+    "api_unavailable_alert": "not configured: needs a rules:write token or the Grafana UI",
+    "synthetic_monitoring": "not configured: needs Grafana Cloud access this session does not have",
+    "route_p95_alert": "deliberately not configured; threshold unset"
+  }
+}

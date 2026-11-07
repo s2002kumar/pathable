@@ -452,15 +452,42 @@ jobs:
             exit 1
           fi
 
+      # The compose service itself, started as the host starts it, with
+      # placeholder credentials. Validating the config file could not see that
+      # Alloy, as root with every capability dropped, cannot reach its own
+      # storage: it restarted forever on the pilot (2026-11-07). Nothing here
+      # connects anywhere; the scrape and the remote write simply fail.
+      - name: The Alloy service starts as compose defines it
+        run: |
+          set -euo pipefail
+          mkdir -p infra/secrets
+          printf '%s\n' \
+            GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus.example.invalid/api/prom/push \
+            GRAFANA_CLOUD_PROMETHEUS_USER=0 \
+            GRAFANA_CLOUD_PROMETHEUS_TOKEN=ci-placeholder > infra/secrets/grafana-cloud.env
+          export POSTGRES_SUPERUSER_PASSWORD=ci PATHABLE_DB_PASSWORD=ci PATHABLE_REVISION=ci \
+            PATHABLE_APP_VERSION=ci PATHABLE_HOST=pilot.example.invalid
+          docker compose -f infra/vps/compose.yaml --profile observability up -d --no-deps alloy
+          sleep 15
+          docker logs pathable-alloy-1 2>&1 | tail -n 15
+          state="$(docker inspect --format '{{.State.Status}} restarts={{.RestartCount}}' pathable-alloy-1)"
+          docker compose -f infra/vps/compose.yaml --profile observability down -v
+          if [ "$state" != "running restarts=0" ]; then
+            echo "::error::the Alloy service is $state, not running"
+            exit 1
+          fi
+
       # 0.5 s is the test suite's value, not a production threshold; see the
       # header of alerts.test.yaml.
       - name: Alert rules are valid and behave as tested
         run: |
           mkdir -p "$RUNNER_TEMP/alerts"
           ROUTE_P95_THRESHOLD_SECONDS=0.5 sh infra/vps/grafana/render-alerts.sh \
-            > "$RUNNER_TEMP/alerts/alerts.rules.yaml"
-          cp infra/vps/grafana/alerts.test.yaml "$RUNNER_TEMP/alerts/"
+            > "$RUNNER_TEMP/alerts/latency.rules.yaml"
+          cp infra/vps/grafana/availability.rules.yaml infra/vps/grafana/alerts.test.yaml \
+            "$RUNNER_TEMP/alerts/"
           docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
-            --entrypoint promtool prom/prometheus:v3.15.1 check rules alerts.rules.yaml
+            --entrypoint promtool prom/prometheus:v3.15.1 check rules \
+            availability.rules.yaml latency.rules.yaml
           docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
             --entrypoint promtool prom/prometheus:v3.15.1 test rules alerts.test.yaml
