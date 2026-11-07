@@ -128,16 +128,16 @@ test.describe('the recruiter demo', () => {
       `${Math.round(answer.accessible_route.distance_m)} m`,
     );
     await expect(page.getByTestId('difference-extra')).toHaveText(
-      `+${Math.round(answer.extra_distance_m)} m detour`,
+      `+${Math.round(answer.extra_distance_m)} m`,
     );
     await expect(page.getByTestId('main-difference')).toContainText(
       `Avoids ${stairways} recorded stairways`,
     );
 
-    // The shortest route crosses stairs a wheelchair cannot use, so it gets no
-    // travel time — read from the segments the live API marks, not the count.
+    // The shortest route is a fixed baseline, timed at walking pace whatever
+    // the profile (Waterloo Core v2); the stairs it crosses are what is marked.
     await expect(page.getByTestId('difference-shortest-time')).toHaveText(
-      'Time unavailable for this profile',
+      /^\d+(–\d+)? min · walking pace$/,
     );
     await expect(page.getByTestId('route-blocked')).toContainText(
       `${stairways} recorded stairways`,
@@ -208,7 +208,7 @@ test.describe('the recruiter demo', () => {
     await runExample(page);
 
     // Colour is never the only cue: each line's card names its route.
-    await expect(page.getByTestId('difference-accessible')).toContainText('Wheelchair route');
+    await expect(page.getByTestId('difference-accessible')).toContainText('Your wheelchair route');
     await expect(page.getByTestId('difference-shortest')).toContainText(
       'Shortest pedestrian route',
     );
@@ -247,7 +247,7 @@ test.describe('the recruiter demo', () => {
       );
     } else {
       // A network with no elevation model owes it no credit in the answer.
-      await expect(page.getByTestId('route-difference')).toBeVisible();
+      await expect(page.getByTestId('route-details')).toBeVisible();
       await expect(page.getByTestId('elevation-attribution')).toHaveCount(0);
     }
   });
