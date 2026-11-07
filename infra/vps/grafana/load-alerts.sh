@@ -1,7 +1,7 @@
 #!/bin/sh
 # Load the pilot's alert rules into Grafana Cloud's Prometheus (its Mimir ruler).
 #
-#   ROUTE_P95_THRESHOLD_SECONDS=<seconds> \
+#   [ROUTE_P95_THRESHOLD_SECONDS=<seconds>] \
 #   MIMIR_ADDRESS=https://prometheus-prod-NN-prod-REGION.grafana.net \
 #   MIMIR_TENANT_ID=<Prometheus instance ID> \
 #   MIMIR_API_KEY=<access policy token with rules:read and rules:write> \
@@ -10,6 +10,10 @@
 # MIMIR_ADDRESS is the Prometheus URL from the Grafana Cloud portal without its
 # /api/prom/push path. The token is not the one Alloy holds: Alloy's can only
 # write metrics, and this one never needs to live on the pilot host.
+#
+# The availability alert is always loaded. The route latency alert is loaded
+# only when ROUTE_P95_THRESHOLD_SECONDS is set, because its threshold is to be
+# chosen from observed latency; until then it is left out, not guessed.
 #
 # Runs mimirtool from its pinned image, so the only requirement is Docker.
 # `rules load` replaces groups of the same name, so running it again with a new
@@ -35,12 +39,25 @@ trap 'rm -rf "$work"' EXIT
 # key. So it is added here, at load time only.
 {
     echo "namespace: pathable"
-    "$HERE/render-alerts.sh"
-} > "$work/pathable.rules.yaml"
+    cat "$HERE/availability.rules.yaml"
+} > "$work/availability.rules.yaml"
+files="/rules/availability.rules.yaml"
+if [ -n "${ROUTE_P95_THRESHOLD_SECONDS:-}" ]; then
+    {
+        echo "namespace: pathable"
+        "$HERE/render-alerts.sh"
+    } > "$work/latency.rules.yaml"
+    files="$files /rules/latency.rules.yaml"
+fi
 
+# shellcheck disable=SC2086
 docker run --rm \
     -e MIMIR_ADDRESS -e MIMIR_TENANT_ID -e MIMIR_API_KEY \
     -v "$work:/rules:ro" \
-    "$MIMIRTOOL_IMAGE" rules load /rules/pathable.rules.yaml
+    "$MIMIRTOOL_IMAGE" rules load $files
 
-echo "load-alerts: loaded the pathable namespace with a route p95 threshold of ${ROUTE_P95_THRESHOLD_SECONDS}s"
+if [ -n "${ROUTE_P95_THRESHOLD_SECONDS:-}" ]; then
+    echo "load-alerts: loaded availability, and route latency with a p95 threshold of ${ROUTE_P95_THRESHOLD_SECONDS}s"
+else
+    echo "load-alerts: loaded availability; route latency left out until ROUTE_P95_THRESHOLD_SECONDS is chosen"
+fi

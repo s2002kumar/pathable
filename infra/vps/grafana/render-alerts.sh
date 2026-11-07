@@ -1,7 +1,10 @@
 #!/bin/sh
-# Render the pilot's alert rules with a route latency threshold.
+# Render the pilot's route latency alert with its threshold.
 #
-#   ROUTE_P95_THRESHOLD_SECONDS=<seconds> render-alerts.sh > alerts.rules.yaml
+#   ROUTE_P95_THRESHOLD_SECONDS=<seconds> render-alerts.sh > latency.rules.yaml
+#
+# The availability alert needs no threshold and is used as it stands
+# (availability.rules.yaml).
 #
 # The threshold has no default on purpose: it is to be set from the p95 the
 # pilot is actually observed to have, not guessed. Refuses anything that is not
@@ -27,4 +30,4 @@ if ! awk -v t="$threshold" 'BEGIN { exit !(t > 0) }'; then
     exit 2
 fi
 
-sed "s/\${ROUTE_P95_THRESHOLD_SECONDS}/$threshold/" "$HERE/alerts.rules.yaml.template"
+sed "s/\${ROUTE_P95_THRESHOLD_SECONDS}/$threshold/" "$HERE/latency.rules.yaml.template"

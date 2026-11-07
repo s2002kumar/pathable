@@ -1,6 +1,7 @@
-# promtool unit tests for alerts.rules.yaml.template, run in CI:
+# promtool unit tests for availability.rules.yaml and
+# latency.rules.yaml.template, run in CI:
 #
-#   ROUTE_P95_THRESHOLD_SECONDS=0.5 render-alerts.sh > alerts.rules.yaml
+#   ROUTE_P95_THRESHOLD_SECONDS=0.5 render-alerts.sh > latency.rules.yaml
 #   promtool test rules alerts.test.yaml
 #
 # 0.5 s is a TEST VALUE ONLY, chosen so the synthetic series below sit clearly
@@ -10,7 +11,8 @@
 # Probe samples arrive every 30 s, as Alloy scrapes them.
 
 rule_files:
-  - alerts.rules.yaml
+  - availability.rules.yaml
+  - latency.rules.yaml
 
 evaluation_interval: 1m
 

@@ -107,11 +107,11 @@ series, 14-day retention, 3 users, no credit card required).
    source.
 6. **Set up a contact point** (an email address) in _Alerting → Contact points_
    and route the default notification policy to it.
-7. **Load the alerts** once the route p95 has been observed for a while (see
-   below):
+7. **Load the availability alert** once Alloy is running and probe data has
+   reached Grafana Cloud (before that, missing data fires it, as a down host
+   would):
 
    ```sh
-   ROUTE_P95_THRESHOLD_SECONDS=<seconds> \
    MIMIR_ADDRESS=https://prometheus-prod-NN-prod-REGION.grafana.net \
    MIMIR_TENANT_ID=<instance ID> \
    MIMIR_API_KEY=<pathable-rules token> \
@@ -119,13 +119,17 @@ series, 14-day retention, 3 users, no credit card required).
    ```
 
    `MIMIR_ADDRESS` is the same host as the remote-write URL **without**
-   `/api/prom/push`. The script runs `grafana/mimirtool:3.2.2` in Docker and
-   replaces the `pathable` rule namespace, so re-running it with a new threshold
-   updates the rule in place.
+   `/api/prom/push`. The script runs `grafana/mimirtool:3.2.2` in Docker.
+
+8. **Add the route latency alert** once the route p95 has been observed for a
+   while (see below): the same command with `ROUTE_P95_THRESHOLD_SECONDS=<seconds>`
+   in front. `rules load` replaces groups of the same name, so re-running it with
+   a new threshold updates the rule in place.
 
 ## Alerts
 
-`infra/vps/grafana/alerts.rules.yaml.template`, tested by `promtool` in CI
+`infra/vps/grafana/availability.rules.yaml` and
+`latency.rules.yaml.template`, tested by `promtool` in CI
 (`alerts.test.yaml`):
 
 - **PathAbleApiUnavailable** (critical) — no readiness probe has succeeded for

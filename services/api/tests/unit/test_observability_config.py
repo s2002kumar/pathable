@@ -24,7 +24,8 @@ from tests.conftest import build_settings
 REPO = Path(__file__).resolve().parents[4]
 GRAFANA = REPO / "infra" / "vps" / "grafana"
 DASHBOARD = GRAFANA / "pathable-dashboard.json"
-ALERTS = GRAFANA / "alerts.rules.yaml.template"
+AVAILABILITY = GRAFANA / "availability.rules.yaml"
+LATENCY = GRAFANA / "latency.rules.yaml.template"
 ALLOY = REPO / "infra" / "vps" / "alloy" / "config.alloy"
 VPS_COMPOSE = REPO / "infra" / "vps" / "compose.yaml"
 
@@ -50,7 +51,11 @@ def _dashboard_queries() -> list[str]:
 
 
 def _queries() -> list[str]:
-    return [*_dashboard_queries(), ALERTS.read_text(encoding="utf-8")]
+    return [
+        *_dashboard_queries(),
+        AVAILABILITY.read_text(encoding="utf-8"),
+        LATENCY.read_text(encoding="utf-8"),
+    ]
 
 
 def _exported_series() -> set[str]:
@@ -109,6 +114,24 @@ def test_alloy_scrapes_the_port_the_api_is_told_to_serve_on() -> None:
     assert f'"__address__" = "api:{port.group(1)}"' in alloy
 
 
+def _service(compose: str, name: str) -> str:
+    """One service's block of a compose file, as text."""
+    match = re.search(rf"^  {name}:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|^[a-z])", compose, re.M | re.S)
+    assert match is not None, f"no {name} service"
+    return match.group(1)
+
+
+def test_alloy_runs_as_its_own_user_since_root_without_capabilities_cannot_reach_its_storage() -> (
+    None
+):
+    # Regression, 2026-11-07: as root with every capability dropped, Alloy could
+    # not enter /var/lib/alloy (uid 473, mode 0770) and restarted forever on the
+    # pilot. Dropping the capabilities stays; the user is the image's own.
+    alloy = _service(VPS_COMPOSE.read_text(encoding="utf-8"), "alloy")
+    assert 'user: "473:473"' in alloy
+    assert "cap_drop: [ALL]" in alloy
+
+
 def test_the_metrics_port_is_never_published() -> None:
     # Only Caddy publishes ports; the exposition has no authentication.
     compose = VPS_COMPOSE.read_text(encoding="utf-8")
@@ -121,7 +144,16 @@ def test_the_metrics_port_is_never_published() -> None:
 def test_the_latency_threshold_is_left_to_be_decided() -> None:
     # The p95 threshold is set from observed production latency, never guessed
     # into the committed rules.
-    assert "${ROUTE_P95_THRESHOLD_SECONDS}" in ALERTS.read_text(encoding="utf-8")
+    assert "${ROUTE_P95_THRESHOLD_SECONDS}" in LATENCY.read_text(encoding="utf-8")
+
+
+def test_the_availability_alert_loads_without_any_threshold() -> None:
+    # It is wanted before the latency threshold exists, so nothing in it may
+    # wait for one.
+    rules = AVAILABILITY.read_text(encoding="utf-8")
+    assert "alert: PathAbleApiUnavailable" in rules
+    assert "${" not in rules
+    assert "PathAbleRouteLatencyP95High" not in rules
 
 
 def test_the_series_pattern_finds_names_in_a_real_query() -> None:
