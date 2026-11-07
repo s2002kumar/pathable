@@ -24,12 +24,13 @@ internet ─▶ caddy :80/:443 ──┬─ /api/v1/* ─▶ api :8000 (one work
                                           api ─▶ db :5432 (PostGIS, network with no route out)
 ```
 
-| Service | Image                     | Memory limit | Notes                                                               |
-| ------- | ------------------------- | -----------: | ------------------------------------------------------------------- |
-| `db`    | `postgis/postgis:17-3.5`  |        1 GiB | Network `data` only, which is `internal`                            |
-| `api`   | `pathable-api:<full SHA>` |      1.5 GiB | Connects as `pathable_app`: not a superuser, owns only its database |
-| `web`   | `pathable-web:<full SHA>` |      512 MiB | Built with `NEXT_PUBLIC_API_BASE_URL` = the public origin           |
-| `caddy` | `caddy:2.11.7-alpine`     |      256 MiB | The only container with published ports                             |
+| Service | Image                     | Memory limit | Notes                                                                                |
+| ------- | ------------------------- | -----------: | ------------------------------------------------------------------------------------ |
+| `db`    | `postgis/postgis:17-3.5`  |        1 GiB | Network `data` only, which is `internal`                                             |
+| `api`   | `pathable-api:<full SHA>` |      1.5 GiB | Connects as `pathable_app`: not a superuser, owns only its database                  |
+| `web`   | `pathable-web:<full SHA>` |      512 MiB | Built with `NEXT_PUBLIC_API_BASE_URL` = the public origin                            |
+| `caddy` | `caddy:2.11.7-alpine`     |      256 MiB | The only container with published ports                                              |
+| `alloy` | `grafana/alloy:v1.21.2`   |      256 MiB | Metrics agent; runs only once its credentials exist ([below](#metrics-and-alerting)) |
 
 API, web and Caddy run with `no-new-privileges` and drop every capability
 (Caddy keeps `NET_BIND_SERVICE`). The API and web processes run as uid 10001.
@@ -46,6 +47,7 @@ revision; the images are tagged with the full SHA and carry it in their
 /srv/pathable/repo                  clone of the public repository; tooling runs from here
 /srv/pathable/stack                 compose.yaml, Caddyfile, db-init/ in use (copied by deploy.sh)
 /srv/pathable/secrets/pathable.env  0600: POSTGRES_SUPERUSER_PASSWORD, PATHABLE_DB_PASSWORD
+/srv/pathable/secrets/grafana-cloud.env  0600, optional: metrics credentials (OBSERVABILITY.md)
 /srv/pathable/site.env              PATHABLE_HOST, PATHABLE_TLS_PROFILE (not secret)
 /srv/pathable/release.env           the revision being served; release.env.previous before it
 /srv/pathable/deployments.log       one line per switch, with its live and ready times
@@ -352,8 +354,15 @@ journalctl -u pathable-backup.service           # backups
   route's origin and destination are, are never logged.
 - **PostgreSQL**: statements slower than one second.
 
-There is no metrics collection and no alerting. Nobody is told when the site
-is down ([KI-12](../development/KNOWN_ISSUES.md)).
+## Metrics and alerting
+
+The API exports bounded Prometheus metrics on an unpublished port, and Alloy
+ships them, with a probe of public readiness, to Grafana Cloud, where a
+dashboard and two alerts are prepared ([OBSERVABILITY.md](OBSERVABILITY.md)).
+**None of it is connected yet**: it waits on a Grafana Cloud account and two
+tokens, and the route latency alert on a threshold chosen from observed
+latency. Until then nobody is told when the site is down
+([KI-12](../development/KNOWN_ISSUES.md)).
 
 ## Rate limits
 

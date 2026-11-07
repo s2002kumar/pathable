@@ -529,9 +529,11 @@ anything is routed.
 The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
 ([`vps-deployment.json`](../evidence/vps-deployment.json)):
 
-1. **Nobody is told when it is down.** There are JSON logs with rotation and
-   nothing else: no metrics, no uptime check, no alerting. An outage lasts until
-   someone happens to look.
+1. **Nobody is told when it is down.** Metrics, a readiness probe, a dashboard
+   and an unavailability alert exist in the repository
+   ([OBSERVABILITY.md](../deployment/OBSERVABILITY.md), 2026-11-06), but none of
+   it is connected: it waits on a Grafana Cloud account only the founder can
+   create. Until then an outage lasts until someone happens to look.
 2. **Backups live on the host's own disk.** Daily and pre-deploy `pg_dump`s, 14
    days, restore exercised twice — but losing the VPS loses them too. They are
    copied off only by hand.
@@ -551,8 +553,8 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    only a rollback that far back needs the release image plus `libexpat1`.
 
 **Check when:** anyone is pointed at the URL, a domain is bought, or a second
-host is considered. Off-host backups and an uptime check are the two cheapest
-items; both need an account or a decision outside this repository.
+host is considered. Off-host backups and connecting the metrics are the two
+cheapest items; both need an account or a decision outside this repository.
 
 ---
 
