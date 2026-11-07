@@ -335,8 +335,9 @@ jobs:
       - name: Load the campus extract and its place index
         working-directory: services/api
         run: |
-          set -eu
+          set -euo pipefail
           fixture=tests/data/uw-campus.osm.pbf
+          uv run pathable regions seed
           uv run pathable ingest pbf --region waterloo --file "$fixture" \
             --provider overpass-api.de --source-timestamp 2026-11-07T02:48:06Z \
             --no-elevation-required | tee "$RUNNER_TEMP/ingest.txt"
