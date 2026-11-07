@@ -463,7 +463,8 @@ Each has a regression test except the last, a command-line label.
   tests, not on real data.
 - **The live pilot still runs policy 2.** `infra/vps/smoke.py` now expects
   401.3 m with 3 stairways against 503.7 m, so it fails against the pilot until
-  this is deployed, which is the founder's decision.
+  this is deployed, which is the founder's decision. _(2026-11-03: deployed as
+  `629a67a`; the smoke passed 19/19 from outside the host and on it.)_
 - **At 1280 × 720** a headline naming two moved ends still cuts the shortest
   route card's last line, its barrier chips; the panel scrolls. At 1366 × 768
   and 1280 × 800 both cards show (§10).

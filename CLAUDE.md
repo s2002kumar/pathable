@@ -162,8 +162,14 @@ from a previous commit.
 routes over a real 180,554-segment Waterloo network with 1 m LiDAR elevation.
 The repository went public at `v0.3.0-public-release`.
 
+A public pilot has run at <https://51.222.36.79> since 2026-10-15, on one VPS
+(ADR 0009, `docs/deployment/VPS.md`). Since 2026-11-03 it serves `main` at
+`629a67a`: Waterloo Core v2, routing policy 3, place index v2. That is part of
+Gate D, not Gate D: metrics and alerting are prepared
+(`docs/deployment/OBSERVABILITY.md`) but not connected, backups sit on the
+host's own disk, and a deploy interrupts routing for about a minute.
+
 Gate C has not started on `main`. `feature/c01-ml-production-readiness` (PR #22)
 is frozen legacy work: do not merge it or use its `0006_perception` migration as
-a baseline. The Gate D deployment architecture is proposed in ADR 0009, with
-nothing deployed. See `docs/product/PHASES.md` for what exists and — more
+a baseline. See `docs/product/PHASES.md` for what exists and — more
 importantly — what deliberately does not.
