@@ -195,6 +195,12 @@ services:
     profiles: [observability]
     restart: unless-stopped
     depends_on: [api]
+    # The image's own user. It runs as root by default, but /var/lib/alloy is
+    # owned by uid 473 with mode 0770, and root with every capability dropped
+    # cannot enter it: on the pilot Alloy failed "mkdir /var/lib/alloy/data:
+    # permission denied" and restarted forever (2026-11-07). The volume is
+    # created from that directory, so it is 473's too.
+    user: "473:473"
     command:
       - run
       # Alloy's own UI and API stay on the container's loopback.

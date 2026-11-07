@@ -109,6 +109,24 @@ def test_alloy_scrapes_the_port_the_api_is_told_to_serve_on() -> None:
     assert f'"__address__" = "api:{port.group(1)}"' in alloy
 
 
+def _service(compose: str, name: str) -> str:
+    """One service's block of a compose file, as text."""
+    match = re.search(rf"^  {name}:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|^[a-z])", compose, re.M | re.S)
+    assert match is not None, f"no {name} service"
+    return match.group(1)
+
+
+def test_alloy_runs_as_its_own_user_since_root_without_capabilities_cannot_reach_its_storage() -> (
+    None
+):
+    # Regression, 2026-11-07: as root with every capability dropped, Alloy could
+    # not enter /var/lib/alloy (uid 473, mode 0770) and restarted forever on the
+    # pilot. Dropping the capabilities stays; the user is the image's own.
+    alloy = _service(VPS_COMPOSE.read_text(encoding="utf-8"), "alloy")
+    assert 'user: "473:473"' in alloy
+    assert "cap_drop: [ALL]" in alloy
+
+
 def test_the_metrics_port_is_never_published() -> None:
     # Only Caddy publishes ports; the exposition has no authentication.
     compose = VPS_COMPOSE.read_text(encoding="utf-8")
