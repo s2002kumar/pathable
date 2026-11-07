@@ -33,6 +33,8 @@
 #   /srv/pathable/repo                  clone of the public repository
 #   /srv/pathable/stack                 compose.yaml, Caddyfile, db-init/ in use
 #   /srv/pathable/secrets/pathable.env  database passwords (0600)
+#   /srv/pathable/secrets/grafana-cloud.env  optional (0600): metrics credentials;
+#                                       Alloy runs only when it exists
 #   /srv/pathable/site.env              PATHABLE_HOST, PATHABLE_TLS_PROFILE
 #   /srv/pathable/release.env           current release; .previous is the one before
 #   /srv/pathable/deployments.log       one line per switch
@@ -43,6 +45,7 @@ ROOT="${PATHABLE_ROOT:-/srv/pathable}"
 REPO="$ROOT/repo"
 STACK="$ROOT/stack"
 SECRETS="$ROOT/secrets/pathable.env"
+METRICS_SECRETS="$ROOT/secrets/grafana-cloud.env"
 SITE="$ROOT/site.env"
 RELEASE="$ROOT/release.env"
 HISTORY="$ROOT/deployments.log"
@@ -65,7 +68,12 @@ esac
 # The one origin the site is served from, the web bundle calls and CORS allows.
 PATHABLE_PUBLIC_URL="https://$PATHABLE_HOST"
 
+# The metrics agent runs only where its credentials are: without them it would
+# start, fail to authenticate and restart forever (docs/deployment/OBSERVABILITY.md).
 compose() {
+    if [ -f "$METRICS_SECRETS" ]; then
+        set -- --profile observability "$@"
+    fi
     docker compose --project-directory "$STACK" -f "$STACK/compose.yaml" \
         --env-file "$SECRETS" --env-file "$SITE" --env-file "$RELEASE" "$@"
 }
@@ -190,9 +198,10 @@ write_release() {
     # The stack files in use are the ones from this checkout; copied rather than
     # bind-mounted from the repository so a `git pull` never changes a running
     # container's Caddyfile underneath it.
-    mkdir -p "$STACK/db-init"
+    mkdir -p "$STACK/db-init" "$STACK/alloy"
     cp "$HERE/compose.yaml" "$HERE/Caddyfile" "$STACK/"
     cp "$HERE/db-init/20-pathable.sh" "$STACK/db-init/"
+    cp "$HERE/alloy/config.alloy" "$STACK/alloy/"
 
     tmp="$RELEASE.tmp"
     {

@@ -16,6 +16,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
@@ -34,6 +35,7 @@ from pathable_api.geo.models import GazetteerBuild, GazetteerEntry
 from pathable_api.geo.place_text import initialism, normalise_text
 from pathable_api.geo.regions import WATERLOO, seed_region
 from pathable_api.main import create_app
+from tests.metrics_scrape import value
 from tests.unit.test_gazetteer import write_extract
 
 pytestmark = pytest.mark.integration
@@ -432,6 +434,31 @@ class TestApi:
 
         assert body["enabled"] is True
         assert body["matches"] == []
+
+    def test_found_and_empty_are_separate_outcomes(self, indexed_database_url: str) -> None:
+        with client_for(indexed_database_url) as client:
+            search(client, "Davis Centre")
+            search(client, "Atlantis Boulevard")
+            search(client, "Dav", autocomplete=True)
+        app = client.app
+        assert isinstance(app, FastAPI)
+
+        assert value(app, "pathable_place_searches_total", mode="submit", outcome="success") == 1
+        assert value(app, "pathable_place_searches_total", mode="submit", outcome="empty") == 1
+        assert (
+            value(app, "pathable_place_searches_total", mode="autocomplete", outcome="success") == 1
+        )
+        assert value(app, "pathable_place_search_duration_seconds_count", mode="submit") == 2
+
+    def test_a_region_with_no_index_counts_as_not_searched(self, region_database_url: str) -> None:
+        with client_for(region_database_url) as client:
+            search(client, "Davis Centre")
+        app = client.app
+        assert isinstance(app, FastAPI)
+
+        assert (
+            value(app, "pathable_place_searches_total", mode="submit", outcome="not_searched") == 1
+        )
 
     def test_the_caller_can_ask_for_fewer(self, indexed_database_url: str) -> None:
         with client_for(indexed_database_url) as client:

@@ -17,6 +17,7 @@ policy forbids that answers such a request with "not searched".
 
 from __future__ import annotations
 
+import time
 from http import HTTPStatus
 from typing import Annotated, Literal
 
@@ -25,6 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from pathable_api.core.errors import ApiError
 from pathable_api.core.logging import get_logger
+from pathable_api.core.metrics import Metrics, PlaceSearchOutcome
 from pathable_api.geo.geocoding import MAX_QUERY_LENGTH, MAX_RESULTS, GeocodingError
 from pathable_api.geo.regions import region_definition
 from pathable_api.schemas.errors import ApiErrorResponse
@@ -128,6 +130,28 @@ class GeocodeResponse(BaseModel):
     },
 )
 async def search(payload: GeocodeRequest, request: Request) -> GeocodeResponse:
+    metrics: Metrics = request.app.state.metrics
+    # Anything that escapes without setting an outcome is the server's failure.
+    outcome: PlaceSearchOutcome = "error"
+    try:
+        response = await _search(payload, request, metrics)
+        outcome = _outcome_of(response)
+        return response
+    except ApiError as error:
+        outcome = "invalid" if error.code == "unknown_region" else "error"
+        raise
+    finally:
+        metrics.count_place_search(autocomplete=payload.autocomplete, outcome=outcome)
+
+
+def _outcome_of(response: GeocodeResponse) -> PlaceSearchOutcome:
+    # "Did not look" and "found nothing" stay apart here as they do in the body.
+    if not response.enabled:
+        return "not_searched"
+    return "success" if response.matches else "empty"
+
+
+async def _search(payload: GeocodeRequest, request: Request, metrics: Metrics) -> GeocodeResponse:
     provider = request.app.state.geocoder
 
     try:
@@ -139,6 +163,7 @@ async def search(payload: GeocodeRequest, request: Request) -> GeocodeResponse:
             message=f"Pilot region {payload.region!r} does not exist.",
         ) from error
 
+    started = time.perf_counter()
     try:
         outcome = await provider.search(
             payload.query,
@@ -152,6 +177,10 @@ async def search(payload: GeocodeRequest, request: Request) -> GeocodeResponse:
             code="geocoding_unavailable",
             message=str(error),
         ) from error
+    finally:
+        metrics.observe_place_search(
+            autocomplete=payload.autocomplete, seconds=time.perf_counter() - started
+        )
 
     # The query itself is deliberately absent from this log line.
     logger.info(

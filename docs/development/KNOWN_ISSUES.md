@@ -529,9 +529,11 @@ anything is routed.
 The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
 ([`vps-deployment.json`](../evidence/vps-deployment.json)):
 
-1. **Nobody is told when it is down.** There are JSON logs with rotation and
-   nothing else: no metrics, no uptime check, no alerting. An outage lasts until
-   someone happens to look.
+1. **Nobody is told when it is down.** Metrics, a readiness probe, a dashboard
+   and an unavailability alert exist in the repository
+   ([OBSERVABILITY.md](../deployment/OBSERVABILITY.md), 2026-11-06), but none of
+   it is connected: it waits on a Grafana Cloud account only the founder can
+   create. Until then an outage lasts until someone happens to look.
 2. **Backups live on the host's own disk.** Daily and pre-deploy `pg_dump`s, 14
    days, restore exercised twice — but losing the VPS loses them too. They are
    copied off only by hand.
@@ -540,6 +542,25 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    and become ready, and the landing page drops for a few seconds when its own
    container is replaced. Unattended security upgrades may reboot the host at
    08:30 UTC; after the measured reboot routing was back in 66 s, unattended.
+
+   **Two graph-loaded API processes do not fit this host safely** (assessed
+   2026-11-06, nothing run). Measured: 3,814 MiB of RAM and 1,793 MiB available
+   with one API at 997 MiB; the database's cgroup at 475 MiB, peaking at 852 MiB
+   with page cache; a loading API's peak at 1,085 MiB
+   ([`vps-deployment.json`](../evidence/vps-deployment.json), 2026-10-15); the
+   Core v2 API at 1,019 MiB (deploy of 2026-11-03). Derived from those: about
+   1,770 MiB available with today's one API; about 750 MiB with a second at
+   steady state; about 660 MiB while the second passes its load peak, if that
+   peak rose by the same 22 MiB as the steady figure (it has not been re-measured
+   on the host). Alloy, once running, takes its share of that, unmeasured, up to
+   its 256 MiB limit. What remains must hold the kernel, Docker and the
+   database's page cache. And the limits stop protecting the host: two
+   1,536 MiB APIs bring the limits to 5,120 MiB against 3,814 MiB of RAM, where
+   today they sum to 3,584 MiB with Alloy and fit. Keeping them inside RAM
+   leaves each API under ~1.3 GiB even with every other limit cut to its
+   measured peak, below the 1.5 GiB ADR 0009 accepted. **Conclusion: unsafe and
+   unjustified without more RAM**, which is a cost decision. Not tried.
+
 4. **While the graph loads, the API barely answers.** Readiness requests timed
    out after 5 s during most of the ~34 s load rather than returning 503; Docker's
    60 s start period covers it, an external monitor would see timeouts.
@@ -551,8 +572,8 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    only a rollback that far back needs the release image plus `libexpat1`.
 
 **Check when:** anyone is pointed at the URL, a domain is bought, or a second
-host is considered. Off-host backups and an uptime check are the two cheapest
-items; both need an account or a decision outside this repository.
+host is considered. Off-host backups and connecting the metrics are the two
+cheapest items; both need an account or a decision outside this repository.
 
 ---
 

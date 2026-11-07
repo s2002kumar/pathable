@@ -1,0 +1,69 @@
+// PathAble AI — the metrics agent on the pilot host.
+//
+// Two sources, one destination:
+//
+//   * the API's own metrics, scraped over the container network from the
+//     listener METRICS_PORT opens (never published, never proxied by Caddy);
+//   * a probe of public readiness, through Caddy and TLS exactly as a visitor
+//     reaches it, so "unavailable" means what a visitor would see.
+//
+// Both are remote-written to Grafana Cloud. Nothing listens for the internet:
+// Alloy's own HTTP server stays on the container's loopback.
+//
+// Credentials arrive as environment variables from
+// /srv/pathable/secrets/grafana-cloud.env (0600, never committed). The
+// observability profile in compose.yaml starts this container only when that
+// file exists. See docs/deployment/OBSERVABILITY.md.
+
+prometheus.scrape "api" {
+  targets = [{
+    "__address__" = "api:9464",
+  }]
+  job_name        = "pathable-api"
+  scrape_interval = "30s"
+  scrape_timeout  = "10s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// The probe follows the same path as a visitor: public address, Caddy, TLS,
+// the API's readiness. Readiness, not liveness, because an API that is up but
+// cannot route — graph still loading, database gone — is not available. A
+// deploy's ~60 s readiness gap is shorter than the alert's two minutes.
+//
+// This runs on the host it is probing, so it cannot see a network path that
+// fails outside the host; a host that is down stops the probe and the alert
+// fires on the missing data instead.
+prometheus.exporter.blackbox "public" {
+  config = "{ modules: { https_ready: { prober: http, timeout: 10s, http: { method: GET, valid_status_codes: [200], fail_if_not_ssl: true, preferred_ip_protocol: ip4 } } } }"
+
+  target {
+    name    = "pathable-public-readiness"
+    address = "https://" + sys.env("PATHABLE_HOST") + "/api/v1/health/ready"
+    module  = "https_ready"
+    labels  = {
+      "probe" = "pathable-public-readiness",
+    }
+  }
+}
+
+prometheus.scrape "public_probe" {
+  targets         = prometheus.exporter.blackbox.public.targets
+  scrape_interval = "30s"
+  scrape_timeout  = "15s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USER")
+      password = sys.env("GRAFANA_CLOUD_PROMETHEUS_TOKEN")
+    }
+  }
+
+  external_labels = {
+    "deployment" = "waterloo-pilot",
+  }
+}

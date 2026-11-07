@@ -11,6 +11,7 @@ Nothing about a request is persisted. See ADR 0007.
 from __future__ import annotations
 
 import datetime as dt
+import time
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
@@ -19,8 +20,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pathable_api.api.deps import DatabaseDep
 from pathable_api.core.errors import ApiError
 from pathable_api.core.logging import get_logger
+from pathable_api.core.metrics import Metrics, RouteKind, RouteOutcome
 from pathable_api.geo.elevation import elevation_attribution
 from pathable_api.geo.models import DatasetVersion
+from pathable_api.geo.regions import region_definition
 from pathable_api.routing.comparison import RouteComparison, compare_routes
 from pathable_api.routing.cost import BlockReason
 from pathable_api.routing.engine import DurationEstimate, GradeExtreme, GradientSummary, Route
@@ -122,6 +125,41 @@ def _evidence_age_days(source_timestamp: dt.datetime | None) -> int | None:
 async def compare(
     payload: RouteCompareRequest, request: Request, database: DatabaseDep
 ) -> RouteCompareResponse:
+    metrics: Metrics = request.app.state.metrics
+    # Anything that escapes without setting an outcome is the server's failure.
+    outcome: RouteOutcome = "error"
+    try:
+        response, outcome = await _compare(payload, request, database, metrics)
+        return response
+    except ApiError as error:
+        outcome = _outcome_of(error, payload.region)
+        raise
+    finally:
+        metrics.count_route_comparison(profile=payload.profile, outcome=outcome)
+
+
+#: What each refusal the endpoint raises means for the outcome metric.
+_REFUSAL_OUTCOMES: dict[str, RouteOutcome] = {
+    "no_route": "no_route",
+    "custom_profile_required": "invalid",
+}
+
+
+def _outcome_of(error: ApiError, region: str) -> RouteOutcome:
+    """The outcome metric's reading of a refusal.
+
+    A refusal not listed above — no database, or a pilot region with nothing
+    active — is the server failing a request it should have answered. A region
+    nobody defined is the caller's mistake, though the response is the same 404.
+    """
+    if error.code == "no_active_dataset" and not _is_pilot_region(region):
+        return "invalid"
+    return _REFUSAL_OUTCOMES.get(error.code, "error")
+
+
+async def _compare(
+    payload: RouteCompareRequest, request: Request, database: DatabaseDep, metrics: Metrics
+) -> tuple[RouteCompareResponse, RouteOutcome]:
     if database is None:
         raise ApiError(
             status_code=HTTPStatus.SERVICE_UNAVAILABLE,
@@ -144,11 +182,17 @@ async def compare(
 
         provenance = await dataset_provenance(session, graph, payload.region)
 
+    started = time.perf_counter()
     comparison = compare_routes(
         graph,
         origin=(payload.origin.longitude, payload.origin.latitude),
         destination=(payload.destination.longitude, payload.destination.latitude),
         profile=profile,
+    )
+    metrics.observe_route_comparison(
+        profile=payload.profile,
+        seconds=time.perf_counter() - started,
+        searches=_search_times(comparison),
     )
 
     if comparison.standard_route is None and comparison.accessible_route is None:
@@ -173,7 +217,29 @@ async def compare(
         },
     )
 
-    return comparison_response(comparison, provenance)
+    # Success means the route that was asked for exists. Every requestable
+    # profile is an accessibility profile, so a response that carries only the
+    # shortest route — with the reason the profile has none — is a no_route.
+    found = comparison.accessible_route is not None or profile.is_standard
+    return comparison_response(comparison, provenance), ("success" if found else "no_route")
+
+
+def _is_pilot_region(slug: str) -> bool:
+    try:
+        region_definition(slug)
+    except KeyError:
+        return False
+    return True
+
+
+def _search_times(comparison: RouteComparison) -> list[tuple[RouteKind, float]]:
+    """How long the search behind each route the comparison found took."""
+    times: list[tuple[RouteKind, float]] = []
+    if comparison.standard_route is not None:
+        times.append(("shortest", comparison.standard_route.computation_ms / 1000.0))
+    if comparison.accessible_route is not None:
+        times.append(("profile", comparison.accessible_route.computation_ms / 1000.0))
+    return times
 
 
 async def dataset_provenance(

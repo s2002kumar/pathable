@@ -1,0 +1,47 @@
+# PathAble AI — alert rules for the public pilot, in Prometheus rule format.
+#
+# A template: the route latency threshold is deliberately not chosen yet. It
+# will be set from the p95 the pilot is actually observed to have, so
+# render-alerts.sh refuses to produce a rules file until
+# ROUTE_P95_THRESHOLD_SECONDS is given. Loaded into Grafana Cloud's Mimir ruler
+# with load-alerts.sh; tested with promtool in CI (alerts.test.yaml).
+#
+# Series names are the API's (services/api/src/pathable_api/core/metrics.py) and
+# the probe Alloy runs (infra/vps/alloy/config.alloy). A unit test fails if
+# either side renames one.
+
+groups:
+  - name: pathable-pilot
+    interval: 1m
+    rules:
+      # Every readiness probe through Caddy has failed for two minutes — or no
+      # probe result has arrived for two minutes, which is what a host, Docker or
+      # Alloy outage looks like from Grafana Cloud. A deploy's ~60 s readiness
+      # gap is shorter than the window, so a routine release does not page.
+      - alert: PathAbleApiUnavailable
+        expr: |
+          max_over_time(probe_success{probe="pathable-public-readiness"}[2m]) == 0
+          or
+          absent_over_time(probe_success{probe="pathable-public-readiness"}[2m])
+        labels:
+          severity: critical
+        annotations:
+          summary: "The public pilot has not answered readiness for over two minutes."
+          description: "No readiness probe through Caddy succeeded for two minutes, or no probe result arrived (host, Docker or Alloy down). See docs/deployment/VPS.md."
+
+      # Server-side time for successful route comparisons, as a caller waits for
+      # it: from the API receiving the request to finishing the response.
+      - alert: PathAbleRouteLatencyP95High
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(pathable_http_request_duration_seconds_bucket{route="/api/v1/routes/compare", status_class="2xx"}[10m])
+            )
+          ) > ${ROUTE_P95_THRESHOLD_SECONDS}
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Route comparison p95 has been above its threshold for ten minutes."
+          description: "p95 of successful POST /api/v1/routes/compare over ten minutes stayed above the threshold. With little traffic one slow request can dominate: check the request rate first."

@@ -34,18 +34,24 @@ type Answer = {
   accessible_route: { distance_m: number; stairway_count: number };
   extra_distance_m: number;
   ml_predictions_used: boolean;
+  summary: { headline: string };
+  dataset: { elevation_attribution: string | null };
 };
 
 /**
- * This suite needs the real Waterloo network, which is a 970 MB extract and
- * hours of ingestion. CI loads the nine-node synthetic fixture instead, so
- * these tests skip there rather than failing — and say so, because a silent
- * skip would let the demo rot unnoticed.
+ * This suite needs real OpenStreetMap data around the University of Waterloo.
+ * CI routes on a sealed campus extract (services/api/tests/data/README.md):
+ * real tagging and topology, no elevation model. The assertions that need the
+ * elevation model check, without it, that none is claimed instead. Against the
+ * full Waterloo network — the production-smoke stack, where the demo is given
+ * (docs/evidence/DEMO.md) — every assertion runs as written.
  *
- * Where they do run: locally, against the production-smoke stack, which is the
- * environment the demo is actually given in. See docs/evidence/DEMO.md.
+ * With no routable Waterloo network at all, the tests skip rather than fail,
+ * and say so, because a silent skip would let the demo rot unnoticed.
  */
 let waterlooLoaded = false;
+/** Whether the network carries grades from the elevation model (HRDEM). */
+let hasElevation = false;
 
 test.beforeAll(async ({ request }) => {
   const response = await request.post(`${API_BASE_URL}${COMPARE_PATH}`, {
@@ -53,6 +59,10 @@ test.beforeAll(async ({ request }) => {
     failOnStatusCode: false,
   });
   waterlooLoaded = response.status() === 200;
+  if (waterlooLoaded) {
+    const answer = (await response.json()) as Answer;
+    hasElevation = answer.dataset.elevation_attribution !== null;
+  }
   if (!waterlooLoaded) {
     console.warn(
       `[recruiter-demo] skipping: ${API_BASE_URL} has no routable Waterloo dataset ` +
@@ -119,16 +129,17 @@ test.describe('the recruiter demo', () => {
       `${Math.round(answer.accessible_route.distance_m)} m`,
     );
     await expect(page.getByTestId('difference-extra')).toHaveText(
-      `+${Math.round(answer.extra_distance_m)} m detour`,
+      `+${Math.round(answer.extra_distance_m)} m`,
     );
-    await expect(page.getByTestId('main-difference')).toContainText(
-      `Avoids ${stairways} recorded stairways`,
-    );
+    // The comparison in one line is the API's own sentence, shown as sent, and
+    // it names the stairways the shortest route crosses.
+    expect(answer.summary.headline).toContain(`to avoid ${stairways} recorded stairways`);
+    await expect(page.getByTestId('comparison-headline')).toHaveText(answer.summary.headline);
 
-    // The shortest route crosses stairs a wheelchair cannot use, so it gets no
-    // travel time — read from the segments the live API marks, not the count.
+    // The shortest route is a fixed baseline, timed at walking pace whatever
+    // the profile (Waterloo Core v2); the stairs it crosses are what is marked.
     await expect(page.getByTestId('difference-shortest-time')).toHaveText(
-      'Time unavailable for this profile',
+      /^\d+(–\d+)? min · walking pace$/,
     );
     await expect(page.getByTestId('route-blocked')).toContainText(
       `${stairways} recorded stairways`,
@@ -150,7 +161,11 @@ test.describe('the recruiter demo', () => {
     await page.getByTestId('view-evidence').click();
     await expect(page.getByTestId('gap-stairs')).toContainText('Recorded · OSM');
     await expect(page.getByTestId('gap-stairs')).toContainText('Your profile rule');
-    await expect(page.getByTestId('gap-grade')).toContainText(/Recorded · OSM|Derived · HRDEM/);
+    // Without the elevation model, no grade can be derived, so it is recorded
+    // or it is unknown — never derived.
+    await expect(page.getByTestId('gap-grade')).toContainText(
+      hasElevation ? /Recorded · OSM|Derived · HRDEM/ : /Recorded · OSM|Not recorded/,
+    );
     const dock = page.getByTestId('gap-dock');
     await expect(dock).not.toContainText(/\b(verified|safe|guaranteed|confident)\b/i);
 
@@ -195,7 +210,7 @@ test.describe('the recruiter demo', () => {
     await runExample(page);
 
     // Colour is never the only cue: each line's card names its route.
-    await expect(page.getByTestId('difference-accessible')).toContainText('Wheelchair route');
+    await expect(page.getByTestId('difference-accessible')).toContainText('Your wheelchair route');
     await expect(page.getByTestId('difference-shortest')).toContainText(
       'Shortest pedestrian route',
     );
@@ -228,9 +243,15 @@ test.describe('the recruiter demo', () => {
     await expect(credit).toContainText('ODbL');
     await expect(credit).toContainText('Open Government Licence – Canada');
     await page.getByTestId('open-route-details').click();
-    await expect(page.getByTestId('elevation-attribution')).toContainText(
-      /Open Government Licence/i,
-    );
+    if (hasElevation) {
+      await expect(page.getByTestId('elevation-attribution')).toContainText(
+        /Open Government Licence/i,
+      );
+    } else {
+      // A network with no elevation model owes it no credit in the answer.
+      await expect(page.getByTestId('route-details')).toBeVisible();
+      await expect(page.getByTestId('elevation-attribution')).toHaveCount(0);
+    }
   });
 
   test('a person can still place their own points afterwards', async ({ page }) => {

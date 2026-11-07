@@ -1,7 +1,8 @@
 # Threat model
 
-Lightweight, Phase 0. It covers what exists today and the risks the architecture
-must be ready for.
+Lightweight. Written in Phase 0 and revised on 2026-11-06 for the public pilot
+that has run since 2026-10-15. It covers what exists today and the risks the
+architecture must be ready for.
 
 **No formal security audit or penetration test has been performed.**
 
@@ -9,29 +10,29 @@ must be ready for.
 
 ## Scope today
 
-|                |                                                                            |
-| -------------- | -------------------------------------------------------------------------- |
-| Deployed       | Nothing. Local development only.                                           |
-| User data      | None. No accounts, no location, no analytics, no cookies.                  |
-| Authentication | None. Nothing to authenticate.                                             |
-| Attack surface | Two unauthenticated health endpoints, a static frontend, a local database. |
-| External calls | Map tiles, browser → provider, direct.                                     |
+|                |                                                                                                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deployed       | A public pilot at <https://51.222.36.79> since 2026-10-15: one OVH VPS, Docker Compose, Caddy the only process with ports (80, 443); PostgreSQL, the API and the web server have none ([VPS.md](../deployment/VPS.md))            |
+| User data      | None stored. Route and search requests are answered in memory and never persisted or logged; no accounts, analytics or cookies. Caddy's access log keeps client addresses truncated to /24 (IPv4) or /48 (IPv6)                   |
+| Authentication | None. The API is public and read-only; there is nothing to sign in to                                                                                                                                                             |
+| Attack surface | Public: route comparison and place search (per-client rate limits), the profile list, health and readiness, the Next.js site. SSH with keys only. Internal: the metrics listener, unauthenticated by design and published nowhere |
+| External calls | Map tiles: browser → OpenFreeMap, direct. Metrics: Alloy → Grafana Cloud, once connected — aggregate counts and timings, no request content ([OBSERVABILITY.md](../deployment/OBSERVABILITY.md))                                  |
 
-Most of what follows is therefore about _not building in_ problems that would be
-expensive to remove later.
+Much of what follows is still about _not building in_ problems that would be
+expensive to remove later: nothing about a person is stored yet.
 
 ---
 
 ## Assets
 
-| Asset                    | Value today   | Value later                                                    |
-| ------------------------ | ------------- | -------------------------------------------------------------- |
-| Origin/destination pairs | Not collected | **Very high** — reveals home, workplace, clinic, routine       |
-| Accessibility reports    | Not collected | **High** — can reveal a contributor's disability and movements |
-| Pedestrian graph         | Not built     | Medium — rebuildable, but expensive                            |
-| Model + dataset          | Do not exist  | High — the main artefact of Phase 3                            |
-| Repository and CI        | Exists        | High — a supply-chain foothold                                 |
-| Product trustworthiness  | Exists        | **Critical** — a wrong accessibility claim can strand someone  |
+| Asset                    | Value today                        | Value later                                                    |
+| ------------------------ | ---------------------------------- | -------------------------------------------------------------- |
+| Origin/destination pairs | Processed, never stored or logged  | **Very high** — reveals home, workplace, clinic, routine       |
+| Accessibility reports    | Not collected                      | **High** — can reveal a contributor's disability and movements |
+| Pedestrian graph         | Built, backed up daily on the host | Medium — rebuildable, but expensive                            |
+| Model + dataset          | Do not exist                       | High — the main artefact of Phase 3                            |
+| Repository and CI        | Exists                             | High — a supply-chain foothold                                 |
+| Product trustworthiness  | Exists                             | **Critical** — a wrong accessibility claim can strand someone  |
 
 ---
 
@@ -55,8 +56,10 @@ a fight. The cheapest time to decide is before the first line.
   request logging must remain path-only.
 - Any retention needs an explicit, documented purpose and a defined lifetime.
 
-**Residual.** Reverse proxies and hosting providers log IP addresses. Unresolved
-until a deployment decision is made.
+**Residual.** Caddy's access log is the one place a client address is written,
+truncated as above and rotated by Docker (10 MB, five files). The hosting
+provider sees connection metadata. Metrics carry no address, coordinate or
+query, which tests/unit/test_metrics.py checks by sending them.
 
 ---
 
@@ -87,9 +90,9 @@ physical, and it is caused by the product working exactly as coded.
 
 **Mitigations.**
 
-- Phase 0 states prominently that there is no routing and no ML, and that nothing
-  shown should be used to plan a journey. Frontend tests assert the disclosure is
-  present and that no routing controls exist.
+- The product states that there is no ML, and every route response carries
+  `ml_predictions_used: false`, typed as a literal. It advises; it never says a
+  route is passable.
 - No route may ever be labelled "accessible" without qualification.
 - Confidence and data age must be shown, not hidden behind a clean UI.
 - The two error directions are **not symmetric**: a false "passable" is far worse
@@ -246,8 +249,8 @@ becomes a PathAble outage.
   outage degrades rather than breaks the page.
 - No test depends on public tile availability.
 
-**Residual.** The default tile provider has no SLA. Flagged as a founder
-decision before any public deployment.
+**Residual.** OpenFreeMap serves the public pilot's tiles without an SLA, a
+founder decision recorded in ADR 0005.
 
 ---
 
@@ -266,6 +269,9 @@ database and user.
 - Validation errors forward only `loc` and `msg` — Pydantic's `input` and `ctx`
   would reflect caller-controlled data straight back out.
 - Only `host:port/database` is ever logged, via `safe_database_target()`.
+- The metrics exposition has no authentication and is served only on an
+  unpublished port. Its labels are closed vocabularies, so even read by someone
+  it would show traffic volumes, not people.
 - Interactive API docs are disabled in production.
 - `X-Powered-By` removed; `nosniff`, `DENY` framing and a strict referrer policy
   set.
@@ -275,20 +281,23 @@ DSN never appear in a response body.
 
 ---
 
-## Out of scope for Phase 0
+## Out of scope
 
 Not because they do not matter, but because the thing they protect does not exist
-yet: authentication and session security, authorisation, CSRF, DDoS protection,
-infrastructure hardening, backup and recovery, incident response, and GDPR/PIPEDA
-compliance processes.
+yet: authentication and session security, authorisation, CSRF, DDoS protection
+beyond per-client rate limits, incident response, and GDPR/PIPEDA compliance
+processes.
 
-Each becomes in scope at the phase that introduces its asset.
+Host hardening, backup and restore, and rate limits came into scope with the
+public pilot and are in [VPS.md](../deployment/VPS.md). Each remaining item
+becomes in scope at the phase that introduces its asset.
 
 ---
 
 ## Review triggers
 
-Revisit this document when any of the following first happens: the application is
-deployed anywhere public; any personal data is collected; authentication is
+Revisit this document when any of the following first happens. The first, a
+public deployment, fired on 2026-10-15; this revision is the response. The
+application is deployed anywhere public; any personal data is collected; authentication is
 added; user reports are accepted; imagery is ingested; a model affects a route;
 or a third-party service becomes a runtime dependency.

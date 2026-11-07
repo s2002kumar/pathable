@@ -70,6 +70,14 @@ Three obligations:
   current to (§4).
 - In the repository: the README and `docs/evidence/README.md`.
 
+### Extracts kept in the repository
+
+`services/api/tests/data/uw-campus.osm.pbf` — 159 KB of OpenStreetMap data
+around the University of Waterloo campus, retrieved from Overpass on
+2026-11-07, offered under ODbL 1.0 with its own README giving the query,
+snapshot time, checksums and the ODbL credit. Contributor names and ids are
+removed. CI routes and searches on it; it is never the pilot's network.
+
 ---
 
 ## 3. Tile provider

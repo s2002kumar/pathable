@@ -715,7 +715,8 @@ rationale, before and after captures, interleaved performance measurement,
 accessibility verification, a recording of one session.
 
 **Branch.** `feat/premium-landing`, from `main` at `a3f6448`, with `main` merged
-in at `490c8a7` (the VPS deployment) on 2026-10-15. Draft PR; not merged.
+in at `490c8a7` (the VPS deployment) on 2026-10-15. Merged as `e5a5b90`
+(PR #101) and deployed on 2026-10-16.
 
 **Not verified here.** A manual screen-reader pass; Safari and Firefox (the
 browser suites run Chromium only).
@@ -742,6 +743,8 @@ It adds no routing capability. It is part of what Gate D asks for, not Gate D.
 **Still does not exist.**
 
 - Metrics, alerting, uptime monitoring. Nobody is told when the site is down.
+  (Prepared in the repository on 2026-11-06 and not yet connected; see
+  [Production observability](#production-observability-2026-11-06).)
 - Backups anywhere but the host's own disk.
 - A domain name; the certificate is a 6-day IP-address certificate.
 - Any capacity or availability figure: one process serves about six route
@@ -777,14 +780,39 @@ a wheelchair, median detour 51.5 m; policy 3's latency, graph load and memory
 measured on one laptop. A field checklist for eight journeys exists and has not
 been performed.
 
-**Branch.** `feature/waterloo-core-v2`, from `main` at `e62b7e8`. Not merged,
-not deployed: the live pilot still runs policy 2, and `infra/vps/smoke.py`
-expects policy 3's answer.
+**Branch.** `feature/waterloo-core-v2`, from `main` at `e62b7e8`. Merged as
+`52f54b1` (PR #117) and deployed with PR #118 as `629a67a` on 2026-11-03: the
+live pilot runs policy 3 and place index v2 (migration `0008_place_codes`),
+`infra/vps/smoke.py` passed 19/19 from outside the host and 19/19 on it, and the
+searched Davis Centre → Student Life Centre journey answers 401.3 m with 3
+stairways (shortest) against 503.7 m with none (wheelchair).
 
 **Not done, by decision.** Building codes from the University's own list need
 its permission ([KI-15](../development/KNOWN_ISSUES.md)); accessible entrances
 have no licensed coordinate source ([KI-16](../development/KNOWN_ISSUES.md)).
 Nobody outside this repository has judged a route.
+
+---
+
+## Production observability (2026-11-06)
+
+An operations card. It changes no route, no cost and no response body.
+
+| Area    | What exists                                                                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Metrics | Requests by route template and status, route and search outcomes and latency, measured graph startup; every label a closed vocabulary       |
+| Privacy | No coordinate, query, address, request id, segment identity or exception text reaches a label; tests send each one and search for it        |
+| Agent   | Grafana Alloy scrapes an unpublished port and probes public readiness through Caddy; it starts only once its credentials exist              |
+| Alerts  | Readiness failing or silent for two minutes; route p95 over a threshold to be chosen from observed latency. Both tested with promtool in CI |
+| Guide   | [OBSERVABILITY.md](../deployment/OBSERVABILITY.md), with the founder's Grafana Cloud checklist                                              |
+
+**Still does not exist.**
+
+- A connection: no Grafana Cloud account, so no series has left the host and no
+  alert can fire. The route p95 threshold is unset by design.
+- A probe from outside the host, logs shipping, traces.
+- Zero-downtime deploys. Two graph-loaded API processes do not fit this host
+  safely ([KI-12](../development/KNOWN_ISSUES.md)).
 
 ---
 

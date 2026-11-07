@@ -12,8 +12,8 @@ import styles from './PlannerFooter.module.css';
  * The elevation statement is the Open Government Licence – Canada's required
  * wording. The panel shows grades derived from HRDEM on its first screen, so
  * the statement cannot live only behind "Route Details"; the response's own
- * `elevation_attribution` is repeated there in full. The tile host is named
- * as a development service because ADR 0005 has not approved it for production.
+ * `elevation_attribution` is repeated there in full. The tile host is named as
+ * a third-party public service with no SLA, as ADR 0005 records.
  */
 export function PlannerFooter() {
   return (

@@ -1,7 +1,10 @@
 # Architecture overview
 
-Phase 0. This describes what exists, plus the shape later phases are expected to
-grow into. Where something is planned rather than built, it says so.
+Written in Phase 0 and revised on 2026-11-06. The pedestrian graph, the routing
+engine and place search exist, and serve a public pilot
+([VPS.md](../deployment/VPS.md)). This describes what exists, plus the shape later
+phases are expected to grow into. Where something is planned rather than built,
+it says so.
 
 ---
 
@@ -30,7 +33,10 @@ Three runtime services, no more:
 
 There is no queue, no cache, no worker and no separate inference service. Adding
 one before there is load to justify it would buy operational complexity with no
-return — see [ADR 0002](../adr/0002-modular-monolith.md).
+return — see [ADR 0002](../adr/0002-modular-monolith.md). The public pilot adds
+Caddy in front for TLS, and Grafana Alloy beside the API to ship metrics once it
+has credentials ([ADR 0009](../adr/0009-deployment-architecture.md),
+[OBSERVABILITY.md](../deployment/OBSERVABILITY.md)).
 
 ---
 
@@ -121,8 +127,29 @@ for the application; a synchronous engine for Alembic — psycopg 3 serves both
 from one `postgresql+psycopg://` URL, so there is only ever one connection string
 in the system.
 
-The baseline migration creates the PostGIS extension and nothing else. Inventing
-graph tables before the routing requirements exist would bake in the wrong shape.
+Migrations `0001`–`0008` hold the pedestrian network — nodes and segments with
+normalised accessibility attributes beside the raw OSM tags, directional
+evidence, kerb tiers and elevation-derived grade kept apart from OSM-reported
+incline — then the dataset lifecycle (sealed candidates, an activation gate,
+rollback: [ADR 0010](../adr/0010-dataset-lifecycle.md)) and the place index.
+
+---
+
+## Routing
+
+The graph is stored in PostGIS and routed in the application
+([ADR 0004](../adr/0004-postgis-and-runtime-graph.md)). The active dataset of a
+region is loaded once into an in-memory graph keyed by its dataset version —
+155,714 nodes and 180,554 physical segments for Waterloo — and shared across
+requests; production loads it at startup and readiness waits for it.
+
+A comparison computes the shortest walking route and the route the chosen
+mobility profile allows, each with A\* (Dijkstra is the correctness baseline,
+and the two are tested to agree on cost), over a cost model of deterministic
+rules on recorded attributes ([ADR 0008](../adr/0008-accessibility-cost-model.md),
+routing policy 3). Unknown is never treated as clear. Every difference between
+the two routes is explained from the same cost model and tagged with the kind of
+evidence it rests on; no model prediction is involved anywhere.
 
 ---
 
@@ -162,12 +189,11 @@ Both images run as uid 10001 and contain no `.env` and no credentials.
 
 | Not present            | Why                                                          |
 | ---------------------- | ------------------------------------------------------------ |
-| Routing engine         | Phase 1. Needs the graph from Phase 0.5 first.               |
-| Pedestrian graph       | Phase 0.5.                                                   |
 | Redis / Celery / Kafka | No workload justifies them. Add when measurement demands it. |
 | Separate ML service    | No model exists. See ADR 0002.                               |
 | Auth                   | No accounts, no personal data, nothing to protect yet.       |
-| Kubernetes             | Nothing is deployed.                                         |
+| Kubernetes             | One VPS and Compose serve the pilot (ADR 0009).              |
+| A metrics store        | Grafana Cloud holds them; nothing on the host does.          |
 
 Empty directories for future components are not created. They advertise
 capability that does not exist and rot.

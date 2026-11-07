@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from pathable_api.core.logging import get_logger
+from pathable_api.core.metrics import UNPARSED, Metrics
 from pathable_api.core.request_context import REQUEST_ID_HEADER, get_request_id
 from pathable_api.schemas.errors import ApiErrorResponse, ErrorDetail
 
@@ -105,7 +106,7 @@ async def http_exception_handler(_request: Request, exc: Exception) -> JSONRespo
     )
 
 
-async def validation_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Render request-validation failures.
 
     Only ``loc`` and ``msg`` are forwarded. Pydantic also reports ``input`` and
@@ -117,12 +118,31 @@ async def validation_exception_handler(_request: Request, exc: Exception) -> JSO
         ErrorDetail(field=_format_location(error["loc"]), message=str(error["msg"]))
         for error in exc.errors()
     ]
+    _count_unparsed_request(request)
     return build_error_response(
         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
         code="validation_error",
         message="The request did not match the expected schema.",
         details=details,
     )
+
+
+def _count_unparsed_request(request: Request) -> None:
+    """Count a route or search request whose body never parsed as ``invalid``.
+
+    Each endpoint counts the requests that reach it, and one refused here never
+    does. Without this the outcome metrics would leave out exactly the malformed
+    traffic an operator wants to see. The operation id names the endpoint; the
+    body, which failed to parse, is not read.
+    """
+    metrics: Metrics | None = getattr(request.app.state, "metrics", None)
+    operation = getattr(request.scope.get("route"), "operation_id", None)
+    if metrics is None:
+        return
+    if operation == "compareRoutes":
+        metrics.count_route_comparison(profile=UNPARSED, outcome="invalid")
+    elif operation == "searchPlaces":
+        metrics.count_place_search(autocomplete=None, outcome="invalid")
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
