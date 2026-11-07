@@ -483,9 +483,11 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/alerts"
           ROUTE_P95_THRESHOLD_SECONDS=0.5 sh infra/vps/grafana/render-alerts.sh \
-            > "$RUNNER_TEMP/alerts/alerts.rules.yaml"
-          cp infra/vps/grafana/alerts.test.yaml "$RUNNER_TEMP/alerts/"
+            > "$RUNNER_TEMP/alerts/latency.rules.yaml"
+          cp infra/vps/grafana/availability.rules.yaml infra/vps/grafana/alerts.test.yaml \
+            "$RUNNER_TEMP/alerts/"
           docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
-            --entrypoint promtool prom/prometheus:v3.15.1 check rules alerts.rules.yaml
+            --entrypoint promtool prom/prometheus:v3.15.1 check rules \
+            availability.rules.yaml latency.rules.yaml
           docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
             --entrypoint promtool prom/prometheus:v3.15.1 test rules alerts.test.yaml

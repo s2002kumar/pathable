@@ -1,0 +1,32 @@
+# PathAble AI — the route latency alert for the public pilot, in Prometheus
+# rule format.
+#
+# A template: the threshold is deliberately not chosen yet. It will be set from
+# the p95 the pilot is actually observed to have, so render-alerts.sh refuses to
+# produce this file until ROUTE_P95_THRESHOLD_SECONDS is given, and
+# load-alerts.sh loads it only then. Tested with promtool in CI
+# (alerts.test.yaml).
+#
+# Series names are the API's (services/api/src/pathable_api/core/metrics.py). A
+# unit test fails if either side renames one.
+
+groups:
+  - name: pathable-latency
+    interval: 1m
+    rules:
+      # Server-side time for successful route comparisons, as a caller waits for
+      # it: from the API receiving the request to finishing the response.
+      - alert: PathAbleRouteLatencyP95High
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(pathable_http_request_duration_seconds_bucket{route="/api/v1/routes/compare", status_class="2xx"}[10m])
+            )
+          ) > ${ROUTE_P95_THRESHOLD_SECONDS}
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Route comparison p95 has been above its threshold for ten minutes."
+          description: "p95 of successful POST /api/v1/routes/compare over ten minutes stayed above the threshold. With little traffic one slow request can dominate: check the request rate first."
