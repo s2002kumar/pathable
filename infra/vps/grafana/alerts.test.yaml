@@ -1,0 +1,118 @@
+# promtool unit tests for alerts.rules.yaml.template, run in CI:
+#
+#   ROUTE_P95_THRESHOLD_SECONDS=0.5 render-alerts.sh > alerts.rules.yaml
+#   promtool test rules alerts.test.yaml
+#
+# 0.5 s is a TEST VALUE ONLY, chosen so the synthetic series below sit clearly
+# either side of it. It is not a proposed production threshold; that is set from
+# observed production latency (docs/deployment/OBSERVABILITY.md).
+#
+# Probe samples arrive every 30 s, as Alloy scrapes them.
+
+rule_files:
+  - alerts.rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # An outage of four and a half minutes pages; recovery clears it.
+  - interval: 30s
+    input_series:
+      - series: 'probe_success{job="pathable-public-readiness", probe="pathable-public-readiness"}'
+        values: "1x4 0x8 1x4"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: PathAbleApiUnavailable
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PathAbleApiUnavailable
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: pathable-public-readiness
+              probe: pathable-public-readiness
+            exp_annotations:
+              summary: "The public pilot has not answered readiness for over two minutes."
+              description: "No readiness probe through Caddy succeeded for two minutes, or no probe result arrived (host, Docker or Alloy down). See docs/deployment/VPS.md."
+      - eval_time: 8m
+        alertname: PathAbleApiUnavailable
+        exp_alerts: []
+
+  # A deploy: readiness fails for about a minute while the graph loads. No page.
+  - interval: 30s
+    input_series:
+      - series: 'probe_success{job="pathable-public-readiness", probe="pathable-public-readiness"}'
+        values: "1x4 0x1 1x10"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: PathAbleApiUnavailable
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: PathAbleApiUnavailable
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: PathAbleApiUnavailable
+        exp_alerts: []
+
+  # The host, Docker or Alloy stops: no probe result arrives at all. Pages.
+  - interval: 30s
+    input_series:
+      - series: 'probe_success{job="pathable-public-readiness", probe="pathable-public-readiness"}'
+        values: "1x4"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: PathAbleApiUnavailable
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PathAbleApiUnavailable
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              probe: pathable-public-readiness
+            exp_annotations:
+              summary: "The public pilot has not answered readiness for over two minutes."
+              description: "No readiness probe through Caddy succeeded for two minutes, or no probe result arrived (host, Docker or Alloy down). See docs/deployment/VPS.md."
+
+  # Every successful comparison takes 1.0-1.5 s: p95 1.475 s, above the test
+  # threshold. Pending once the rate has two samples, firing ten minutes later.
+  - interval: 30s
+    input_series:
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="0.1"}'
+        values: "0x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="0.5"}'
+        values: "0x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="1.0"}'
+        values: "0x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="1.5"}'
+        values: "0+10x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="+Inf"}'
+        values: "0+10x40"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: PathAbleRouteLatencyP95High
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: PathAbleRouteLatencyP95High
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Route comparison p95 has been above its threshold for ten minutes."
+              description: "p95 of successful POST /api/v1/routes/compare over ten minutes stayed above the threshold. With little traffic one slow request can dominate: check the request rate first."
+
+  # Every successful comparison is under 0.1 s, and slow refusals (429s answered
+  # late, say) are not successes, so they cannot raise the p95. No alert.
+  - interval: 30s
+    input_series:
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="0.1"}'
+        values: "0+10x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="2xx", le="+Inf"}'
+        values: "0+10x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="4xx", le="0.1"}'
+        values: "0x40"
+      - series: 'pathable_http_request_duration_seconds_bucket{method="POST", route="/api/v1/routes/compare", status_class="4xx", le="+Inf"}'
+        values: "0+10x40"
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: PathAbleRouteLatencyP95High
+        exp_alerts: []

@@ -11,7 +11,7 @@
 # own high-water mark since the container started, which no sampling can miss
 # and which is what the 1536m limit is enforced against.
 #
-# Finally, every container's memory and the host's, once. Output is one JSON
+# Finally, every running container's memory and the host's, once. Output is one JSON
 # object per line, for docs/evidence/vps-deployment.json.
 #
 # This restarts the API: expect ~30-45 s in which routes return 502.
@@ -68,7 +68,9 @@ while [ "$run" -le "$RUNS" ]; do
     run=$((run + 1))
 done
 
-for name in pathable-db-1 pathable-api-1 pathable-web-1 pathable-caddy-1; do
+# Alloy only where the observability profile runs it.
+for name in pathable-db-1 pathable-api-1 pathable-web-1 pathable-caddy-1 pathable-alloy-1; do
+    docker inspect "$name" >/dev/null 2>&1 || continue
     printf '{"measure":"container_memory","container":"%s","memory_current_mib":%s,"memory_peak_mib":%s,"memory_max_mib":%s,"started_at":"%s"}\n' \
         "$name" \
         "$(mib "$(cgroup_file "$name" memory.current)")" \

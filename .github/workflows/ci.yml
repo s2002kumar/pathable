@@ -387,3 +387,47 @@ jobs:
           POSTGRES_SUPERUSER_PASSWORD=ci PATHABLE_DB_PASSWORD=ci PATHABLE_REVISION=ci \
           PATHABLE_APP_VERSION=ci PATHABLE_HOST=pilot.example.invalid \
             docker compose -f infra/vps/compose.yaml config --quiet
+          # And with the metrics agent the host runs once it has credentials.
+          POSTGRES_SUPERUSER_PASSWORD=ci PATHABLE_DB_PASSWORD=ci PATHABLE_REVISION=ci \
+          PATHABLE_APP_VERSION=ci PATHABLE_HOST=pilot.example.invalid \
+            docker compose -f infra/vps/compose.yaml --profile observability config --quiet
+
+  # ---------------------------------------------------------------------------
+  # Observability
+  # ---------------------------------------------------------------------------
+  observability-config:
+    name: Observability · agent config and alert rules
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Alloy's own validator, from the same image the host runs. The values
+      # are placeholders: nothing here connects anywhere.
+      - name: Alloy configuration is valid
+        run: |
+          docker run --rm -v "$PWD/infra/vps/alloy:/etc/alloy:ro" \
+            -e PATHABLE_HOST=pilot.example.invalid \
+            -e GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus.example.invalid/api/prom/push \
+            -e GRAFANA_CLOUD_PROMETHEUS_USER=0 \
+            -e GRAFANA_CLOUD_PROMETHEUS_TOKEN=ci-placeholder \
+            grafana/alloy:v1.21.2 validate /etc/alloy/config.alloy
+
+      - name: Rendering refuses to guess the latency threshold
+        run: |
+          if sh infra/vps/grafana/render-alerts.sh > /dev/null 2>&1; then
+            echo "::error::render-alerts.sh produced rules without ROUTE_P95_THRESHOLD_SECONDS"
+            exit 1
+          fi
+
+      # 0.5 s is the test suite's value, not a production threshold; see the
+      # header of alerts.test.yaml.
+      - name: Alert rules are valid and behave as tested
+        run: |
+          mkdir -p "$RUNNER_TEMP/alerts"
+          ROUTE_P95_THRESHOLD_SECONDS=0.5 sh infra/vps/grafana/render-alerts.sh \
+            > "$RUNNER_TEMP/alerts/alerts.rules.yaml"
+          cp infra/vps/grafana/alerts.test.yaml "$RUNNER_TEMP/alerts/"
+          docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
+            --entrypoint promtool prom/prometheus:v3.15.1 check rules alerts.rules.yaml
+          docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
+            --entrypoint promtool prom/prometheus:v3.15.1 test rules alerts.test.yaml

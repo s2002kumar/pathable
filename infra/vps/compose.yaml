@@ -15,6 +15,8 @@
 #   * the API connects as a role that is not a superuser and owns only its own
 #     database (the managed-hosting path PRODUCTION_SMOKE.md proves).
 #   * memory limits from the measured envelope, sized for a 3.7 GiB host.
+#   * metrics leave the host only through Alloy, and only when its credentials
+#     exist (the `observability` profile; docs/deployment/OBSERVABILITY.md).
 
 name: pathable
 
@@ -99,6 +101,9 @@ services:
       # limit counts is the X-Forwarded-For entry Caddy wrote. Caddy discards any
       # X-Forwarded-For a client sends; verified against caddy:2.11.7.
       TRUSTED_PROXY_HOPS: "1"
+      # The Prometheus exposition, on its own listener. No host port and no
+      # Caddy route reach it: only Alloy, over the edge network, scrapes it.
+      METRICS_PORT: "9464"
     # One worker: every worker holds its own ~1 GB copy of the graph (ADR 0009).
     command: ["python", "-m", "pathable_api"]
     networks: [data, edge]
@@ -182,6 +187,48 @@ services:
           memory: 256m
     logging: *logging
 
+  # Scrapes the API and probes public readiness, and remote-writes both to
+  # Grafana Cloud. In a profile so it never starts without credentials:
+  # deploy.sh enables it when /srv/pathable/secrets/grafana-cloud.env exists.
+  alloy:
+    image: grafana/alloy:v1.21.2
+    profiles: [observability]
+    restart: unless-stopped
+    depends_on: [api]
+    command:
+      - run
+      # Alloy's own UI and API stay on the container's loopback.
+      - --server.http.listen-addr=127.0.0.1:12345
+      - --storage.path=/var/lib/alloy/data
+      # No anonymous usage report to Grafana Labs.
+      - --disable-reporting
+      - /etc/alloy/config.alloy
+    environment:
+      PATHABLE_HOST: ${PATHABLE_HOST}
+      # Keeps the Go heap under the container limit rather than at it.
+      GOMEMLIMIT: 200MiB
+    env_file:
+      # GRAFANA_CLOUD_PROMETHEUS_URL, _USER and _TOKEN. Relative to the stack
+      # directory, so /srv/pathable/secrets/grafana-cloud.env. Not required for
+      # `compose config`; without it the profile is never enabled.
+      - path: ../secrets/grafana-cloud.env
+        required: false
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # The remote-write WAL, so a short Grafana Cloud outage is buffered
+      # rather than lost.
+      - alloy-data:/var/lib/alloy/data
+    networks: [edge]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    deploy:
+      resources:
+        limits:
+          # Not yet measured on the host; docs/deployment/OBSERVABILITY.md
+          # says how to before relying on it.
+          memory: 256m
+    logging: *logging
+
 networks:
   # Caddy, web and API. Has a route out, which Caddy needs for ACME.
   edge: {}
@@ -196,3 +243,5 @@ volumes:
     name: pathable-caddy-data
   caddy-config:
     name: pathable-caddy-config
+  alloy-data:
+    name: pathable-alloy-data
