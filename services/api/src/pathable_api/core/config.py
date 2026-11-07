@@ -154,6 +154,14 @@ class Settings(BaseSettings):
             return tuple(_split_csv(value))
         return value
 
+    @field_validator("metrics_port", mode="before")
+    @classmethod
+    def _empty_means_unset(cls, value: object) -> object:
+        """``METRICS_PORT=`` — how .env.example leaves it — means no listener."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     @field_validator("graph_preload_regions", mode="after")
     @classmethod
     def _validate_preload_regions(cls, value: tuple[str, ...]) -> tuple[str, ...]:

@@ -43,7 +43,7 @@ from pathable_api.core.middleware import route_template, route_templates
 from pathable_api.geo.geocoding import GeocodeResult, GeocodingError, SearchOutcome
 from pathable_api.geo.regions import RegionDefinition
 from pathable_api.main import create_app
-from tests.conftest import build_settings
+from tests.conftest import build_settings, settings_from
 from tests.metrics_scrape import exposition, samples, value
 
 COMPARE = "/api/v1/routes/compare"
@@ -486,6 +486,13 @@ class TestExposition:
 
 
 class TestConfiguration:
+    def test_an_empty_metrics_port_means_no_listener(self) -> None:
+        # Regression: `METRICS_PORT=`, as .env.example ships it, failed integer
+        # parsing, so a developer copying the example could not start the API.
+        assert settings_from({"metrics_port": ""}).metrics_port is None
+        assert settings_from({"metrics_port": "  "}).metrics_port is None
+        assert settings_from({"metrics_port": "9464"}).metrics_port == 9464
+
     def test_the_metrics_port_cannot_be_the_api_port(self) -> None:
         with pytest.raises(ValueError, match="METRICS_PORT must differ from API_PORT"):
             build_settings(api_port=8000, metrics_port=8000)
