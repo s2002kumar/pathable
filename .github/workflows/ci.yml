@@ -343,7 +343,15 @@ jobs:
             --no-elevation-required | tee "$RUNNER_TEMP/ingest.txt"
           dataset="$(sed -n 's/^Dataset \([0-9a-f-]*\) .*/\1/p' "$RUNNER_TEMP/ingest.txt" | head -n 1)"
           uv run pathable datasets seal "$dataset"
-          uv run pathable datasets evaluate "$dataset" | tee "$RUNNER_TEMP/evaluate.txt"
+          # Exit 3 is "review required", which a region's first dataset always
+          # is: there is no live network to compare with. Anything else fails.
+          status=0
+          uv run pathable datasets evaluate "$dataset" > "$RUNNER_TEMP/evaluate.txt" || status=$?
+          cat "$RUNNER_TEMP/evaluate.txt"
+          if [ "$status" -ne 3 ]; then
+            echo "::error::datasets evaluate exited $status, not 3 (review required)"
+            exit 1
+          fi
           run="$(sed -n 's/^Regression run \([0-9a-f-]*\).*/\1/p' "$RUNNER_TEMP/evaluate.txt" | head -n 1)"
           uv run pathable datasets accept "$run" --reason \
             "CI only: the sealed campus extract in services/api/tests/data is the region's first dataset, so there is nothing live to compare with, and most corpus journeys lie outside it."

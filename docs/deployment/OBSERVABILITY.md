@@ -64,9 +64,9 @@ fixed vocabulary in code; anything else folds into `other`, `unmatched` or
 `unparsed`. A path scan adds one `unmatched` series, not one per path.
 `tests/unit/test_metrics.py` sends each of those things and searches the
 exposition for it, and checks every label value against its vocabulary;
-`tests/integration/test_routing_api.py` does the same with real routes over
-PostGIS. Breaking a collector costs the metric, never the request — both suites
-test that too.
+`tests/integration/test_routing_api.py` checks computed routes' coordinates and
+segment identities stay out, over the synthetic network in PostGIS. Breaking a
+collector costs the metric, never the request — both suites test that too.
 
 A local run exercising every endpoint and outcome without a database produced
 202 series. Successful routes, process metrics and the probe add to that in
