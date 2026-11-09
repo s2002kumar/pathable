@@ -149,6 +149,25 @@ _Route request latency_ panel, or run in Explore:
 histogram_quantile(0.95, sum by (le) (rate(pathable_http_request_duration_seconds_bucket{route="/api/v1/routes/compare", status_class="2xx"}[1h])))
 ```
 
+## If Grafana Cloud refuses the token
+
+Alloy logs `non-recoverable error … 401 Unauthorized … invalid token`, and its
+`prometheus_remote_storage_samples_failed_total` equals `samples_total`: every
+batch is refused and dropped, while scraping carries on. On 2026-11-09 the token
+reached Alloy intact, was a complete `glc_` token for the stack's region, and
+was still refused, so the fault was on the Grafana Cloud side of it. Check, in
+the portal:
+
+- the access policy's realm includes this stack, and it has `metrics:write`;
+- the token is still listed under that policy (not deleted or expired);
+- `GRAFANA_CLOUD_PROMETHEUS_USER` is the instance ID on the stack's
+  _Prometheus → Details_ page, not the stack or organisation ID.
+
+Then replace the value in `grafana-cloud.env`. Compose reads an env file only
+when it creates a container, so Alloy needs recreating, not restarting:
+`deploy.sh up <the serving SHA>` does that without restarting the API (the API's
+configuration is unchanged; the release's backup is still taken).
+
 ## After enabling: measure, do not assume
 
 Alloy's 256 MiB container limit and `GOMEMLIMIT=200MiB` are configuration, not
