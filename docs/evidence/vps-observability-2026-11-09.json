@@ -1,0 +1,146 @@
+{
+  "what": "Deploy of main 905364e (PR #123: Alloy as uid 473; availability alert loadable alone) to the public pilot, and verification of the observability activation. Alloy runs and scrapes; Grafana Cloud refuses its token, so nothing has been ingested.",
+  "captured_at": "2026-11-09T22:50:00Z",
+  "deployment": {
+    "sha": "905364e736b18cecee6c80ee72b289b3df900da0",
+    "reported_version": "0.1.0+905364e736b1",
+    "previous": "c020398d0c1f88de79c07903a5c6b7bd94c20195",
+    "tooling": "infra/vps/deploy.sh up <sha>, detached; log /srv/pathable/evidence/deploy-905364e-20261109.log; evidence /srv/pathable/evidence/observability-20261109/ on the host",
+    "build_seconds": {
+      "api": 2.1,
+      "web": 1.2,
+      "note": "both from cache; PR #123 changed no application code"
+    },
+    "live_seconds": 19.9,
+    "ready_seconds": 67.5,
+    "graph_preload_seconds": 47.7,
+    "database_revision": "0008_place_codes, unchanged",
+    "place_index": "current, version 2"
+  },
+  "rollback_point": {
+    "backup": "/var/backups/pathable/pathable-20261109T145145Z-pre-deploy-c020398d0c1f.dump",
+    "size": "32 MB, 12 tables with data",
+    "holds": "the database as c020398 served it, at 0008_place_codes, the revision 905364e also uses"
+  },
+  "routing_dataset": {
+    "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+    "content_checksum_recomputed": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00",
+    "matches_recorded": true
+  },
+  "smoke": {
+    "external": {
+      "started_at": "2026-11-09T14:55:49+00:00",
+      "checks_passed": 19,
+      "checks_total": 19,
+      "searched_journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 678 ms",
+      "sequential_route_server_ms": {
+        "n": 10,
+        "min": 135.2,
+        "p50": 147.0,
+        "p95": 177.1,
+        "max": 177.1,
+        "mean": 148.6
+      }
+    },
+    "vps": {
+      "started_at": "2026-11-09T14:56:36+00:00",
+      "checks_passed": 19,
+      "checks_total": 19,
+      "searched_journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 195 ms",
+      "sequential_route_server_ms": {
+        "n": 10,
+        "min": 131.3,
+        "p50": 143.1,
+        "p95": 177.5,
+        "max": 177.5,
+        "mean": 149.0
+      }
+    }
+  },
+  "alloy": {
+    "state": "running, restart count 0 across the whole window (started 2026-11-09T14:53:00Z)",
+    "user": "container configured 473:473; process Uid and Gid 473 in /proc/<pid>/status",
+    "components": {
+      "prometheus.exporter.blackbox.public": "healthy",
+      "prometheus.remote_write.grafana_cloud": "healthy",
+      "prometheus.scrape.public_probe": "healthy",
+      "prometheus.scrape.api": "healthy"
+    },
+    "scrape_api": [
+      {
+        "job": "pathable-api",
+        "url": "http://api:9464/metrics",
+        "health": "up",
+        "last_scrape": "2026-11-09T22:49:06.113330787Z",
+        "last_scrape_duration": "13.930722ms"
+      }
+    ],
+    "scrape_public_readiness_probe": [
+      {
+        "job": "prometheus.scrape.public_probe",
+        "url": "http://alloy.internal:12345/api/v0/component/prometheus.exporter.blackbox.public/metrics?module=https_ready&target=https%3A%2F%2F51.222.36.79%2Fapi%2Fv1%2Fhealth%2Fready",
+        "health": "up",
+        "last_scrape": "2026-11-09T22:48:57.772042592Z",
+        "last_scrape_duration": "31.105594ms"
+      }
+    ],
+    "remote_write": {
+      "at_14_54Z": {
+        "samples_failed_total": 202.0,
+        "samples_pending": 0.0,
+        "samples_retried_total": 0.0,
+        "samples_total": 202.0,
+        "sent_batch_duration_seconds_count": 4.0
+      },
+      "at_22_49Z": {
+        "samples_failed_total": 256059.0,
+        "samples_pending": 0.0,
+        "samples_retried_total": 0.0,
+        "samples_total": 256059.0,
+        "sent_batch_duration_seconds_count": 1904.0
+      },
+      "result": "every sample refused: HTTP 401 Unauthorized, 'authentication error: invalid token', classed non-recoverable, so dropped rather than retried",
+      "token_checks_without_printing_it": [
+        "the token Alloy received is byte-identical to the file's (hashes compared in one shell, neither printed)",
+        "it has the glc_ prefix of a Grafana Cloud access-policy token, not glsa_",
+        "it decodes to complete JSON with fields k, m, n, o, recording region prod-ca-east-0, which the push URL names",
+        "GRAFANA_CLOUD_PROMETHEUS_USER as Alloy received it is 3746954"
+      ],
+      "conclusion": "the credential is rejected by Grafana Cloud itself: revoked or expired, an access policy whose realm or scope does not cover this stack, or an instance ID that is not the stack's Prometheus instance"
+    },
+    "memory": {
+      "samples": [
+        "14:57:40Z alloy current=195.7 MiB peak=199.1 MiB anon=44.0 MiB file=149.5 MiB limit=256 MiB uptime_since=14:53:00 restarts=0",
+        "14:59:53Z alloy current=195.8 MiB peak=199.1 MiB anon=43.9 MiB file=149.5 MiB restarts=0",
+        "15:01:53Z alloy current=195.3 MiB peak=199.1 MiB anon=43.6 MiB file=149.5 MiB restarts=0",
+        "15:03:53Z alloy current=195.5 MiB peak=199.1 MiB anon=43.7 MiB file=149.5 MiB restarts=0",
+        "15:05:54Z alloy current=195.3 MiB peak=199.1 MiB anon=43.7 MiB file=149.5 MiB restarts=0",
+        "15:07:54Z alloy current=195.4 MiB peak=199.1 MiB anon=43.7 MiB file=149.5 MiB restarts=0",
+        "15:09:54Z alloy current=195.6 MiB peak=199.1 MiB anon=43.7 MiB file=149.6 MiB restarts=0",
+        "alloy process RSS 215.2 MiB (alloy)",
+        "2026-11-09T22:49:40Z alloy current=198.0 MiB peak=199.1 MiB anon=44.9 MiB file=150.9 MiB restarts=0",
+        "alloy process RSS 217.4 MiB",
+        "pathable-api-1 current=1042.8 MiB",
+        "pathable-db-1 current=357.5 MiB",
+        "pathable-web-1 current=81.3 MiB",
+        "pathable-caddy-1 current=60.5 MiB"
+      ],
+      "summary": "cgroup 195.3-198.0 MiB from 5 min to 8 h after start, peak 199.1 MiB, against the 256 MiB limit; 43.6-44.9 MiB of it anonymous, the rest page cache; process RSS 215-217 MiB. Measured while every write was refused; to be re-read once ingestion works."
+    }
+  },
+  "privacy": {
+    "metrics_port_from_outside": "TCP 9464 and 12345 timed out from the internet; GET /metrics and /api/v1/metrics 404 with no exposition; no host listener on either port",
+    "exposition_check": {
+      "samples": 205,
+      "pathable_samples": 189,
+      "violations": [],
+      "labels_withheld": []
+    }
+  },
+  "grafana_cloud": {
+    "ingestion": "none: every write refused (401)",
+    "metrics_visible_in_grafana_cloud": "no; not queryable from here either (no metrics:read token)",
+    "availability_alert": "not loaded: no rules:read/rules:write token in this machine's process, user or machine environment; and loading it before ingestion works would fire it on missing data",
+    "route_p95_alert": "not configured, by instruction"
+  }
+}
