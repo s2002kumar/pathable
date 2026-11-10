@@ -31,8 +31,11 @@ API's answer, and the [full-stack test suite](apps/web/tests/fullstack/recruiter
 are. The landing page is static, so its example is one recorded response, dated and with its dataset checksum, and
 it says so.
 
-**[Try the live Waterloo pilot](https://51.222.36.79)** — a deployed routing stack serving the Waterloo network from a single VPS. This is a research pilot, not an availability-backed service or an accessibility certification ([deployment details](docs/deployment/VPS.md)). The recording above was made against local production
-containers before it existed; [running the demo](docs/evidence/DEMO.md) reproduces it.
+**[Try the live Waterloo pilot](https://51.222.36.79)** — a deployed routing stack serving the
+Waterloo network on one VPS. This is a research pilot, not an availability-backed service or
+accessibility certification ([deployment details](docs/deployment/VPS.md)). The recording above
+was made against local production containers before the pilot existed;
+[running the demo](docs/evidence/DEMO.md) reproduces it.
 
 ## What the comparison actually says
 
@@ -72,7 +75,7 @@ is estimated.
 | **Graph load: 46.83 s → 22.14 s median, peak Python heap 1,381.3 MB → 700.7 MB (−49%)** after replacing ORM entity construction with narrow Core columns; Waterloo Core v2 then added 4–13 s back on the same laptop                                                                                                                                                          | [`waterloo-graph-load.json`](docs/evidence/waterloo-graph-load.json) vs [`-before.json`](docs/evidence/waterloo-graph-load-before.json) · [Core v2 A/B](docs/evidence/waterloo-graph-load-core-v2-ab.json) · [KI-6](docs/development/KNOWN_ISSUES.md) |
 | **Routes unchanged by that optimisation** — identical node and segment SHA-256 fingerprints, identical answers on all 20 corpus journeys                                                                                                                                                                                                                                      | [`waterloo-routes.json`](docs/evidence/waterloo-routes.json)                                                                                                                                                                                          |
 | **17 of 20 corpus journeys route differently** for a wheelchair profile; 1 has no route at all and says why                                                                                                                                                                                                                                                                   | [`waterloo-routes.json`](docs/evidence/waterloo-routes.json)                                                                                                                                                                                          |
-| **A\* expanded about 80% fewer nodes than Dijkstra**: 1,398 versus 7,041 at the median. Observed p50 latency was 220 ms versus 267 ms on one memory-constrained laptop; the latency difference was within run-to-run variation                                                                                                                                                                    | [`waterloo-performance-policy3.json`](docs/evidence/waterloo-performance-policy3.json)                                                                                                                                                                |
+| **A\* expanded about 80% fewer nodes than Dijkstra**: 1,398 vs 7,041 median. Latency was 220 ms vs 267 ms (p50); run-to-run variation prevents a reliable speedup claim                                                                                                                                                                                                       | [`waterloo-performance-policy3.json`](docs/evidence/waterloo-performance-policy3.json)                                                                                                                                                                |
 | **Production container envelope**: one API worker holds 997 MB steady / 1,064 MB peak and is routable 18.7 s after start; the frontend fits 512 MiB with 92% headroom over three cold starts                                                                                                                                                                                  | [`production-envelope.json`](docs/evidence/production-envelope.json) · [ADR 0009](docs/adr/0009-deployment-architecture.md)                                                                                                                           |
 | **Dataset bootstrap needs no PostgreSQL superuser** — verified against a role with `superuser=f`, after the obvious `pg_restore --disable-triggers` was shown to fail on one                                                                                                                                                                                                  | [`restore-dataset.sh`](infra/production-smoke/restore-dataset.sh) · [KI-8](docs/development/KNOWN_ISSUES.md)                                                                                                                                          |
 | **The public pilot, measured on its own 2-vCPU host on 2026-10-15**: ready 51.2 s after a cold start, 997 MiB resident; a route comparison takes 128–137 ms of server time at the median; backup, restore into a scratch database, disaster-recovery restore and rollback all exercised there                                                                                 | [`vps-deployment.json`](docs/evidence/vps-deployment.json) · [runbook](docs/deployment/VPS.md)                                                                                                                                                        |
@@ -584,7 +587,7 @@ rebuild.
 ## Repository structure
 
 ```
-pathable-ai/
+pathable/
 ├── apps/web/                 Next.js App Router frontend
 │   ├── src/app/              routes, layout, /api/healthz
 │   ├── src/components/       header, pilot panel, configuration error
