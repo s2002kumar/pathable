@@ -7,8 +7,8 @@ map — and a mobility profile. PathAble returns the ordinary shortest walking r
 that profile, and explains the difference using what OpenStreetMap actually records: steps, surfaces, gradients,
 kerbs. Where nothing has been recorded, it says so.
 
-[![CI](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml)
-[![Security](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml)
+[![CI](https://github.com/s2002kumar/pathable/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable/actions/workflows/ci.yml)
+[![Security](https://github.com/s2002kumar/pathable/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable/actions/workflows/security.yml)
 
 ## Recorded demo
 
@@ -31,9 +31,11 @@ API's answer, and the [full-stack test suite](apps/web/tests/fullstack/recruiter
 are. The landing page is static, so its example is one recorded response, dated and with its dataset checksum, and
 it says so.
 
-**A public pilot runs at <https://51.222.36.79>** — Waterloo only, on one small VPS, with no monitoring and no
-availability promise ([how it runs](docs/deployment/VPS.md)). The recording above was made against local production
-containers before it existed; [running the demo](docs/evidence/DEMO.md) reproduces it.
+**[Try the live Waterloo pilot](https://51.222.36.79)** — a deployed routing stack serving the
+Waterloo network on one VPS. This is a research pilot, not an availability-backed service or
+accessibility certification ([deployment details](docs/deployment/VPS.md)). The recording above
+was made against local production containers before the pilot existed;
+[running the demo](docs/evidence/DEMO.md) reproduces it.
 
 ## What the comparison actually says
 
@@ -73,7 +75,7 @@ is estimated.
 | **Graph load: 46.83 s → 22.14 s median, peak Python heap 1,381.3 MB → 700.7 MB (−49%)** after replacing ORM entity construction with narrow Core columns; Waterloo Core v2 then added 4–13 s back on the same laptop                                                                                                                                                          | [`waterloo-graph-load.json`](docs/evidence/waterloo-graph-load.json) vs [`-before.json`](docs/evidence/waterloo-graph-load-before.json) · [Core v2 A/B](docs/evidence/waterloo-graph-load-core-v2-ab.json) · [KI-6](docs/development/KNOWN_ISSUES.md) |
 | **Routes unchanged by that optimisation** — identical node and segment SHA-256 fingerprints, identical answers on all 20 corpus journeys                                                                                                                                                                                                                                      | [`waterloo-routes.json`](docs/evidence/waterloo-routes.json)                                                                                                                                                                                          |
 | **17 of 20 corpus journeys route differently** for a wheelchair profile; 1 has no route at all and says why                                                                                                                                                                                                                                                                   | [`waterloo-routes.json`](docs/evidence/waterloo-routes.json)                                                                                                                                                                                          |
-| **A\* does a fifth of the work, and is not reliably faster**: 1,398 expanded nodes against Dijkstra's 7,041 at the median, 220 ms against 267 ms at p50 on one paging laptop — inside its run-to-run noise                                                                                                                                                                    | [`waterloo-performance-policy3.json`](docs/evidence/waterloo-performance-policy3.json)                                                                                                                                                                |
+| **A\* expanded about 80% fewer nodes than Dijkstra**: 1,398 vs 7,041 median. Latency was 220 ms vs 267 ms (p50); run-to-run variation prevents a reliable speedup claim                                                                                                                                                                                                       | [`waterloo-performance-policy3.json`](docs/evidence/waterloo-performance-policy3.json)                                                                                                                                                                |
 | **Production container envelope**: one API worker holds 997 MB steady / 1,064 MB peak and is routable 18.7 s after start; the frontend fits 512 MiB with 92% headroom over three cold starts                                                                                                                                                                                  | [`production-envelope.json`](docs/evidence/production-envelope.json) · [ADR 0009](docs/adr/0009-deployment-architecture.md)                                                                                                                           |
 | **Dataset bootstrap needs no PostgreSQL superuser** — verified against a role with `superuser=f`, after the obvious `pg_restore --disable-triggers` was shown to fail on one                                                                                                                                                                                                  | [`restore-dataset.sh`](infra/production-smoke/restore-dataset.sh) · [KI-8](docs/development/KNOWN_ISSUES.md)                                                                                                                                          |
 | **The public pilot, measured on its own 2-vCPU host on 2026-10-15**: ready 51.2 s after a cold start, 997 MiB resident; a route comparison takes 128–137 ms of server time at the median; backup, restore into a scratch database, disaster-recovery restore and rollback all exercised there                                                                                 | [`vps-deployment.json`](docs/evidence/vps-deployment.json) · [runbook](docs/deployment/VPS.md)                                                                                                                                                        |
@@ -126,7 +128,7 @@ the cached graph relies on ([ADR 0010](docs/adr/0010-dataset-lifecycle.md)).
 
 Counted separately on purpose — these suites overlap in what they cover, and adding them up would be a bigger
 number describing less. The counts change with every card; these are from CI run
-[38908538697](https://github.com/s2002kumar/pathable-ai/actions/runs/38908538697), on commit `d1e63c9`.
+[38908538697](https://github.com/s2002kumar/pathable/actions/runs/38908538697), on commit `d1e63c9`.
 
 | Suite                                   | Count                                                                              | Command                                                    |
 | --------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -143,7 +145,7 @@ The backend integration tests run against real PostgreSQL/PostGIS, never a mock.
 real browser through real containers. Ten of its seventeen tests need the real Waterloo network or its place index and
 [skip with a printed reason](docs/evidence/DEMO.md) where they are absent, which includes CI.
 
-## What it is not
+## Operating scope and accessibility safeguards
 
 - **One city.** Waterloo, Ontario. The pilot region is configuration, but no second region has been run.
 - **A pilot on one host.** One VPS, one API process, no metrics or alerting, backups on the same disk, and about a
@@ -585,7 +587,7 @@ rebuild.
 ## Repository structure
 
 ```
-pathable-ai/
+pathable/
 ├── apps/web/                 Next.js App Router frontend
 │   ├── src/app/              routes, layout, /api/healthz
 │   ├── src/components/       header, pilot panel, configuration error
@@ -661,7 +663,7 @@ Start the database and export the URL:
 
 ## Current limitations
 
-See [What it is not](#what-it-is-not) above, and the
+See [Operating scope and accessibility safeguards](#operating-scope-and-accessibility-safeguards) above, and the
 [known issues](docs/development/KNOWN_ISSUES.md) for each one in detail.
 
 ---
