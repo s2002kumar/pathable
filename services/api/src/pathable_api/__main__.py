@@ -23,6 +23,16 @@ import uvicorn
 from pathable_api.core.config import get_settings
 from pathable_api.core.event_loop import configure_event_loop_policy, selector_loop_factory
 
+#: Seconds an idle keep-alive connection stays open. Longer than Caddy keeps an
+#: idle upstream connection for reuse (its reverse_proxy default, two minutes),
+#: so Caddy is always the side that closes one. With uvicorn's own default of
+#: 5 s the API could close a connection at the moment Caddy reused it: Caddy read
+#: a reset and answered a route comparison with 502, and a POST is not retried
+#: (pilot, 2026-11-15, under load). The margin is generous because a saturated
+#: event loop starts this timer before a large answer has left the socket, so
+#: Caddy's own idle clock can start seconds later.
+KEEP_ALIVE_SECONDS = 180
+
 
 def build_server() -> uvicorn.Server:
     """Construct the uvicorn server from validated application settings."""
@@ -34,6 +44,7 @@ def build_server() -> uvicorn.Server:
         port=settings.api_port,
         log_level=settings.log_level.lower(),
         access_log=True,
+        timeout_keep_alive=KEEP_ALIVE_SECONDS,
     )
     return uvicorn.Server(config)
 
