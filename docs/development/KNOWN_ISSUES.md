@@ -316,7 +316,7 @@ reached readiness at a median **51.2 s**, the graph load itself 33.9 s — about
 twice the laptop's 14.6 s on a slower CPU — with **997 MiB** resident and a
 **1,085 MiB** cgroup peak under a 1.5 GiB limit. The load window is now a
 real, user-visible cost: about a minute without routing per deploy
-([KI-12](#ki-12--the-public-pilot-is-one-host-unmonitored-with-its-backups-on-the-same-disk)).
+([KI-12](#ki-12--the-public-pilot-is-one-host-with-its-backups-on-the-same-disk)).
 
 **Check when:** a second region is added, or the deploy outage starts to matter.
 
@@ -522,18 +522,22 @@ anything is routed.
 
 ---
 
-## KI-12 — The public pilot is one host, unmonitored, with its backups on the same disk
+## KI-12 — The public pilot is one host, with its backups on the same disk
 
 **Status: Open** · 2026-10-15 · [ADR 0009](../adr/0009-deployment-architecture.md) · [runbook](../deployment/VPS.md)
 
 The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
 ([`vps-deployment.json`](../evidence/vps-deployment.json)):
 
-1. **Nobody is told when it is down.** Metrics, a readiness probe, a dashboard
-   and an unavailability alert exist in the repository
-   ([OBSERVABILITY.md](../deployment/OBSERVABILITY.md), 2026-11-06), but none of
-   it is connected: it waits on a Grafana Cloud account only the founder can
-   create. Until then an outage lasts until someone happens to look.
+1. **Monitoring is connected; the latency alert is not set.** Since
+   2026-11-15 (the founder's setup) metrics reach Grafana Cloud, the dashboard
+   is live, a Grafana-managed availability alert e-mails a contact point, and
+   Synthetic Monitoring probes public readiness from two locations every two
+   minutes ([OBSERVABILITY.md](../deployment/OBSERVABILITY.md)). The route p95
+   alert is deliberately unset; a threshold is recommended in
+   [VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md). Under saturation, readiness
+   itself degrades and can answer 503 while the database is healthy
+   ([KI-17](#ki-17--one-route-request-can-hold-the-api-for-seconds-and-the-rate-limit-counts-requests-not-work)).
 2. **Backups live on the host's own disk.** Daily and pre-deploy `pg_dump`s, 14
    days, restore exercised twice — but losing the VPS loses them too. They are
    copied off only by hand.
@@ -593,9 +597,14 @@ gives each client a token bucket per endpoint — **30 route comparisons and 60
 searches a minute**, each figure both the burst and the refill — and answers an
 empty bucket with HTTP 429, a `Retry-After` in seconds and the API's ordinary
 error body (code `rate_limited`), before the request body is read. Health,
-readiness and the profile list are never limited. One client can now hold under
-a tenth of what the process serves — 0.5 a second against about 6.3 measured; the planner shows the
-refusal's message as it shows any other routing error.
+readiness and the profile list are never limited. For campus-scale journeys one
+client can now hold under a tenth of what the process serves — 0.5 a second
+against about 6 measured; the planner shows the refusal's message as it shows
+any other routing error. **That holds only for short journeys:** a cross-region
+route costs up to 11 s of the one event loop, so one client within its limit
+can still saturate the API
+([KI-17](#ki-17--one-route-request-can-hold-the-api-for-seconds-and-the-rate-limit-counts-requests-not-work),
+measured 2026-11-15).
 
 - **In-process, deliberately.** One API process means a dictionary in it is the
   exact count, with no service to add. A second worker would give each client
@@ -715,3 +724,55 @@ There is no clean source for accessible-entrance coordinates on campus:
 No entrance coordinate has been inferred or placed by hand. Entrance-aware
 routing waits for a licensed authoritative source, or for OpenStreetMap
 coverage good enough to state its gaps building by building.
+
+---
+
+## KI-17 — One route request can hold the API for seconds, and the rate limit counts requests, not work
+
+**Status: Open** · 2026-11-15 · [capacity evidence](../evidence/VPS_CAPACITY.md)
+
+A route comparison runs on the event loop of the pilot's one API process, and
+nothing else runs while it does. What it costs grows steeply with distance.
+Measured sequentially on the pilot, wheelchair profile, server time for both
+routes: 129 ms for the 401 m campus journey, 0.8–1.7 s for 1.9–2.7 km, 2.3 s
+for 5.5 km, and **8.6 s and 11.2 s for 7.8 km and 9.1 km** journeys across the
+region ([`vps-load-2026-11-15.json`](../evidence/vps-load-2026-11-15.json)
+→ `journey_costs`).
+
+What follows from it:
+
+1. **One client can saturate the API without being rate-limited.** The limit
+   is 30 requests a minute whatever they cost
+   ([KI-13](#ki-13--the-public-api-had-no-rate-limit)). Thirty cross-region
+   routes a minute ask for about 335 s of computation; the process has 60.
+2. **Everything waits behind a long route** — other routes, search, liveness
+   and readiness. Throughput is 1 ÷ mean server time: about 6 a second for the
+   campus journey, 2.2 for a 0.4–1.6 km mix, one every 11 s for a cross-region
+   route.
+3. **Under saturation, readiness blames the database.** Its dependency probe has
+   2 s (`READINESS_TIMEOUT_SECONDS`), and on a busy loop it cannot even be
+   scheduled. Readiness then answers 503 with `database` and `postgis`
+   "unavailable", although the database is healthy. That happened three probes
+   in a row at 50 requests in flight, and once at 10 in flight on the mixed
+   journeys. Sustained for two minutes, it would fire the availability alert,
+   which is fair to a visitor kept waiting but misleading to an operator.
+4. **The route p95 alert depends on what people route**, not only on load: a
+   cross-region request takes longer than any threshold below 10 s on an idle
+   host. See the recommendation in
+   [VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md).
+
+**Options, none taken.** Each is a decision, not a fix:
+
+- a cost-aware limit, charging tokens by explored area or measured time rather
+  than one per request;
+- a maximum journey length for the pilot, which is a product decision about
+  what the planner may answer;
+- computing routes off the event loop on one worker thread, which keeps
+  health, readiness and search responsive but adds no throughput (the GIL), and
+  needs its own load test;
+- a second process or a bigger host, which needs about 1 GiB more RAM
+  ([KI-12](#ki-12--the-public-pilot-is-one-host-with-its-backups-on-the-same-disk)).
+
+**Check when:** real traffic includes cross-region journeys, the access log
+shows one client sending long routes back to back, or readiness reports the
+database unavailable while routes are succeeding.

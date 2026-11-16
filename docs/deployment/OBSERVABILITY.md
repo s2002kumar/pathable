@@ -1,9 +1,26 @@
 # Observability
 
-How the public pilot reports whether it is up and fast, and how to switch that
-on. The repository side is complete. Nothing is connected yet: it needs a
-Grafana Cloud account and two tokens, which only the founder can create (see
-[Turning it on](#turning-it-on)).
+How the public pilot reports whether it is up and fast, and how it was switched
+on.
+
+## Current state
+
+Connected. As of 2026-11-15, as the founder reports it, with the machine side
+checked the same day ([`vps-load-2026-11-15.json`](../evidence/vps-load-2026-11-15.json)):
+
+| Part                    | State                                                                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Remote write            | Alloy on the host: every batch accepted, 0 failed, 0 retried, 0 pending, through a load test that moved 440–686 samples a stage; all four components healthy                                                             |
+| Ingestion               | `pathable_build_info` visible in Grafana Explore (founder)                                                                                                                                                               |
+| Dashboard               | `pathable-dashboard.json` imported and live (founder)                                                                                                                                                                    |
+| Availability alert      | **Grafana-managed** rule "PathAble API unavailable", configured in Grafana's UI, state Normal (founder). Its expression lives in Grafana, not in this repository: `availability.rules.yaml` remains the tested reference |
+| Notification            | An e-mail contact point (founder)                                                                                                                                                                                        |
+| External probe          | Synthetic Monitoring check "PathAble public readiness" on `https://51.222.36.79/api/v1/health/ready`, every 2 minutes, 10 s timeout, from Calgary and Montreal (founder)                                                 |
+| Route p95 latency alert | **Deliberately not set.** A threshold is recommended, with its reasons, in [VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md#route-p95-alert-threshold-recommendation-not-set)                                               |
+
+The write-only Alloy token cannot read series back, so Grafana-side checks are
+the founder's. The steps below are how it was set up. Repeat them for a new
+stack.
 
 ## What runs where
 
@@ -142,8 +159,12 @@ series, 14-day retention, 3 users, no credit card required).
 
 **The p95 threshold is not set.** It is to be chosen from observed production
 latency, not guessed: `render-alerts.sh` refuses to render without it, and CI
-checks that it still refuses. After a week of traffic, read the dashboard's
-_Route request latency_ panel, or run in Explore:
+checks that it still refuses. The 2026-11-15 load test recommends **5 s**, on a
+bucket boundary, together with a minimum-volume guard, because with today's
+near-zero traffic one cross-region route is the p95. Both are argued in
+[VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md#route-p95-alert-threshold-recommendation-not-set),
+and neither is applied pending review. To watch real traffic, read the
+dashboard's _Route request latency_ panel, or run in Explore:
 
 ```promql
 histogram_quantile(0.95, sum by (le) (rate(pathable_http_request_duration_seconds_bucket{route="/api/v1/routes/compare", status_class="2xx"}[1h])))
@@ -168,19 +189,23 @@ when it creates a container, so Alloy needs recreating, not restarting:
 `deploy.sh up <the serving SHA>` does that without restarting the API (the API's
 configuration is unchanged; the release's backup is still taken).
 
-## After enabling: measure, do not assume
+## Alloy's footprint, measured
 
-Alloy's 256 MiB container limit and `GOMEMLIMIT=200MiB` are configuration, not
-measurement. After it has run for a day, `sudo /srv/pathable/repo/infra/vps/measure.sh 1`
-records its cgroup memory beside the others; add the line to
-`docs/evidence/vps-deployment.json`. (`measure.sh` restarts the API once.)
+Measured on the pilot on 2026-11-15, after 39 h up and through the load test,
+sampled each second ([`vps-load-2026-11-15.json`](../evidence/vps-load-2026-11-15.json)):
+**43.5 MiB of anonymous memory, steady**, and about 0.5% of one vCPU. Its
+cgroup's `memory.current` sits at the 256 MiB limit, but what fills it is
+reclaimable page cache (the WAL's files), not memory Alloy needs. Alloy has not
+restarted. `measure.sh` reports `memory.current` alone, which reads as "at the
+limit" here, so look at the cgroup's `memory.stat` `anon` before concluding
+anything from it.
 
 ## What this does not cover
 
-- **Reachability from outside the host.** The probe runs on the host it probes,
-  so a network path that fails beyond it goes unseen until the host stops
-  reporting. Grafana Cloud's Synthetic Monitoring (Free tier: 100k API test
-  executions a month) can probe from outside; not configured.
+- **Reachability from outside the host** is now Synthetic Monitoring's job (see
+  [Current state](#current-state)); Alloy's probe runs on the host it probes and
+  cannot see a network path that fails beyond it. Whether the synthetic check
+  alerts on its own is configured in Grafana and not recorded here.
 - **Logs and traces.** Logs stay in Docker's rotated JSON files on the host
   (`compose logs`); nothing ships them.
 - **Several API workers.** Counters live in the one process (ADR 0009). More

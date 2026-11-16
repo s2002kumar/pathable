@@ -1,0 +1,88 @@
+{
+  "region": "waterloo",
+  "profile": "wheelchair",
+  "origin": {
+    "longitude": -80.5419973,
+    "latitude": 43.4724277
+  },
+  "destination": {
+    "longitude": -80.54521281370106,
+    "latitude": 43.47197215
+  },
+  "search": {
+    "start_query": "Davis Centre",
+    "start_label": "Davis Centre Library",
+    "end_query": "Student Life Centre",
+    "end_label": "Student Life Centre"
+  },
+  "expected": {
+    "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+    "standard": {
+      "distance_m": 401.3,
+      "stairway_count": 3
+    },
+    "accessible": {
+      "distance_m": 503.7,
+      "stairway_count": 0
+    }
+  },
+  "mix": [
+    {
+      "key": "campus-to-laurier",
+      "origin": {
+        "longitude": -80.5424,
+        "latitude": 43.4728
+      },
+      "destination": {
+        "longitude": -80.5275,
+        "latitude": 43.474
+      },
+      "standard": {
+        "distance_m": 1464.5,
+        "stairway_count": 2
+      },
+      "accessible": {
+        "distance_m": 1516.0,
+        "stairway_count": 0
+      }
+    },
+    {
+      "key": "laurier-to-uptown",
+      "origin": {
+        "longitude": -80.5275,
+        "latitude": 43.474
+      },
+      "destination": {
+        "longitude": -80.5222,
+        "latitude": 43.465
+      },
+      "standard": {
+        "distance_m": 1316.1,
+        "stairway_count": 0
+      },
+      "accessible": {
+        "distance_m": 1341.4,
+        "stairway_count": 0
+      }
+    },
+    {
+      "key": "grand-river-hospital-to-kitchener-city-hall",
+      "origin": {
+        "longitude": -80.5069,
+        "latitude": 43.4574
+      },
+      "destination": {
+        "longitude": -80.4925,
+        "latitude": 43.4516
+      },
+      "standard": {
+        "distance_m": 1564.0,
+        "stairway_count": 0
+      },
+      "accessible": {
+        "distance_m": 1618.2,
+        "stairway_count": 0
+      }
+    }
+  ]
+}
