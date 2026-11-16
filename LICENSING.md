@@ -3,8 +3,8 @@
 ## The policy, in one paragraph
 
 **PathAble AI's source code is © Sandeep Kumar. All rights reserved.** The
-repository is intended to become **source-visible** — readable by anyone who
-opens it — but that is not a grant of any right to use, copy, modify or
+repository is **source-visible** — readable by anyone who opens it — but that
+is not a grant of any right to use, copy, modify or
 redistribute the code. **PathAble is not open source**, and must not be
 described as open source, MIT, Apache-2.0, or "free to use" in the README, a
 presentation, a CV, or a pitch. Being able to read something is not permission
