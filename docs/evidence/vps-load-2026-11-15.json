@@ -1,0 +1,2666 @@
+{
+  "what": "Controlled load against the public pilot's production API: closed-loop stages at 1, 10, 25 and 50 requests in flight, open-loop stages at 3 and 5 requests a second, a mixed-length journey stage and a place-search stage, with every answer checked, host and container resources sampled each second, public latency and readiness probed from outside, and telemetry flowing to Grafana Cloud throughout.",
+  "captured_at": "2026-11-15T23:50:00Z",
+  "not_a_claim_about": "real users, visitors or business scale. A virtual user here is a closed loop with no think time: N virtual users means N requests in flight at every moment.",
+  "serving": {
+    "sha": "905364e736b18cecee6c80ee72b289b3df900da0",
+    "reported_version": "0.1.0+905364e736b1",
+    "deployed_at": "2026-11-10T16:59:40Z",
+    "rollback_release": "c020398d0c1f88de79c07903a5c6b7bd94c20195 (release.env.previous)",
+    "changed_by_this_run": "nothing: no deploy, restart or configuration change; the API fix in this PR is not deployed"
+  },
+  "host": {
+    "provider": "OVH VPS, Ubuntu 26.04, 2 vCPU, 3,814 MiB RAM, 2 GiB swap, 38 GB disk",
+    "api": "one uvicorn process, routes computed on its event loop; cgroup limit 1,536 MiB",
+    "limits_mib": {
+      "db": 1024,
+      "caddy": 256,
+      "web": 512,
+      "alloy": 256
+    },
+    "uptime_note": "host rebooted by unattended-upgrades 2026-11-14T08:30Z; every container started then and has restart count 0"
+  },
+  "dataset": {
+    "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+    "checksum_in_every_response": "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906",
+    "content_checksum": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00, recorded on the host at the 905364e deploy; not recomputed in this run",
+    "routing_policy": 3,
+    "attribution": "Routes derive from OpenStreetMap data, (c) OpenStreetMap contributors, ODbL 1.0"
+  },
+  "methodology": {
+    "target": "the production API process at http://api:8000 on the pilot's Compose edge network, from a k6 container on the same host; the public path (internet, Caddy, TLS) measured alongside from a laptop in Ontario",
+    "why_inside_the_host": "the API limits each client to 30 routes and 60 searches a minute and Caddy discards any X-Forwarded-For a client sends, so load from one machine through the public URL measures only the limiter; the limiter itself is measured through the public path (public_rate_limit)",
+    "synthetic_clients": "each request's X-Forwarded-For is the next of 762 addresses in the RFC 5737 documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24): the limiter sees many clients, none near its limit, and none can be a real visitor. No host stage received a 429.",
+    "workloads": {
+      "route": "POST /api/v1/routes/compare, the smoke journey (Davis Centre Library to Student Life Centre, wheelchair profile), coordinates from production place search in this run",
+      "mix": "the smoke journey and three 1.3-1.6 km corpus journeys in turn, each checked against the answer production gave sequentially in this run",
+      "search": "POST /api/v1/geocode/search, a submitted search for each journey end (checked) alternating with as-you-type prefixes"
+    },
+    "stage_order_and_rests": "c01, c10, c25, c50, mix10, r3, r5, s10, each followed by at least 60 s idle; each later stage ran only after the previous one's gates were read (errors, mismatches, API memory, host memory, readiness, restarts, Alloy)",
+    "abort_limits": "API anonymous memory above 1,300 MiB, host MemAvailable below 400 MiB, or public readiness failing without a break for 60 s (45 s for c50); none triggered",
+    "public_watch": "laptop: readiness every 5 s and the smoke journey every 4 s (0.25/s, half one client's refill), 23:27 to 23:46 UTC",
+    "external_monitors": "Alloy's blackbox probe and Grafana Synthetic Monitoring's two locations, read from Caddy's access log by user agent; client addresses dropped",
+    "server_side_quantiles": "differenced API histograms read like histogram_quantile: linear within buckets, so coarse above 2.5 s (buckets 2.5, 5, 10 s) and capped at 10 s; they include the public watch's requests",
+    "clocks": "host and laptop timestamps are UTC from NTP-synchronised clocks, aligned by epoch"
+  },
+  "disk_cleanup": {
+    "before": {
+      "used_bytes": 31308247040,
+      "free_bytes": 9099804672,
+      "used_pct": 78
+    },
+    "after": {
+      "used_bytes": 24054992896,
+      "free_bytes": 16353058816,
+      "used_pct": 60
+    },
+    "reclaimed_bytes": 7253262336,
+    "step_1_release_images": {
+      "reclaimed_bytes": 4029992960,
+      "removed": [
+        "pathable-api:629a67a8fb6d1e9003ae50d6f5243c2d7353970b",
+        "pathable-web:629a67a8fb6d1e9003ae50d6f5243c2d7353970b",
+        "pathable-api:e62b7e83341d82c1415c3d2aeb31f5281a91cba7",
+        "pathable-web:e62b7e83341d82c1415c3d2aeb31f5281a91cba7",
+        "pathable-api:88fe1bef8fa5b23ea4b510828e44320322984846",
+        "pathable-web:88fe1bef8fa5b23ea4b510828e44320322984846",
+        "pathable-api:e5a5b90540a7da7f1cd9907b7f85476265ef37b7",
+        "pathable-web:e5a5b90540a7da7f1cd9907b7f85476265ef37b7",
+        "pathable-api:490c8a7c946c083590b4a7bea54f28aa849ca547",
+        "pathable-web:490c8a7c946c083590b4a7bea54f28aa849ca547",
+        "pathable-api:465bab7929717fddacb90fcd726ac5bd8d7d320b",
+        "pathable-web:465bab7929717fddacb90fcd726ac5bd8d7d320b",
+        "pathable-api:a3f6448aab55e4b81f0dab805f2e71bd311af189",
+        "pathable-web:a3f6448aab55e4b81f0dab805f2e71bd311af189",
+        "pathable-api-cli:a3f6448aab55e4b81f0dab805f2e71bd311af189"
+      ],
+      "why_safe": "older than the rollback release c020398, referenced by no container, rebuildable from git with deploy.sh build; all but 629a67a predate database revision 0008, so deploy.sh rollback could not use them"
+    },
+    "step_2_build_cache": {
+      "reclaimed_bytes": 3223269376,
+      "command": "docker builder prune -f --filter until=240h",
+      "kept": "cache last used by the c020398 and 905364e builds and the parent records they depend on, so the next build stays warm"
+    },
+    "kept": [
+      "serving images 905364e (api, web)",
+      "rollback images c020398 (api, web)",
+      "postgis, caddy and alloy images",
+      "every volume, including an unattached anonymous volume (449.7 MB) holding a PostgreSQL 17 data directory created 2026-10-15T00:28Z, left for the founder",
+      "all backups in /var/backups/pathable",
+      "evidence and deployment files"
+    ],
+    "end_of_run_free_bytes": 16343195648,
+    "end_of_run_note": "the k6 image (36.9 MB compressed) was pulled for the run and removed after it"
+  },
+  "tooling": {
+    "k6_image": "grafana/k6:1.8.1@sha256:23f2279054c3e01535455c4d92914a625df12aeb631ea0e3ea7a43f96bcbc843",
+    "scripts_as_run_sha256_prefix": {
+      "c01 c10 c25 c50": {
+        "load.js": "6ac1c965b765",
+        "run_stage.py": "1b4e5354c7f1"
+      },
+      "mix10 r3 r5 s10": {
+        "load.js": "7ec0102611f2",
+        "run_stage.py": "5ead8e7abaf2"
+      },
+      "journey.json, all stages": "6755676f5cf3"
+    },
+    "committed_versions": "load.js and journey.json are byte-identical to the later run; run_stage.py differs only in docstring wrapping. The earlier revisions lacked only the open-loop --rate option, which no closed-loop stage uses.",
+    "host_raw_files": "/srv/pathable/evidence/load-20261115/ (samples, readiness, k6 raw CSV, expositions); archive load-20261115-results.tar.gz, sha256 b35000a0d9aa7fa0ae4ca594a836a6985bb4a7b29a71a8473165489b69afdd92"
+  },
+  "stages": [
+    {
+      "stage": "c01",
+      "workload": "route",
+      "loop": "closed",
+      "vus": 1,
+      "arrival_rate_per_s": null,
+      "duration": "60s",
+      "started_at": "2026-11-15T23:27:31.825Z",
+      "ended_at": "2026-11-15T23:28:32.488Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 345,
+        "throughput_per_s": 5.74,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 345,
+          "min": 135.8,
+          "p50": 154.7,
+          "mean": 170.3,
+          "p90": 181.9,
+          "p95": 216.5,
+          "p99": 320.0,
+          "max": 2426.5
+        },
+        "time_to_first_byte_ms": {
+          "n": 345,
+          "min": 135.5,
+          "p50": 154.1,
+          "mean": 169.8,
+          "p90": 181.4,
+          "p95": 215.5,
+          "p99": 318.1,
+          "max": 2425.7
+        },
+        "response_bytes": {
+          "n": 345,
+          "min": 81292,
+          "p50": 81294,
+          "mean": 81293.9,
+          "p90": 81294,
+          "p95": 81295,
+          "p99": 81295,
+          "max": 81295
+        },
+        "server_computation_ms_reported": {
+          "n": 345,
+          "min": 111.2,
+          "p50": 124.3,
+          "mean": 128.2,
+          "p90": 144.9,
+          "p95": 149.6,
+          "p99": 166.3,
+          "max": 187.1
+        },
+        "littles_law_in_flight": 1.0
+      },
+      "correctness": {
+        "checked": 345,
+        "matched": 345,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 345,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 345,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 61,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 99.1,
+          "cpu_p95_1s_pct": 132.2,
+          "anon_max_mib": 1024.5,
+          "memory_current_max_mib": 1162.3
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 3.4,
+          "cpu_p95_1s_pct": 10.6,
+          "anon_max_mib": 14.1,
+          "memory_current_max_mib": 282.3
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.6,
+          "anon_max_mib": 16.3,
+          "memory_current_max_mib": 68.1
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 0.9,
+          "cpu_p95_1s_pct": 10.5,
+          "anon_max_mib": 68.4,
+          "memory_current_max_mib": 177.9
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.6,
+          "cpu_p95_1s_pct": 0.9,
+          "anon_max_mib": 43.3,
+          "memory_current_max_mib": 256.0
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 3.4,
+          "cpu_p95_1s_pct": 4.4,
+          "anon_max_mib": 13.8,
+          "memory_current_max_mib": 14.7
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 55.3,
+          "cpu_steal_pct": 0.01,
+          "cpu_iowait_pct": 0.0,
+          "mem_available_min_mib": 1845.8,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 4.31,
+          "loadavg_1m_max": 1.22
+        }
+      },
+      "readiness_from_host": {
+        "probes": 13,
+        "ok": 13,
+        "failed": 0,
+        "failed_statuses": {},
+        "latency_ms": {
+          "n": 13,
+          "min": 19.4,
+          "p50": 129.4,
+          "p95": 1850.1,
+          "max": 1850.1,
+          "mean": 255.6
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 15,
+        "routes_ok": 15,
+        "routes_matching_smoke": 15,
+        "route_round_trip_ms": {
+          "n": 15,
+          "min": 301.9,
+          "p50": 372.6,
+          "p95": 928.0,
+          "max": 928.0,
+          "mean": 413.7
+        },
+        "readiness": {
+          "probes": 13,
+          "ok": 13,
+          "failed": 0,
+          "failed_statuses": {},
+          "latency_ms": {
+            "n": 13,
+            "min": 89.0,
+            "p50": 241.6,
+            "p95": 377.1,
+            "max": 377.1,
+            "mean": 237.8
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 2,
+          "failed": 0,
+          "slowest_s": 0.14
+        },
+        "grafana_synthetic_monitoring": {
+          "probes": 2,
+          "failed": 0,
+          "slowest_s": 0.02
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 466,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 220.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 361,
+          "mean_ms": 172.2,
+          "p50_ms": 179.4,
+          "p95_ms": 275.7,
+          "p99_ms": 465.7
+        },
+        "route_comparison_compute": {
+          "count": 361,
+          "mean_ms": 138.2,
+          "p50_ms": 129.8,
+          "p95_ms": 185.0,
+          "p99_ms": 197.7
+        }
+      }
+    },
+    {
+      "stage": "c10",
+      "workload": "route",
+      "loop": "closed",
+      "vus": 10,
+      "arrival_rate_per_s": null,
+      "duration": "90s",
+      "started_at": "2026-11-15T23:29:36.861Z",
+      "ended_at": "2026-11-15T23:31:08.623Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 560,
+        "throughput_per_s": 6.14,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 560,
+          "min": 479.4,
+          "p50": 1576.6,
+          "mean": 1611.5,
+          "p90": 1868.0,
+          "p95": 1961.9,
+          "p99": 2371.6,
+          "max": 2429.3
+        },
+        "time_to_first_byte_ms": {
+          "n": 560,
+          "min": 475.8,
+          "p50": 1559.2,
+          "mean": 1587.5,
+          "p90": 1845.8,
+          "p95": 1946.1,
+          "p99": 2345.7,
+          "max": 2424.7
+        },
+        "response_bytes": {
+          "n": 560,
+          "min": 81292,
+          "p50": 81294,
+          "mean": 81293.9,
+          "p90": 81295,
+          "p95": 81295,
+          "p99": 81295,
+          "max": 81295
+        },
+        "server_computation_ms_reported": {
+          "n": 560,
+          "min": 108.6,
+          "p50": 124.5,
+          "mean": 128.7,
+          "p90": 147.5,
+          "p95": 153.3,
+          "p99": 162.2,
+          "max": 206.5
+        },
+        "littles_law_in_flight": 9.9
+      },
+      "correctness": {
+        "checked": 560,
+        "matched": 560,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 560,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 560,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 92,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 102.1,
+          "cpu_p95_1s_pct": 140.0,
+          "anon_max_mib": 1025.4,
+          "memory_current_max_mib": 1163.7
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 4.9,
+          "cpu_p95_1s_pct": 12.9,
+          "anon_max_mib": 27.7,
+          "memory_current_max_mib": 297.9
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.5,
+          "anon_max_mib": 15.6,
+          "memory_current_max_mib": 67.5
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 1.1,
+          "cpu_p95_1s_pct": 10.4,
+          "anon_max_mib": 66.4,
+          "memory_current_max_mib": 175.8
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.5,
+          "cpu_p95_1s_pct": 0.9,
+          "anon_max_mib": 43.3,
+          "memory_current_max_mib": 255.8
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 3.6,
+          "cpu_p95_1s_pct": 5.7,
+          "anon_max_mib": 25.6,
+          "memory_current_max_mib": 26.6
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 57.6,
+          "cpu_steal_pct": 0.02,
+          "cpu_iowait_pct": 0.01,
+          "mem_available_min_mib": 1858.8,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 4.87,
+          "loadavg_1m_max": 1.11
+        }
+      },
+      "readiness_from_host": {
+        "probes": 15,
+        "ok": 15,
+        "failed": 0,
+        "failed_statuses": {},
+        "latency_ms": {
+          "n": 15,
+          "min": 21.1,
+          "p50": 1817.8,
+          "p95": 2370.7,
+          "max": 2370.7,
+          "mean": 1648.1
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 23,
+        "routes_ok": 22,
+        "routes_matching_smoke": 22,
+        "route_round_trip_ms": {
+          "n": 22,
+          "min": 822.8,
+          "p50": 1765.8,
+          "p95": 2541.7,
+          "max": 2794.3,
+          "mean": 1802.2
+        },
+        "readiness": {
+          "probes": 19,
+          "ok": 19,
+          "failed": 0,
+          "failed_statuses": {},
+          "latency_ms": {
+            "n": 19,
+            "min": 797.7,
+            "p50": 2009.2,
+            "p95": 2761.1,
+            "max": 2761.1,
+            "mean": 1956.9
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 3,
+          "failed": 0,
+          "slowest_s": 2.25
+        },
+        "grafana_synthetic_monitoring": {
+          "probes": 2,
+          "failed": 0,
+          "slowest_s": 1.61
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 686,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 220.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 583,
+          "mean_ms": 1660.9,
+          "p50_ms": 1870.1,
+          "p95_ms": 2442.9,
+          "p99_ms": 2493.8
+        },
+        "route_comparison_compute": {
+          "count": 583,
+          "mean_ms": 138.8,
+          "p50_ms": 130.9,
+          "p95_ms": 187.7,
+          "p99_ms": 198.3
+        }
+      }
+    },
+    {
+      "stage": "c25",
+      "workload": "route",
+      "loop": "closed",
+      "vus": 25,
+      "arrival_rate_per_s": null,
+      "duration": "60s",
+      "started_at": "2026-11-15T23:32:11.856Z",
+      "ended_at": "2026-11-15T23:33:16.018Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 372,
+        "throughput_per_s": 5.86,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 372,
+          "min": 982.2,
+          "p50": 4114.4,
+          "mean": 4158.4,
+          "p90": 4726.4,
+          "p95": 5092.9,
+          "p99": 5769.5,
+          "max": 6384.4
+        },
+        "time_to_first_byte_ms": {
+          "n": 372,
+          "min": 970.1,
+          "p50": 4035.6,
+          "mean": 4053.1,
+          "p90": 4693.2,
+          "p95": 5006.5,
+          "p99": 5751.5,
+          "max": 6007.1
+        },
+        "response_bytes": {
+          "n": 372,
+          "min": 81292,
+          "p50": 81294,
+          "mean": 81294.2,
+          "p90": 81295,
+          "p95": 81295,
+          "p99": 81295,
+          "max": 81295
+        },
+        "server_computation_ms_reported": {
+          "n": 372,
+          "min": 111.6,
+          "p50": 132.7,
+          "mean": 135.5,
+          "p90": 159.6,
+          "p95": 164.0,
+          "p99": 173.6,
+          "max": 181.8
+        },
+        "littles_law_in_flight": 24.4
+      },
+      "correctness": {
+        "checked": 372,
+        "matched": 372,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 372,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 372,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 64,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 101.6,
+          "cpu_p95_1s_pct": 121.7,
+          "anon_max_mib": 1025.9,
+          "memory_current_max_mib": 1164.6
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 5.2,
+          "cpu_p95_1s_pct": 11.8,
+          "anon_max_mib": 27.5,
+          "memory_current_max_mib": 297.7
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.5,
+          "anon_max_mib": 15.7,
+          "memory_current_max_mib": 67.6
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 1.0,
+          "cpu_p95_1s_pct": 9.8,
+          "anon_max_mib": 69.1,
+          "memory_current_max_mib": 178.6
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.6,
+          "cpu_p95_1s_pct": 1.0,
+          "anon_max_mib": 43.4,
+          "memory_current_max_mib": 255.8
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 3.6,
+          "cpu_p95_1s_pct": 6.4,
+          "anon_max_mib": 34.1,
+          "memory_current_max_mib": 35.0
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 57.6,
+          "cpu_steal_pct": 0.01,
+          "cpu_iowait_pct": 0.01,
+          "mem_available_min_mib": 1851.2,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 5.39,
+          "loadavg_1m_max": 0.97
+        }
+      },
+      "readiness_from_host": {
+        "probes": 8,
+        "ok": 8,
+        "failed": 0,
+        "failed_statuses": {},
+        "latency_ms": {
+          "n": 8,
+          "min": 16.6,
+          "p50": 4581.8,
+          "p95": 7203.6,
+          "max": 7203.6,
+          "mean": 4120.1
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 14,
+        "routes_ok": 14,
+        "routes_matching_smoke": 14,
+        "route_round_trip_ms": {
+          "n": 14,
+          "min": 559.4,
+          "p50": 4501.6,
+          "p95": 5369.3,
+          "max": 5369.3,
+          "mean": 4272.4
+        },
+        "readiness": {
+          "probes": 13,
+          "ok": 13,
+          "failed": 0,
+          "failed_statuses": {},
+          "latency_ms": {
+            "n": 13,
+            "min": 932.5,
+            "p50": 4733.5,
+            "p95": 5670.2,
+            "max": 5670.2,
+            "mean": 4587.2
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 3,
+          "failed": 0,
+          "slowest_s": 4.94
+        },
+        "grafana_synthetic_monitoring": {
+          "probes": 2,
+          "failed": 0,
+          "slowest_s": 4.97
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 440,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 220.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 387,
+          "mean_ms": 4457.1,
+          "p50_ms": 3930.2,
+          "p95_ms": 8208.3,
+          "p99_ms": 9641.7
+        },
+        "route_comparison_compute": {
+          "count": 387,
+          "mean_ms": 146.2,
+          "p50_ms": 141.7,
+          "p95_ms": 194.0,
+          "p99_ms": 199.1
+        }
+      }
+    },
+    {
+      "stage": "c50",
+      "workload": "route",
+      "loop": "closed",
+      "vus": 50,
+      "arrival_rate_per_s": null,
+      "duration": "60s",
+      "started_at": "2026-11-15T23:34:20.308Z",
+      "ended_at": "2026-11-15T23:35:27.195Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 408,
+        "throughput_per_s": 6.16,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 408,
+          "min": 1057.2,
+          "p50": 7246.4,
+          "mean": 7787.0,
+          "p90": 11290.7,
+          "p95": 13062.0,
+          "p99": 20165.2,
+          "max": 25224.1
+        },
+        "time_to_first_byte_ms": {
+          "n": 408,
+          "min": 1047.3,
+          "p50": 7143.7,
+          "mean": 7672.1,
+          "p90": 11195.6,
+          "p95": 12967.5,
+          "p99": 20030.8,
+          "max": 25204.5
+        },
+        "response_bytes": {
+          "n": 408,
+          "min": 81292,
+          "p50": 81294,
+          "mean": 81294.0,
+          "p90": 81295,
+          "p95": 81295,
+          "p99": 81295,
+          "max": 81295
+        },
+        "server_computation_ms_reported": {
+          "n": 408,
+          "min": 107.3,
+          "p50": 121.3,
+          "mean": 126.6,
+          "p90": 147.6,
+          "p95": 156.7,
+          "p99": 173.4,
+          "max": 189.3
+        },
+        "littles_law_in_flight": 48.0
+      },
+      "correctness": {
+        "checked": 408,
+        "matched": 408,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 408,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 408,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 67,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 101.8,
+          "cpu_p95_1s_pct": 138.6,
+          "anon_max_mib": 1026.4,
+          "memory_current_max_mib": 1166.1
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 4.0,
+          "cpu_p95_1s_pct": 11.6,
+          "anon_max_mib": 31.7,
+          "memory_current_max_mib": 302.0
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.6,
+          "anon_max_mib": 15.7,
+          "memory_current_max_mib": 67.6
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 1.0,
+          "cpu_p95_1s_pct": 10.2,
+          "anon_max_mib": 69.1,
+          "memory_current_max_mib": 178.6
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.5,
+          "cpu_p95_1s_pct": 1.0,
+          "anon_max_mib": 43.5,
+          "memory_current_max_mib": 256.0
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 3.7,
+          "cpu_p95_1s_pct": 6.6,
+          "anon_max_mib": 47.8,
+          "memory_current_max_mib": 49.0
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 56.9,
+          "cpu_steal_pct": 0.01,
+          "cpu_iowait_pct": 0.01,
+          "mem_available_min_mib": 1835.6,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 4.29,
+          "loadavg_1m_max": 1.59
+        }
+      },
+      "readiness_from_host": {
+        "probes": 7,
+        "ok": 4,
+        "failed": 3,
+        "failed_statuses": {
+          "503": 3
+        },
+        "latency_ms": {
+          "n": 7,
+          "min": 36.7,
+          "p50": 6347.8,
+          "p95": 8849.9,
+          "max": 8849.9,
+          "mean": 5663.1
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 10,
+        "routes_ok": 10,
+        "routes_matching_smoke": 10,
+        "route_round_trip_ms": {
+          "n": 10,
+          "min": 323.2,
+          "p50": 5959.3,
+          "p95": 10577.9,
+          "max": 10577.9,
+          "mean": 6384.1
+        },
+        "readiness": {
+          "probes": 9,
+          "ok": 6,
+          "failed": 3,
+          "failed_statuses": {
+            "503": 3
+          },
+          "latency_ms": {
+            "n": 9,
+            "min": 108.3,
+            "p50": 6987.4,
+            "p95": 9823.2,
+            "max": 9823.2,
+            "mean": 6890.5
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 3,
+          "failed": 0,
+          "slowest_s": 9.8
+        },
+        "grafana_synthetic_monitoring": {
+          "probes": 2,
+          "failed": 1,
+          "slowest_s": 7.2
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 668,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 237.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 419,
+          "mean_ms": 8096.8,
+          "p50_ms": 8032.4,
+          "p95_ms": 10000.0,
+          "p99_ms": 10000.0
+        },
+        "route_comparison_compute": {
+          "count": 419,
+          "mean_ms": 142.0,
+          "p50_ms": 131.0,
+          "p95_ms": 188.0,
+          "p99_ms": 198.6
+        }
+      }
+    },
+    {
+      "stage": "mix10",
+      "workload": "mix",
+      "loop": "closed",
+      "vus": 10,
+      "arrival_rate_per_s": null,
+      "duration": "60s",
+      "started_at": "2026-11-15T23:37:09.465Z",
+      "ended_at": "2026-11-15T23:38:13.739Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 139,
+        "throughput_per_s": 2.18,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 139,
+          "min": 2519.3,
+          "p50": 4489.0,
+          "mean": 4450.1,
+          "p90": 5078.4,
+          "p95": 5203.7,
+          "p99": 5549.3,
+          "max": 6316.8
+        },
+        "time_to_first_byte_ms": {
+          "n": 139,
+          "min": 2516.7,
+          "p50": 4439.9,
+          "mean": 4394.8,
+          "p90": 5043.0,
+          "p95": 5118.2,
+          "p99": 5546.4,
+          "max": 6292.1
+        },
+        "response_bytes": {
+          "n": 139,
+          "min": 81292,
+          "p50": 129609,
+          "mean": 115387.6,
+          "p90": 139037,
+          "p95": 139037,
+          "p99": 139037,
+          "max": 139037
+        },
+        "server_computation_ms_reported": {
+          "n": 139,
+          "min": 114,
+          "p50": 364.3,
+          "mean": 410.5,
+          "p90": 780.6,
+          "p95": 817.2,
+          "p99": 859.5,
+          "max": 879.6
+        },
+        "littles_law_in_flight": 9.7
+      },
+      "correctness": {
+        "checked": 139,
+        "matched": 139,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 35,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 35,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 64,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 102.5,
+          "cpu_p95_1s_pct": 142.9,
+          "anon_max_mib": 1026.4,
+          "memory_current_max_mib": 1165.7
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 2.9,
+          "cpu_p95_1s_pct": 11.1,
+          "anon_max_mib": 22.7,
+          "memory_current_max_mib": 292.7
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.5,
+          "anon_max_mib": 15.7,
+          "memory_current_max_mib": 67.6
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 1.0,
+          "cpu_p95_1s_pct": 9.6,
+          "anon_max_mib": 73.5,
+          "memory_current_max_mib": 183.4
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.5,
+          "cpu_p95_1s_pct": 1.1,
+          "anon_max_mib": 43.5,
+          "memory_current_max_mib": 255.8
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 2.0,
+          "cpu_p95_1s_pct": 4.7,
+          "anon_max_mib": 25.4,
+          "memory_current_max_mib": 26.4
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 55.7,
+          "cpu_steal_pct": 0.01,
+          "cpu_iowait_pct": 0.0,
+          "mem_available_min_mib": 1857.4,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 4.17,
+          "loadavg_1m_max": 0.96
+        }
+      },
+      "readiness_from_host": {
+        "probes": 8,
+        "ok": 7,
+        "failed": 1,
+        "failed_statuses": {
+          "503": 1
+        },
+        "latency_ms": {
+          "n": 8,
+          "min": 26.8,
+          "p50": 4497.6,
+          "p95": 6245.4,
+          "max": 6245.4,
+          "mean": 4008.7
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 14,
+        "routes_ok": 14,
+        "routes_matching_smoke": 14,
+        "route_round_trip_ms": {
+          "n": 14,
+          "min": 408.1,
+          "p50": 4325.6,
+          "p95": 7437.5,
+          "max": 7437.5,
+          "mean": 4456.4
+        },
+        "readiness": {
+          "probes": 12,
+          "ok": 11,
+          "failed": 1,
+          "failed_statuses": {
+            "503": 1
+          },
+          "latency_ms": {
+            "n": 12,
+            "min": 1355.3,
+            "p50": 4912.8,
+            "p95": 6900.0,
+            "max": 6900.0,
+            "mean": 4788.7
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 2,
+          "failed": 1,
+          "slowest_s": 5.44
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 474,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 237.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 154,
+          "mean_ms": 4613.7,
+          "p50_ms": 4166.7,
+          "p95_ms": 9037.5,
+          "p99_ms": 9807.5
+        },
+        "route_comparison_compute": {
+          "count": 154,
+          "mean_ms": 394.1,
+          "p50_ms": 378.3,
+          "p95_ms": 941.7,
+          "p99_ms": 988.3
+        }
+      }
+    },
+    {
+      "stage": "r3",
+      "workload": "route",
+      "loop": "open",
+      "vus": 50,
+      "arrival_rate_per_s": 3.0,
+      "duration": "60s",
+      "started_at": "2026-11-15T23:39:17.358Z",
+      "ended_at": "2026-11-15T23:40:18.201Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 181,
+        "throughput_per_s": 3.0,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 181,
+          "min": 140.2,
+          "p50": 160.3,
+          "mean": 171.4,
+          "p90": 221.1,
+          "p95": 249.8,
+          "p99": 297.6,
+          "max": 390.7
+        },
+        "time_to_first_byte_ms": {
+          "n": 181,
+          "min": 139.6,
+          "p50": 159.8,
+          "mean": 170.8,
+          "p90": 220.5,
+          "p95": 248.7,
+          "p99": 297.0,
+          "max": 390.4
+        },
+        "response_bytes": {
+          "n": 181,
+          "min": 81292,
+          "p50": 81294,
+          "mean": 81294.0,
+          "p90": 81295,
+          "p95": 81295,
+          "p99": 81295,
+          "max": 81295
+        },
+        "server_computation_ms_reported": {
+          "n": 181,
+          "min": 113.7,
+          "p50": 128.0,
+          "mean": 131.2,
+          "p90": 148.0,
+          "p95": 156.2,
+          "p99": 181.4,
+          "max": 206.0
+        }
+      },
+      "correctness": {
+        "checked": 181,
+        "matched": 181,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 181,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 181,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 61,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 56.3,
+          "cpu_p95_1s_pct": 90.6,
+          "anon_max_mib": 1026.1,
+          "memory_current_max_mib": 1165.3
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 2.8,
+          "cpu_p95_1s_pct": 10.2,
+          "anon_max_mib": 18.5,
+          "memory_current_max_mib": 287.2
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.5,
+          "anon_max_mib": 15.7,
+          "memory_current_max_mib": 67.6
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 1.0,
+          "cpu_p95_1s_pct": 9.3,
+          "anon_max_mib": 68.5,
+          "memory_current_max_mib": 177.9
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.5,
+          "cpu_p95_1s_pct": 0.8,
+          "anon_max_mib": 43.5,
+          "memory_current_max_mib": 256.0
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 2.6,
+          "cpu_p95_1s_pct": 4.6,
+          "anon_max_mib": 44.8,
+          "memory_current_max_mib": 45.8
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 32.9,
+          "cpu_steal_pct": 0.02,
+          "cpu_iowait_pct": 0.01,
+          "mem_available_min_mib": 1850.5,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 3.97,
+          "loadavg_1m_max": 1.22
+        }
+      },
+      "readiness_from_host": {
+        "probes": 14,
+        "ok": 14,
+        "failed": 0,
+        "failed_statuses": {},
+        "latency_ms": {
+          "n": 14,
+          "min": 15.3,
+          "p50": 17.6,
+          "p95": 301.9,
+          "max": 301.9,
+          "mean": 48.5
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 15,
+        "routes_ok": 15,
+        "routes_matching_smoke": 15,
+        "route_round_trip_ms": {
+          "n": 15,
+          "min": 278.5,
+          "p50": 305.1,
+          "p95": 339.3,
+          "max": 339.3,
+          "mean": 307.1
+        },
+        "readiness": {
+          "probes": 12,
+          "ok": 12,
+          "failed": 0,
+          "failed_statuses": {},
+          "latency_ms": {
+            "n": 12,
+            "min": 82.9,
+            "p50": 106.3,
+            "p95": 139.3,
+            "max": 139.3,
+            "mean": 111.3
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 3,
+          "failed": 0,
+          "slowest_s": 0.13
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 474,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 237.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 197,
+          "mean_ms": 162.5,
+          "p50_ms": 175.4,
+          "p95_ms": 243.2,
+          "p99_ms": 249.3
+        },
+        "route_comparison_compute": {
+          "count": 197,
+          "mean_ms": 142.4,
+          "p50_ms": 132.4,
+          "p95_ms": 190.9,
+          "p99_ms": 201.5
+        }
+      }
+    },
+    {
+      "stage": "r5",
+      "workload": "route",
+      "loop": "open",
+      "vus": 50,
+      "arrival_rate_per_s": 5.0,
+      "duration": "60s",
+      "started_at": "2026-11-15T23:41:21.815Z",
+      "ended_at": "2026-11-15T23:42:22.618Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 301,
+        "throughput_per_s": 5.0,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 301,
+          "min": 141.8,
+          "p50": 160.0,
+          "mean": 175.7,
+          "p90": 238.2,
+          "p95": 271.0,
+          "p99": 307.9,
+          "max": 312.7
+        },
+        "time_to_first_byte_ms": {
+          "n": 301,
+          "min": 141.3,
+          "p50": 159.4,
+          "mean": 175.1,
+          "p90": 237.7,
+          "p95": 270.5,
+          "p99": 307.4,
+          "max": 312.0
+        },
+        "response_bytes": {
+          "n": 301,
+          "min": 81292,
+          "p50": 81294,
+          "mean": 81294.0,
+          "p90": 81295,
+          "p95": 81295,
+          "p99": 81295,
+          "max": 81295
+        },
+        "server_computation_ms_reported": {
+          "n": 301,
+          "min": 114.8,
+          "p50": 126.7,
+          "mean": 131.2,
+          "p90": 150.1,
+          "p95": 160.4,
+          "p99": 174.5,
+          "max": 217.5
+        }
+      },
+      "correctness": {
+        "checked": 301,
+        "matched": 301,
+        "mismatched": 0,
+        "smoke_distance_spread_m": {
+          "standard": {
+            "n": 301,
+            "min": 401.3,
+            "p50": 401.3,
+            "mean": 401.3,
+            "p90": 401.3,
+            "p95": 401.3,
+            "p99": 401.3,
+            "max": 401.3
+          },
+          "accessible": {
+            "n": 301,
+            "min": 503.7,
+            "p50": 503.7,
+            "mean": 503.7,
+            "p90": 503.7,
+            "p95": 503.7,
+            "p99": 503.7,
+            "max": 503.7
+          }
+        }
+      },
+      "resources": {
+        "samples": 61,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 86.6,
+          "cpu_p95_1s_pct": 113.9,
+          "anon_max_mib": 1026.4,
+          "memory_current_max_mib": 1165.7
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 3.2,
+          "cpu_p95_1s_pct": 10.5,
+          "anon_max_mib": 17.5,
+          "memory_current_max_mib": 286.0
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.6,
+          "anon_max_mib": 15.7,
+          "memory_current_max_mib": 67.6
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 1.1,
+          "cpu_p95_1s_pct": 9.8,
+          "anon_max_mib": 71.3,
+          "memory_current_max_mib": 180.8
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.5,
+          "cpu_p95_1s_pct": 0.9,
+          "anon_max_mib": 43.5,
+          "memory_current_max_mib": 255.9
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 3.7,
+          "cpu_p95_1s_pct": 5.2,
+          "anon_max_mib": 45.1,
+          "memory_current_max_mib": 46.3
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 49.0,
+          "cpu_steal_pct": 0.01,
+          "cpu_iowait_pct": 0.0,
+          "mem_available_min_mib": 1855.0,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 4.57,
+          "loadavg_1m_max": 1.31
+        }
+      },
+      "readiness_from_host": {
+        "probes": 14,
+        "ok": 14,
+        "failed": 0,
+        "failed_statuses": {},
+        "latency_ms": {
+          "n": 14,
+          "min": 16.3,
+          "p50": 37.8,
+          "p95": 286.4,
+          "max": 286.4,
+          "mean": 97.9
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 15,
+        "routes_ok": 15,
+        "routes_matching_smoke": 15,
+        "route_round_trip_ms": {
+          "n": 15,
+          "min": 321.1,
+          "p50": 356.6,
+          "p95": 542.6,
+          "max": 542.6,
+          "mean": 369.5
+        },
+        "readiness": {
+          "probes": 13,
+          "ok": 13,
+          "failed": 0,
+          "failed_statuses": {},
+          "latency_ms": {
+            "n": 13,
+            "min": 142.5,
+            "p50": 158.2,
+            "p95": 462.6,
+            "max": 462.6,
+            "mean": 205.2
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 3,
+          "failed": 0,
+          "slowest_s": 0.14
+        },
+        "grafana_synthetic_monitoring": {
+          "probes": 2,
+          "failed": 0,
+          "slowest_s": 0.01
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 685,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 237.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_compare_2xx": {
+          "count": 317,
+          "mean_ms": 162.6,
+          "p50_ms": 175.5,
+          "p95_ms": 243.4,
+          "p99_ms": 249.4
+        },
+        "route_comparison_compute": {
+          "count": 317,
+          "mean_ms": 141.5,
+          "p50_ms": 131.3,
+          "p95_ms": 188.2,
+          "p99_ms": 198.3
+        }
+      }
+    },
+    {
+      "stage": "s10",
+      "workload": "search",
+      "loop": "closed",
+      "vus": 10,
+      "arrival_rate_per_s": null,
+      "duration": "45s",
+      "started_at": "2026-11-15T23:43:25.773Z",
+      "ended_at": "2026-11-15T23:44:11.479Z",
+      "aborted": null,
+      "k6_exit_code": 0,
+      "client": {
+        "requests": 1237,
+        "throughput_per_s": 27.4,
+        "error_rate": 0,
+        "rate_limited": 0,
+        "server_errors": 0,
+        "transport_errors_or_timeouts": 0,
+        "latency_ms": {
+          "n": 1237,
+          "min": 72.8,
+          "p50": 381.8,
+          "mean": 364.1,
+          "p90": 482.1,
+          "p95": 539.4,
+          "p99": 641.0,
+          "max": 721.3
+        },
+        "time_to_first_byte_ms": {
+          "n": 1237,
+          "min": 71.5,
+          "p50": 380.0,
+          "mean": 363.2,
+          "p90": 481.7,
+          "p95": 537.7,
+          "p99": 639.9,
+          "max": 720.5
+        },
+        "response_bytes": {
+          "n": 1237,
+          "min": 458,
+          "p50": 718,
+          "mean": 588.1,
+          "p90": 718,
+          "p95": 718,
+          "p99": 718,
+          "max": 718
+        },
+        "littles_law_in_flight": 10.0
+      },
+      "correctness": {
+        "checked": 619,
+        "matched": 619,
+        "mismatched": 0
+      },
+      "resources": {
+        "samples": 46,
+        "api": {
+          "cpu_mean_pct_of_one_vcpu": 30.7,
+          "cpu_p95_1s_pct": 59.3,
+          "anon_max_mib": 1026.2,
+          "memory_current_max_mib": 1165.1
+        },
+        "db": {
+          "cpu_mean_pct_of_one_vcpu": 160.4,
+          "cpu_p95_1s_pct": 173.7,
+          "anon_max_mib": 37.1,
+          "memory_current_max_mib": 308.0
+        },
+        "caddy": {
+          "cpu_mean_pct_of_one_vcpu": 0.2,
+          "cpu_p95_1s_pct": 0.6,
+          "anon_max_mib": 15.7,
+          "memory_current_max_mib": 67.6
+        },
+        "web": {
+          "cpu_mean_pct_of_one_vcpu": 0.9,
+          "cpu_p95_1s_pct": 10.5,
+          "anon_max_mib": 73.6,
+          "memory_current_max_mib": 183.6
+        },
+        "alloy": {
+          "cpu_mean_pct_of_one_vcpu": 0.5,
+          "cpu_p95_1s_pct": 0.8,
+          "anon_max_mib": 43.5,
+          "memory_current_max_mib": 255.9
+        },
+        "k6": {
+          "cpu_mean_pct_of_one_vcpu": 3.2,
+          "cpu_p95_1s_pct": 4.4,
+          "anon_max_mib": 15.6,
+          "memory_current_max_mib": 16.7
+        },
+        "host": {
+          "cpu_busy_mean_pct_of_two_vcpu": 99.8,
+          "cpu_steal_pct": 0.01,
+          "cpu_iowait_pct": 0.0,
+          "mem_available_min_mib": 1857.1,
+          "swap_used_max_mib": 39.6,
+          "cpu_pressure_some_avg10_max": 95.18,
+          "loadavg_1m_max": 5.85
+        }
+      },
+      "readiness_from_host": {
+        "probes": 11,
+        "ok": 11,
+        "failed": 0,
+        "failed_statuses": {},
+        "latency_ms": {
+          "n": 11,
+          "min": 19.2,
+          "p50": 96.5,
+          "p95": 209.6,
+          "max": 209.6,
+          "mean": 99.3
+        }
+      },
+      "readiness_recovery_seconds": 0.0,
+      "public_during_stage": {
+        "routes": 11,
+        "routes_ok": 11,
+        "routes_matching_smoke": 11,
+        "route_round_trip_ms": {
+          "n": 11,
+          "min": 349.2,
+          "p50": 381.1,
+          "p95": 567.7,
+          "max": 567.7,
+          "mean": 404.2
+        },
+        "readiness": {
+          "probes": 9,
+          "ok": 9,
+          "failed": 0,
+          "failed_statuses": {},
+          "latency_ms": {
+            "n": 9,
+            "min": 111.5,
+            "p50": 187.0,
+            "p95": 255.9,
+            "max": 255.9,
+            "mean": 191.7
+          }
+        }
+      },
+      "external_monitors": {
+        "alloy_blackbox": {
+          "probes": 2,
+          "failed": 0,
+          "slowest_s": 0.16
+        }
+      },
+      "containers_after": {
+        "api": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "db": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "caddy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        },
+        "web": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": "healthy"
+        },
+        "alloy": {
+          "restart_count": 0,
+          "oom_killed": false,
+          "health": null
+        }
+      },
+      "alloy": {
+        "samples_sent": 489,
+        "samples_failed": 0,
+        "samples_retried": 0,
+        "samples_pending_after": 0.0,
+        "active_series_after": 252.0,
+        "components_after": [
+          "healthy"
+        ]
+      },
+      "server": {
+        "http_search_2xx": {
+          "count": 1237,
+          "mean_ms": 365.0,
+          "p50_ms": 356.7,
+          "p95_ms": 596.9,
+          "p99_ms": 719.4
+        },
+        "place_search": {
+          "count": 1237,
+          "mean_ms": 354.9,
+          "p50_ms": 350.0,
+          "p95_ms": 618.2,
+          "p99_ms": 923.6
+        }
+      }
+    }
+  ],
+  "public_while_idle": {
+    "routes": 56,
+    "routes_matching_smoke": 56,
+    "route_round_trip_ms": {
+      "n": 56,
+      "min": 269.0,
+      "p50": 296.4,
+      "p95": 352.2,
+      "max": 399.7,
+      "mean": 302.6
+    },
+    "readiness": {
+      "probes": 42,
+      "ok": 42,
+      "failed": 0,
+      "failed_statuses": {},
+      "latency_ms": {
+        "n": 42,
+        "min": 85.6,
+        "p50": 106.1,
+        "p95": 122.8,
+        "max": 327.4,
+        "mean": 111.8
+      }
+    }
+  },
+  "public_baseline": {
+    "mode": "baseline",
+    "url": "https://51.222.36.79",
+    "started_at": "2026-11-15T23:24:45.512Z",
+    "health_live_round_trip_ms": {
+      "n": 10,
+      "min": 85.8,
+      "p50": 87.7,
+      "p95": 354.9,
+      "max": 354.9,
+      "mean": 114.8
+    },
+    "health_live_statuses": [
+      200
+    ],
+    "health_ready_round_trip_ms": {
+      "n": 10,
+      "min": 77.1,
+      "p50": 88.4,
+      "p95": 113.9,
+      "max": 113.9,
+      "mean": 90.6
+    },
+    "health_ready_statuses": [
+      200
+    ],
+    "search_round_trip_ms": {
+      "n": 12,
+      "min": 145.8,
+      "p50": 153.7,
+      "p95": 168.9,
+      "max": 179.4,
+      "mean": 156.8
+    },
+    "route_sequential": {
+      "requests": 20,
+      "matching_smoke": 20,
+      "round_trip_ms": {
+        "n": 20,
+        "min": 269.6,
+        "p50": 298.0,
+        "p95": 324.8,
+        "max": 332.4,
+        "mean": 300.7
+      },
+      "server_computation_ms": {
+        "n": 20,
+        "min": 110.7,
+        "p50": 129.1,
+        "p95": 147.0,
+        "max": 159.1,
+        "mean": 130.5
+      },
+      "response_bytes_uncompressed": [
+        81302,
+        81303,
+        81304
+      ],
+      "dataset": [
+        [
+          "51585450-8ff5-409d-a02e-66d5a3c5e260",
+          "51e75f7896ab725d29120fe4363c607bea68eed260d830482d6677f827d2e906"
+        ]
+      ],
+      "statuses": [
+        200
+      ]
+    },
+    "route_compressed_transfer": {
+      "content_encoding": "zstd",
+      "bytes": 7849
+    },
+    "journey": {
+      "region": "waterloo",
+      "profile": "wheelchair",
+      "origin": {
+        "longitude": -80.5419973,
+        "latitude": 43.4724277
+      },
+      "destination": {
+        "longitude": -80.54521281370106,
+        "latitude": 43.47197215
+      },
+      "search": {
+        "start_query": "Davis Centre",
+        "start_label": "Davis Centre Library",
+        "end_query": "Student Life Centre",
+        "end_label": "Student Life Centre"
+      },
+      "expected": {
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "standard": {
+          "distance_m": 401.3,
+          "stairway_count": 3
+        },
+        "accessible": {
+          "distance_m": 503.7,
+          "stairway_count": 0
+        }
+      },
+      "mix": [
+        {
+          "key": "campus-to-laurier",
+          "origin": {
+            "longitude": -80.5424,
+            "latitude": 43.4728
+          },
+          "destination": {
+            "longitude": -80.5275,
+            "latitude": 43.474
+          },
+          "standard": {
+            "distance_m": 1464.5,
+            "stairway_count": 2
+          },
+          "accessible": {
+            "distance_m": 1516.0,
+            "stairway_count": 0
+          }
+        },
+        {
+          "key": "laurier-to-uptown",
+          "origin": {
+            "longitude": -80.5275,
+            "latitude": 43.474
+          },
+          "destination": {
+            "longitude": -80.5222,
+            "latitude": 43.465
+          },
+          "standard": {
+            "distance_m": 1316.1,
+            "stairway_count": 0
+          },
+          "accessible": {
+            "distance_m": 1341.4,
+            "stairway_count": 0
+          }
+        },
+        {
+          "key": "grand-river-hospital-to-kitchener-city-hall",
+          "origin": {
+            "longitude": -80.5069,
+            "latitude": 43.4574
+          },
+          "destination": {
+            "longitude": -80.4925,
+            "latitude": 43.4516
+          },
+          "standard": {
+            "distance_m": 1564.0,
+            "stairway_count": 0
+          },
+          "accessible": {
+            "distance_m": 1618.2,
+            "stairway_count": 0
+          }
+        }
+      ]
+    },
+    "longer_journeys": {
+      "campus-to-laurier": {
+        "statuses": [
+          200,
+          200,
+          200
+        ],
+        "standard": [
+          [
+            1464.5,
+            2
+          ]
+        ],
+        "accessible": [
+          [
+            1516.0,
+            0
+          ]
+        ],
+        "server_computation_ms": {
+          "n": 3,
+          "min": 763.9,
+          "p50": 816.3,
+          "p95": 916.5,
+          "max": 916.5,
+          "mean": 832.2
+        },
+        "response_bytes_uncompressed": [
+          139046
+        ],
+        "round_trip_ms": {
+          "n": 3,
+          "min": 944.6,
+          "p50": 1020.8,
+          "p95": 1126.0,
+          "max": 1126.0,
+          "mean": 1030.5
+        }
+      },
+      "laurier-to-uptown": {
+        "statuses": [
+          200,
+          200,
+          200
+        ],
+        "standard": [
+          [
+            1316.1,
+            0
+          ]
+        ],
+        "accessible": [
+          [
+            1341.4,
+            0
+          ]
+        ],
+        "server_computation_ms": {
+          "n": 3,
+          "min": 349.8,
+          "p50": 357.3,
+          "p95": 381.2,
+          "max": 381.2,
+          "mean": 362.8
+        },
+        "response_bytes_uncompressed": [
+          129619,
+          129620
+        ],
+        "round_trip_ms": {
+          "n": 3,
+          "min": 547.7,
+          "p50": 548.7,
+          "p95": 562.7,
+          "max": 562.7,
+          "mean": 553.0
+        }
+      },
+      "grand-river-hospital-to-kitchener-city-hall": {
+        "statuses": [
+          200,
+          200,
+          200
+        ],
+        "standard": [
+          [
+            1564.0,
+            0
+          ]
+        ],
+        "accessible": [
+          [
+            1618.2,
+            0
+          ]
+        ],
+        "server_computation_ms": {
+          "n": 3,
+          "min": 364.6,
+          "p50": 389.0,
+          "p95": 404.5,
+          "max": 404.5,
+          "mean": 386.0
+        },
+        "response_bytes_uncompressed": [
+          111506
+        ],
+        "round_trip_ms": {
+          "n": 3,
+          "min": 552.7,
+          "p50": 569.7,
+          "p95": 598.5,
+          "max": 598.5,
+          "mean": 573.6
+        }
+      }
+    },
+    "finished_at": "2026-11-15T23:25:55.907Z"
+  },
+  "public_rate_limit": {
+    "mode": "ratelimit",
+    "url": "https://51.222.36.79",
+    "started_at": "2026-11-15T23:45:54.662Z",
+    "clients": 10,
+    "requests": 40,
+    "wall_s": 5.44,
+    "admitted": 32,
+    "refused_429": 8,
+    "other_statuses": [],
+    "retry_after_values": [
+      "1",
+      "2"
+    ],
+    "refusal_codes": [
+      "rate_limited"
+    ],
+    "admitted_matching_smoke": 32,
+    "admitted_round_trip_ms": {
+      "n": 32,
+      "min": 1162.3,
+      "p50": 1482.6,
+      "p95": 1932.2,
+      "max": 1981.3,
+      "mean": 1508.1
+    },
+    "refused_round_trip_ms": {
+      "n": 8,
+      "min": 215.4,
+      "p50": 539.6,
+      "p95": 581.9,
+      "max": 581.9,
+      "mean": 418.7
+    },
+    "status_sequence_by_completion": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      429,
+      429,
+      200,
+      200,
+      429,
+      429,
+      429,
+      429,
+      200,
+      200,
+      200,
+      200,
+      429,
+      429,
+      200,
+      200
+    ],
+    "passed": true
+  },
+  "journey_costs": {
+    "started_at": "2026-11-15T23:46:47.015Z",
+    "method": "sequential, public path, paced 2.2 s, wheelchair profile, 2 runs each",
+    "journeys": {
+      "uptown-to-belmont": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            2668.1,
+            0
+          ],
+          "accessible": [
+            2829.2,
+            0
+          ],
+          "server_ms": 1722.1,
+          "bytes": 192154,
+          "round_trip_ms": 1982.5
+        },
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            2668.1,
+            0
+          ],
+          "accessible": [
+            2829.2,
+            0
+          ],
+          "server_ms": 1606.9,
+          "bytes": 192154,
+          "round_trip_ms": 1815.7
+        }
+      ],
+      "the-boardwalk-to-uptown": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            5491.8,
+            0
+          ],
+          "accessible": [
+            5491.8,
+            0
+          ],
+          "server_ms": 2342.1,
+          "bytes": 258600,
+          "round_trip_ms": 2571.7
+        },
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            5491.8,
+            0
+          ],
+          "accessible": [
+            5491.8,
+            0
+          ],
+          "server_ms": 2340.6,
+          "bytes": 258599,
+          "round_trip_ms": 2557.7
+        }
+      ],
+      "laurel-creek-to-campus": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            2370.6,
+            0
+          ],
+          "accessible": [
+            2400.7,
+            0
+          ],
+          "server_ms": 814.7,
+          "bytes": 181225,
+          "round_trip_ms": 998.0
+        },
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            2370.6,
+            0
+          ],
+          "accessible": [
+            2400.7,
+            0
+          ],
+          "server_ms": 840.4,
+          "bytes": 181225,
+          "round_trip_ms": 1035.1
+        }
+      ],
+      "belmont-to-grand-river-hospital": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            1902.0,
+            1
+          ],
+          "accessible": [
+            2018.9,
+            0
+          ],
+          "server_ms": 782.2,
+          "bytes": 132071,
+          "round_trip_ms": 968.2
+        },
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            1902.0,
+            1
+          ],
+          "accessible": [
+            2018.9,
+            0
+          ],
+          "server_ms": 788.6,
+          "bytes": 132071,
+          "round_trip_ms": 989.9
+        }
+      ],
+      "erb-and-westmount-to-uptown": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            2439.8,
+            0
+          ],
+          "accessible": [
+            2494.3,
+            0
+          ],
+          "server_ms": 971.8,
+          "bytes": 234884,
+          "round_trip_ms": 1217.5
+        },
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            2439.8,
+            0
+          ],
+          "accessible": [
+            2494.3,
+            0
+          ],
+          "server_ms": 968.6,
+          "bytes": 234884,
+          "round_trip_ms": 1201.6
+        }
+      ],
+      "bridgeport-and-weber-to-columbia-and-king": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            1196.1,
+            0
+          ],
+          "accessible": [
+            1212.2,
+            0
+          ],
+          "server_ms": 192.8,
+          "bytes": 88074,
+          "round_trip_ms": 370.5
+        },
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            1196.1,
+            0
+          ],
+          "accessible": [
+            1212.2,
+            0
+          ],
+          "server_ms": 193.2,
+          "bytes": 88074,
+          "round_trip_ms": 355.2
+        }
+      ],
+      "the-boardwalk-to-kitchener-market": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            9107.3,
+            0
+          ],
+          "accessible": [
+            9158.1,
+            0
+          ],
+          "server_ms": 11175.8,
+          "bytes": 491412,
+          "round_trip_ms": 11583.0
+        }
+      ],
+      "laurel-creek-to-kitchener-market": [
+        {
+          "status": 200,
+          "code": null,
+          "standard": [
+            7765.6,
+            0
+          ],
+          "accessible": [
+            8021.6,
+            0
+          ],
+          "server_ms": 8597.4,
+          "bytes": 522074,
+          "round_trip_ms": 8890.8
+        }
+      ]
+    },
+    "finished_at": "2026-11-15T23:48:13.078Z"
+  },
+  "external_monitors": {
+    "alloy_blackbox": {
+      "window": [
+        "2026-11-15T23:15:00.838058+00:00",
+        "2026-11-15T23:49:30.842638+00:00"
+      ],
+      "probes": 70,
+      "failed": [
+        {
+          "at": "2026-11-15T23:37:35+00:00",
+          "status": 503,
+          "seconds": 4.22
+        }
+      ],
+      "slower_than_1s": 10,
+      "slowest_s": 9.8
+    },
+    "grafana_synthetic_monitoring": {
+      "window": [
+        "2026-11-15T23:16:34.032988+00:00",
+        "2026-11-15T23:48:35.520241+00:00"
+      ],
+      "probes": 34,
+      "failed": [
+        {
+          "at": "2026-11-15T23:34:40+00:00",
+          "status": 503,
+          "seconds": 6.2
+        }
+      ],
+      "slower_than_1s": 6,
+      "slowest_s": 7.2
+    }
+  }
+}
