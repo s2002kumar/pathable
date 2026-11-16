@@ -41,7 +41,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-STAGES = ("c01", "c10", "c25", "c50", "mix10", "r3", "r5", "s10")
 API = "pathable-api-1"
 CONTAINERS = {
     "api": API,
@@ -266,7 +265,7 @@ def stage_summary(
     requests = int(summary["metrics"]["http_reqs"]["values"]["count"])
     rate = summary["metrics"]["http_reqs"]["values"]["rate"]
     failed_rate = summary["metrics"]["http_req_failed"]["values"]["rate"]
-    route = stage != "s10"
+    route = run["mode"] != "search"
     in_window = [r for r in watch if start <= r["epoch"] <= end]
     public_routes = [r for r in in_window if r["kind"] == "route"]
     public_ready = [r for r in in_window if r["kind"] == "ready"]
@@ -484,25 +483,25 @@ def main() -> int:
     parser.add_argument("--laptop-dir", type=Path, required=True)
     parser.add_argument("--caddy-log", type=Path, default=None)
     parser.add_argument("--json", type=Path, required=True)
+    parser.add_argument(
+        "--exclude",
+        nargs="*",
+        default=["dry"],
+        help="Stage names to leave out (default: the harness check, 'dry')",
+    )
     args = parser.parse_args()
 
     watch_file = args.laptop_dir / "watch.jsonl"
     watch = [json.loads(line) for line in watch_file.open()] if watch_file.exists() else []
     caddy = read_caddy(args.caddy_log)
-    stages = [
-        stage_summary(args.host_dir, stage, watch, caddy)
-        for stage in STAGES
-        if (args.host_dir / f"{stage}-run.json").exists()
-    ]
-    windows = [
-        (
-            json.loads((args.host_dir / f"{s['stage']}-run.json").read_text())[
-                "load_started_epoch"
-            ],
-            json.loads((args.host_dir / f"{s['stage']}-run.json").read_text())["load_ended_epoch"],
-        )
-        for s in stages
-    ]
+    # Every stage the host ran, in the order it ran them.
+    runs = sorted(
+        (json.loads(path.read_text(encoding="utf-8")) for path in args.host_dir.glob("*-run.json")),
+        key=lambda run: run["load_started_epoch"],
+    )
+    runs = [run for run in runs if run["stage"] not in args.exclude]
+    stages = [stage_summary(args.host_dir, run["stage"], watch, caddy) for run in runs]
+    windows = [(run["load_started_epoch"], run["load_ended_epoch"]) for run in runs]
     laptop = {
         name: json.loads((args.laptop_dir / f"{name}.json").read_text(encoding="utf-8"))
         for name in ("baseline", "ratelimit", "journey-costs")
