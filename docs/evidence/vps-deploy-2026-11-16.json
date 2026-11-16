@@ -1,0 +1,339 @@
+{
+  "what": "Deploy of main f3f1a76 (the merge of PR #130: the API keeps idle keep-alive connections for 180 s, longer than Caddy reuses them) to the public pilot, and its verification. Also a read-only identification of the unattached PostgreSQL volume reported on 2026-11-15.",
+  "captured_at": "2026-11-16T06:15:00Z",
+  "deployment": {
+    "sha": "f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc",
+    "reported_version": "0.1.0+f3f1a76c9d28",
+    "previous": "905364e736b18cecee6c80ee72b289b3df900da0",
+    "tooling": "host checkout fast-forwarded to the same commit; infra/vps/deploy.sh build <sha>, then deploy.sh up <sha>, each detached; log /srv/pathable/evidence/deploy-f3f1a76-20261116.log",
+    "build_seconds": {
+      "api": 69.3,
+      "web": 92.9,
+      "note": "built before the switch, so no build time is in the outage"
+    },
+    "image_check": "KEEP_ALIVE_SECONDS = 180 imports from the new image and is absent from 905364e's; both new images carry revision label f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc",
+    "switched_at": "2026-11-16T06:02:32Z",
+    "live_seconds": 20.3,
+    "ready_seconds": 63.3,
+    "graph_load_seconds": 43.3,
+    "recreated": [
+      "api",
+      "web"
+    ],
+    "left_running": [
+      "db",
+      "caddy",
+      "alloy"
+    ],
+    "database_revision": "0008_place_codes before and after",
+    "place_index": "current, version 2, 33,225 entries; extract and network sha256 both cee90e37…"
+  },
+  "rollback_point": {
+    "backup": "/var/backups/pathable/pathable-20261116T060226Z-pre-deploy-905364e736b1.dump",
+    "bytes": 32611561,
+    "tables_with_data": 12,
+    "sha256_file": "verified OK after the deploy",
+    "holds": "the database as 905364e served it, at 0008_place_codes, which f3f1a76 also uses, so a plain deploy.sh rollback applies"
+  },
+  "health_before": {
+    "at": "2026-11-16T05:54:10Z",
+    "live": "200, 0.1.0+905364e736b1; 90, 107 and 124 ms from the laptop",
+    "ready": "200, database, postgis and graph ok, place index current v2; 91, 100 and 101 ms",
+    "containers": "all five running, restart count 0, since the 2026-11-14 08:30 reboot"
+  },
+  "outage_from_outside": {
+    "method": "laptop, through Caddy: live, ready and the landing page every 2 s, no route requests (gap_watch.py, kept with the host evidence)",
+    "ready_unavailable_s": 56.3,
+    "ready_unavailable_bounds_s": [
+      45.9,
+      58.3
+    ],
+    "live_unavailable_s": 61.7,
+    "landing_page_unavailable_s": 4.0,
+    "shape": "502 from Caddy while the API container was replaced (06:02:34–06:02:50); the new process answered live at 06:02:52 and then nothing for about 35 s while it loaded the graph (requests timed out at 5 s); ready from 06:03:30. The landing page returned 502 twice (06:03:36 and 06:03:38) when the web container was recreated."
+  },
+  "smoke": {
+    "external": {
+      "started_at": "2026-11-16T06:04:49+00:00",
+      "checks_passed": 19,
+      "checks_total": 19,
+      "searched_journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 574 ms",
+      "sequential_route_round_trip_ms": {
+        "n": 10,
+        "min": 285.6,
+        "p50": 317.1,
+        "p95": 450.0,
+        "max": 450.0,
+        "mean": 328.7
+      },
+      "sequential_route_server_ms": {
+        "n": 10,
+        "min": 124.2,
+        "p50": 135.5,
+        "p95": 169.1,
+        "max": 169.1,
+        "mean": 140.2
+      }
+    },
+    "vps": {
+      "started_at": "2026-11-16T06:05:28+00:00",
+      "checks_passed": 19,
+      "checks_total": 19,
+      "searched_journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 216 ms",
+      "sequential_route_round_trip_ms": {
+        "n": 10,
+        "min": 157.9,
+        "p50": 170.0,
+        "p95": 193.8,
+        "max": 193.8,
+        "mean": 172.1
+      },
+      "sequential_route_server_ms": {
+        "n": 10,
+        "min": 122.8,
+        "p50": 130.9,
+        "p95": 157.6,
+        "max": 157.6,
+        "mean": 134.2
+      }
+    }
+  },
+  "route_correctness": "Every route answer checked after the deploy matched the recorded journey: 401.3 m with 3 stairways (standard) against 503.7 m with none (wheelchair), dataset 51585450, ml_predictions_used false. That is both smoke runs and all 25 gapped public routes below.",
+  "routing_dataset": {
+    "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+    "content_checksum_recomputed": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00",
+    "matches_recorded": true,
+    "recompute_seconds": 21.98,
+    "dataset_versions_rows": "identical before and after the deploy (diffed)"
+  },
+  "keep_alive_fix": {
+    "idle_close_inside_the_container": {
+      "method": "one GET /api/v1/health/live over HTTP/1.1 keep-alive on 127.0.0.1:8000 inside the API container, then wait for the server to close the idle connection (idle_close.py)",
+      "before_905364e": {
+        "started": "2026-11-16T05:54:59+00:00",
+        "response": "HTTP/1.1 200 OK",
+        "idle_seconds": 5.0,
+        "outcome": "closed by server"
+      },
+      "after_f3f1a76": {
+        "started": "2026-11-16T06:07:02+00:00",
+        "response": "HTTP/1.1 200 OK",
+        "idle_seconds": 180.0,
+        "outcome": "closed by server"
+      }
+    },
+    "public_gapped_routes": {
+      "method": "laptop, through Caddy, one request at a time: the smoke journey after idle gaps either side of the old 5 s timeout and up to 60 s, every answer checked (gapped_routes.py)",
+      "requests": 25,
+      "status_counts": {
+        "200": 25
+      },
+      "all_match": true,
+      "idle_gaps_s": [
+        3,
+        4.5,
+        5,
+        5.5,
+        6,
+        7,
+        10,
+        15,
+        20,
+        30,
+        45,
+        60,
+        5,
+        5.2,
+        4.8,
+        5.1,
+        4.9,
+        6,
+        8,
+        12,
+        5,
+        5,
+        5,
+        25
+      ],
+      "round_trip_ms": {
+        "n": 25,
+        "min": 291.8,
+        "p50": 327.0,
+        "p95": 391.9,
+        "max": 478.1,
+        "mean": 333.3
+      },
+      "server_ms": {
+        "n": 25,
+        "min": 125.7,
+        "p50": 150.1,
+        "p95": 172.4,
+        "max": 174.2,
+        "mean": 150.5
+      },
+      "first": "2026-11-16T06:07:08.926+00:00",
+      "last": "2026-11-16T06:12:19.024+00:00"
+    },
+    "caddy_upstream_connections": {
+      "method": "local ports of Caddy's established connections to :8000, read every second in Caddy's network namespace, 06:07:02–06:12:46 (caddy_conns.sh)",
+      "distinct_connections": 4,
+      "lifetimes_utc": [
+        [
+          "06:07:02",
+          "06:07:32"
+        ],
+        [
+          "06:07:02",
+          "06:07:32"
+        ],
+        [
+          "06:07:02",
+          "06:07:32"
+        ],
+        [
+          "06:07:02",
+          "06:12:46"
+        ]
+      ],
+      "reading": "One connection stayed open through the whole window and carried every route from 06:07:42 on, across idle gaps of up to 60 s. The other three, opened by the host smoke run's parallel requests about two minutes earlier, closed together at 06:07:32: Caddy's two-minute idle timeout, not the API's."
+    },
+    "caddy_log_after_ready": {
+      "window": "06:03:40–06:12:35Z",
+      "requests": 233,
+      "route_compare_statuses": {
+        "200": 93,
+        "429": 2
+      },
+      "status_502": 0,
+      "upstream_resets": 0,
+      "note": "the two 429s are the smoke runs' own rate-limit checks"
+    },
+    "caddy_log_during_switch": {
+      "window": "06:02:32–06:03:40Z",
+      "statuses": {
+        "/api 200": 11,
+        "/api 499": 7,
+        "/api 502": 20,
+        "/api 503": 2,
+        "web 200": 16,
+        "web 502": 2
+      },
+      "note": "the switch itself: the API container replaced, then the graph loading; 499 is a client that gave up"
+    },
+    "limit": "Five minutes cannot show a rare race is gone: the one upstream reset in Caddy's log came after about 40,000 requests. What this shows is the mechanism: the API no longer closes a connection Caddy may still reuse."
+  },
+  "other_502s_in_caddy_log": "Besides the 2026-11-15 23:30:19 route 502 (the race), Caddy's log since 2026-11-04 holds six 502s, all from the web container: EOF after 1–8 ms on scanner requests (rawgrab, a CONNECT tunnel probe, empty user agents). The idle gaps since the previous web response were 0.1–322 s, not near Node's 5 s, so they do not look like the same race. Not investigated further.",
+  "alloy": {
+    "state": "running, restart count 0, not recreated (up since 2026-11-14T08:30:26Z)",
+    "components": {
+      "prometheus.remote_write.grafana_cloud": "healthy",
+      "prometheus.scrape.api": "healthy",
+      "prometheus.exporter.blackbox.public": "healthy",
+      "prometheus.scrape.public_probe": "healthy"
+    },
+    "scrape_target": {
+      "url": "http://api:9464/metrics",
+      "health": "up",
+      "last_scrape": "2026-11-16T06:13:24Z",
+      "last_scrape_duration": "19.1 ms"
+    },
+    "remote_write": {
+      "at_05_54Z": {
+        "samples_total": 635226,
+        "samples_failed_total": 0,
+        "samples_retried_total": 0,
+        "samples_pending": 0
+      },
+      "at_06_13Z": {
+        "samples_total": 644620,
+        "samples_failed_total": 0,
+        "samples_retried_total": 0,
+        "samples_pending": 0
+      }
+    },
+    "build_info_after": "pathable_build_info{version=\"0.1.0+f3f1a76c9d28\"} 1"
+  },
+  "external_monitors": {
+    "source": "Caddy's access log, by user agent. Grafana itself was not read.",
+    "alloy_blackbox_every_30s": {
+      "failed": [
+        "06:03:00, 499 after 9.985 s: timed out during the graph load"
+      ],
+      "either_side": "06:02:30 200; 06:03:30 200 after 5.2 s",
+      "after_ready": "18 of 18 answered 200"
+    },
+    "synthetic_monitoring_every_2m_two_locations": {
+      "failed": [
+        "06:02:34, 502",
+        "06:02:35, 502"
+      ],
+      "after_ready": "10 of 10 answered 200"
+    },
+    "alert": "By the repository's reference rule (no successful probe for two minutes), the switch could not fire it: Alloy's longest run of failures was one probe. The Grafana-managed rule's state during 06:02–06:05 was not read; the founder's to confirm."
+  },
+  "privacy": {
+    "metrics_ports_from_outside": "TCP 9464 and 12345 timed out",
+    "metrics_paths": "GET /metrics and /api/v1/metrics answered 404 with no exposition",
+    "host_listeners_on_9464_or_12345": 0,
+    "published_ports": "Caddy only: 80/tcp, 443/tcp, 443/udp",
+    "exposition_label_scan": {
+      "samples": 222,
+      "pathable_samples": 206,
+      "label_names": [
+        "generation",
+        "implementation",
+        "kind",
+        "le",
+        "major",
+        "method",
+        "minor",
+        "mode",
+        "outcome",
+        "patchlevel",
+        "profile",
+        "region",
+        "route",
+        "stage",
+        "status",
+        "status_class",
+        "version"
+      ],
+      "values_like_coordinates_addresses_uuids_or_place_names": 0
+    }
+  },
+  "after": {
+    "api_cgroup_mib": {
+      "anon": 1013,
+      "current": 1042,
+      "peak": 1129
+    },
+    "api_oom_kills": 0,
+    "host_memory_available_mib": 1860,
+    "disk": "69% used, 12,898,689,024 bytes free (60% and 16,337,408,000 before: the two new images and their build cache)"
+  },
+  "unattached_volume": {
+    "name": "c4dd65156f50e6d12fbe346857735836c64c4f0d6bae337256a60fd595ace34d",
+    "inspection": "read-only: docker volume inspect, container references, file metadata and catalog strings read with sudo; nothing mounted, started, changed or removed",
+    "labels": {
+      "com.docker.volume.anonymous": ""
+    },
+    "created": "2026-10-15T00:28:11Z",
+    "bytes": 449654931,
+    "referenced_by": "no container, running or stopped",
+    "contents": "a PostgreSQL 17 cluster initialised at 00:28:11 and last written at 00:28:56, with postmaster.pid still present (killed, not shut down); one database beyond the templates, 194 MB, named pathable in the WAL, holding alembic_version 0007_place_search and the dataset_versions and pilot_regions tables; 201 MB of WAL, which also holds the pathable_app role and SCRAM-SHA-256 verifiers",
+    "identified_as": "the throwaway database of restore.sh --into scratch, run on 2026-10-15 at 00:28 UTC",
+    "how": [
+      "dockerd's journal: a container named pathable-restore-check-db joined network pathable-restore-check at 00:28:11.8 and ran 47.4 s; a second container joined that network at 00:28:28 and ran 30.9 s. Those are restore.sh's SCRATCH_DB, SCRATCH_NETWORK and its verifier.",
+      "0007_place_search was the schema on 2026-10-15; 0008 came on 2026-11-03.",
+      "restore.sh's next commit (6fa5132) is timestamped 00:29:15 UTC that night."
+    ],
+    "why_it_remained": "restore.sh starts the scratch container with docker run -d (no --rm) and removes it with docker rm -f (no -v). The postgis image declares /var/lib/postgresql/data a volume, so the scratch path leaves one anonymous volume behind each time it runs.",
+    "positively_identified": true,
+    "action": "none: deleting it is the founder's decision"
+  },
+  "host_evidence": {
+    "dir": "/srv/pathable/evidence/deploy-f3f1a76-20261116/",
+    "files": 33,
+    "sha256_of_SHA256SUMS": "270b9694e416343c4acfd9a45394ce06431611cb170de97101b4ffaf68ca497d"
+  }
+}
