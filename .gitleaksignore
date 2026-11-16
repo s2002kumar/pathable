@@ -34,3 +34,17 @@ dd7db76e630e024a7c77e275388f62b7c03bb559:docs/evidence/waterloo-truth-audit.json
 # these lines cover only the history.
 bf15db6ac13a6a2b2b1e41a9d95ac06b54545bd6:services/api/tests/unit/test_metrics.py:generic-api-key:61
 bf15db6ac13a6a2b2b1e41a9d95ac06b54545bd6:services/api/tests/unit/test_metrics.py:generic-api-key:62
+
+# In 5673ca4 the load-test evidence listed the release images it removed as
+# Docker tags, "pathable-api:<commit SHA>", and the generic-api-key rule read
+# each tag's 40-character commit SHA as a credential. They are public Git
+# commits of this repository. The next commit records each release as
+# {"release": <SHA>, "repositories": [...]}, so the rule cannot match the current
+# file; these seven lines cover only the history.
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:61
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:63
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:67
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:69
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:71
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:73
+5673ca46058e4ee506941225298e89839fa1ee94:docs/evidence/vps-load-2026-11-15.json:generic-api-key:75

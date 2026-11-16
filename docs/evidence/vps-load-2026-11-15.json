@@ -58,21 +58,56 @@
     "step_1_release_images": {
       "reclaimed_bytes": 4029992960,
       "removed": [
-        "pathable-api:629a67a8fb6d1e9003ae50d6f5243c2d7353970b",
-        "pathable-web:629a67a8fb6d1e9003ae50d6f5243c2d7353970b",
-        "pathable-api:e62b7e83341d82c1415c3d2aeb31f5281a91cba7",
-        "pathable-web:e62b7e83341d82c1415c3d2aeb31f5281a91cba7",
-        "pathable-api:88fe1bef8fa5b23ea4b510828e44320322984846",
-        "pathable-web:88fe1bef8fa5b23ea4b510828e44320322984846",
-        "pathable-api:e5a5b90540a7da7f1cd9907b7f85476265ef37b7",
-        "pathable-web:e5a5b90540a7da7f1cd9907b7f85476265ef37b7",
-        "pathable-api:490c8a7c946c083590b4a7bea54f28aa849ca547",
-        "pathable-web:490c8a7c946c083590b4a7bea54f28aa849ca547",
-        "pathable-api:465bab7929717fddacb90fcd726ac5bd8d7d320b",
-        "pathable-web:465bab7929717fddacb90fcd726ac5bd8d7d320b",
-        "pathable-api:a3f6448aab55e4b81f0dab805f2e71bd311af189",
-        "pathable-web:a3f6448aab55e4b81f0dab805f2e71bd311af189",
-        "pathable-api-cli:a3f6448aab55e4b81f0dab805f2e71bd311af189"
+        {
+          "release": "629a67a8fb6d1e9003ae50d6f5243c2d7353970b",
+          "repositories": [
+            "pathable-api",
+            "pathable-web"
+          ]
+        },
+        {
+          "release": "e62b7e83341d82c1415c3d2aeb31f5281a91cba7",
+          "repositories": [
+            "pathable-api",
+            "pathable-web"
+          ]
+        },
+        {
+          "release": "88fe1bef8fa5b23ea4b510828e44320322984846",
+          "repositories": [
+            "pathable-api",
+            "pathable-web"
+          ]
+        },
+        {
+          "release": "e5a5b90540a7da7f1cd9907b7f85476265ef37b7",
+          "repositories": [
+            "pathable-api",
+            "pathable-web"
+          ]
+        },
+        {
+          "release": "490c8a7c946c083590b4a7bea54f28aa849ca547",
+          "repositories": [
+            "pathable-api",
+            "pathable-web"
+          ]
+        },
+        {
+          "release": "465bab7929717fddacb90fcd726ac5bd8d7d320b",
+          "repositories": [
+            "pathable-api",
+            "pathable-web"
+          ]
+        },
+        {
+          "release": "a3f6448aab55e4b81f0dab805f2e71bd311af189",
+          "repositories": [
+            "pathable-api",
+            "pathable-web",
+            "pathable-api-cli"
+          ]
+        }
       ],
       "why_safe": "older than the rollback release c020398, referenced by no container, rebuildable from git with deploy.sh build; all but 629a67a predate database revision 0008, so deploy.sh rollback could not use them"
     },
