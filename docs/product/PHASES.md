@@ -742,14 +742,16 @@ It adds no routing capability. It is part of what Gate D asks for, not Gate D.
 
 **Still does not exist.**
 
-- Metrics, alerting, uptime monitoring. Nobody is told when the site is down.
-  (Prepared in the repository on 2026-11-06 and not yet connected; see
-  [Production observability](#production-observability-2026-11-06).)
+- A route latency alert. Metrics, the dashboard, an availability alert and
+  external probes have been connected since 2026-11-15; see
+  [Production observability](#production-observability-2026-11-06).
 - Backups anywhere but the host's own disk.
 - A domain name; the certificate is a 6-day IP-address certificate.
-- Any capacity or availability figure: one process serves about six route
-  comparisons a second. (Per-client rate limits came on 2026-10-16,
-  [KI-13](../development/KNOWN_ISSUES.md).)
+- Any capacity figure beyond what was measured on 2026-11-15: about six
+  campus-scale route comparisons a second at any concurrency, far fewer for
+  long journeys ([VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md),
+  [KI-17](../development/KNOWN_ISSUES.md)). Per-client rate limits count
+  requests, not work.
 - Zero-downtime deploys: routing is unavailable for about a minute per switch.
 - Users, traffic or external validation. A manual screen-reader pass, which the
   README lists as a pre-deployment item, has still not been done.
@@ -808,9 +810,12 @@ An operations card. It changes no route, no cost and no response body.
 
 **Still does not exist.**
 
-- A connection: no Grafana Cloud account, so no series has left the host and no
-  alert can fire. The route p95 threshold is unset by design.
-- A probe from outside the host, logs shipping, traces.
+- The route p95 alert: unset by design, with a threshold recommended from the
+  2026-11-15 load test ([VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md)).
+  Since 2026-11-15 the rest is connected: series reach Grafana Cloud, the
+  dashboard is live, a Grafana-managed availability alert e-mails the founder,
+  and Synthetic Monitoring probes from two locations.
+- Logs shipping, traces.
 - Zero-downtime deploys. Two graph-loaded API processes do not fit this host
   safely ([KI-12](../development/KNOWN_ISSUES.md)).
 

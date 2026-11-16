@@ -146,8 +146,9 @@ real browser through real containers. Ten of its seventeen tests need the real W
 ## What it is not
 
 - **One city.** Waterloo, Ontario. The pilot region is configuration, but no second region has been run.
-- **A pilot on one host.** One VPS, one API process, no metrics or alerting, backups on the same disk, and about a
-  minute without routing whenever it is redeployed ([ADR 0009](docs/adr/0009-deployment-architecture.md),
+- **A pilot on one host.** One VPS, one API process that serves about six short route comparisons a second
+  ([measured](docs/evidence/VPS_CAPACITY.md)), backups on the same disk, and about a minute without routing whenever
+  it is redeployed ([ADR 0009](docs/adr/0009-deployment-architecture.md),
   [KI-12](docs/development/KNOWN_ISSUES.md)). No users or traffic are claimed.
 - **Not validated with the people it is for.** The cost weights are engineering judgement, not tested with
   people who use mobility aids, and nobody has walked these routes.

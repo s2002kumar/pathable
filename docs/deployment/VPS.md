@@ -357,12 +357,12 @@ journalctl -u pathable-backup.service           # backups
 ## Metrics and alerting
 
 The API exports bounded Prometheus metrics on an unpublished port, and Alloy
-ships them, with a probe of public readiness, to Grafana Cloud, where a
-dashboard and two alerts are prepared ([OBSERVABILITY.md](OBSERVABILITY.md)).
-**None of it is connected yet**: it waits on a Grafana Cloud account and two
-tokens, and the route latency alert on a threshold chosen from observed
-latency. Until then nobody is told when the site is down
-([KI-12](../development/KNOWN_ISSUES.md)).
+ships them, with a probe of public readiness, to Grafana Cloud. **Connected
+since 2026-11-15:** the dashboard is live, a Grafana-managed availability alert
+e-mails the founder, and Synthetic Monitoring probes readiness from Calgary and
+Montreal every two minutes ([OBSERVABILITY.md](OBSERVABILITY.md#current-state)).
+The route latency alert is deliberately unset; its recommended threshold is in
+[VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md#route-p95-alert-threshold-recommendation-not-set).
 
 ## Rate limits
 
@@ -429,6 +429,71 @@ On the host, `infra/vps/measure.sh 3` force-recreates the API three times and
 records start to live and to ready, the graph load, and each container's
 cgroup `memory.current` and `memory.peak`. It causes three outages of about a
 minute.
+
+## Measuring capacity
+
+[`infra/vps/load/`](../../infra/vps/load/) measures the production API under
+controlled load; the last run and what it found are in
+[VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md). It restarts and reconfigures
+nothing, but a saturating stage makes every visitor wait, so run it when the
+pilot is quiet and watch it.
+
+1. **Public baseline, from a laptop** (paced inside one client's budget; it
+   also writes `journey.json`, the coordinates and answers the stages check):
+
+   ```bash
+   python infra/vps/load/probe.py baseline --url https://51.222.36.79 --out OUT
+   ```
+
+2. **Copy `infra/vps/load/` and `infra/vps/smoke.py` to the host**, one file at
+   a time (`scp` no longer expands `{a,b}`), into
+   `/srv/pathable/evidence/load-<date>/tooling/`, keeping `load/` beside
+   `smoke.py`.
+3. **Start the public watch** on the laptop for the length of the stages:
+   `probe.py watch --url https://51.222.36.79 --out OUT --minutes 30`.
+4. **Run each stage on the host** as `ubuntu`, reading its gates before the
+   next (`<stage>-run.json`, `-samples.jsonl`, `-readiness.jsonl`), at least
+   60 s apart:
+
+   ```bash
+   cd /srv/pathable/evidence/load-<date>
+   python3 tooling/load/run_stage.py --stage c10 --mode route --vus 10 --duration 90s --out results
+   python3 tooling/load/run_stage.py --stage r3 --mode route --vus 50 --rate 3 --duration 60s --out results
+   ```
+
+   Modes are `route`, `mix` and `search`; `--rate` makes a stage open-loop.
+   k6 runs in the pinned `grafana/k6` image on the `pathable_edge` network, and
+   the stage stops itself on API memory, host memory or a minute of failed
+   readiness. Remove the image afterwards if disk matters.
+
+5. **Stop the watch, wait a minute, test the limit from outside:**
+   `probe.py ratelimit --url https://51.222.36.79 --out OUT`.
+6. **Summarise** on the laptop, after copying `results/` back and saving
+   Caddy's readiness lines into `caddy-ready.jsonl`:
+
+   ```bash
+   docker logs --since <start> --until <end> pathable-caddy-1 2>&1 \
+     | grep /api/v1/health/ready > caddy-ready.jsonl        # on the host
+   python infra/vps/load/summarise.py --host-dir results --laptop-dir OUT \
+     --caddy-log caddy-ready.jsonl --json summary.json      # on the laptop
+   ```
+
+Load enters from inside the host because the per-client rate limit and Caddy's
+handling of `X-Forwarded-For` make load from one machine through the public URL
+measure only the limiter. Each request carries a synthetic client address from
+the RFC 5737 documentation ranges, so no real visitor's budget is touched.
+
+## Disk
+
+Images are built on the host, so old releases and their build cache accumulate.
+On 2026-11-15 the disk was 78% used. Removing release images older than the
+rollback release (`release.env.previous`) and build cache unused for ten days
+reclaimed 7,253,262,336 bytes, leaving it 60% used
+([`vps-load-2026-11-15.json`](../evidence/vps-load-2026-11-15.json) →
+`disk_cleanup`). Keep the serving and rollback images, every volume, the
+backups and the evidence. Never run a blind `docker system prune -a --volumes`:
+an unattached anonymous volume holding a PostgreSQL 17 data directory, created
+2026-10-15T00:28Z, is still on the host awaiting a decision.
 
 ## Certificates
 
