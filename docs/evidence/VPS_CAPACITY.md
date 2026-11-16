@@ -19,7 +19,7 @@ Data: [`vps-load-2026-11-15.json`](vps-load-2026-11-15.json). Tooling:
 | Window            | 2026-11-15, 23:21–23:49 UTC                                                                                |
 | Load generator    | `grafana/k6:1.8.1@sha256:23f22790…` on the host, removed afterwards                                        |
 | Answers checked   | 2,925 under load (2,306 routes, 619 searches) plus 250 public routes: **every one correct**                |
-| Errors seen by k6 | **0** in every stage; 1 visitor-facing 502 through Caddy (below, fixed in this PR, not deployed)           |
+| Errors seen by k6 | **0** in every stage; 1 visitor-facing 502 through Caddy (below; fixed, deployed 2026-11-16)               |
 
 Routes derive from OpenStreetMap data, © OpenStreetMap contributors, ODbL 1.0.
 
@@ -191,7 +191,8 @@ answer was correct.
 
 ## Defects found
 
-1. **A visitor-facing 502 from a keep-alive race (fixed here, not deployed).**
+1. **A visitor-facing 502 from a keep-alive race (fixed in PR #130, deployed
+   2026-11-16).**
    At 23:30:19 during c10, Caddy logged
    `read tcp …->api:8000: read: connection reset by peer` and answered a route
    comparison with 502 after 112 ms. uvicorn closes idle keep-alive connections
@@ -201,7 +202,11 @@ answer was correct.
    is always the side that closes one. A regression test ties that value to the
    Caddyfile, and it fails on the old code. Shortening Caddy's timeout instead
    would not be robust: on a saturated loop, uvicorn's timer starts before a
-   large answer has left the socket. The fix takes effect only with a deploy.
+   large answer has left the socket. Deployed on 2026-11-16 as `f3f1a76`: the
+   API then closed an idle connection after 180 s where it had after 5 s, and
+   Caddy carried routes over one upstream connection across idle gaps of up to
+   60 s, with no 502
+   ([`vps-deploy-2026-11-16.json`](vps-deploy-2026-11-16.json)).
 2. **One request's work is unbounded in practice, and the limit counts requests,
    not work (open, [KI-17](../development/KNOWN_ISSUES.md)).** A 9.1 km journey
    holds the only event loop for 11.2 s. A client within its 30 a minute can

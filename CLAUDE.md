@@ -163,11 +163,12 @@ routes over a real 180,554-segment Waterloo network with 1 m LiDAR elevation.
 The repository went public at `v0.3.0-public-release`.
 
 A public pilot has run at <https://51.222.36.79> since 2026-10-15, on one VPS
-(ADR 0009, `docs/deployment/VPS.md`). Since 2026-11-09 it serves `main` at
-`905364e`: Waterloo Core v2, routing policy 3, place index v2, Alloy. That is
-part of Gate D, not Gate D. Monitoring is connected (2026-11-15: Grafana Cloud
-ingestion, dashboard, Grafana-managed availability alert, Synthetic
-Monitoring); the route p95 alert is unset. Load was measured on 2026-11-15
+(ADR 0009, `docs/deployment/VPS.md`). Since 2026-11-16 it serves `main` at
+`f3f1a76`: Waterloo Core v2, routing policy 3, place index v2, Alloy, and the
+keep-alive fix the load test found. That is part of Gate D, not Gate D.
+Monitoring is connected (2026-11-15: Grafana Cloud ingestion, dashboard,
+Grafana-managed availability alert, Synthetic Monitoring); the route p95 alert
+is unset. Load was measured on 2026-11-15
 (`docs/evidence/VPS_CAPACITY.md`): one event loop serves about six short
 routes a second, and a long route holds it for seconds (KI-17). Backups sit on
 the host's own disk, and a deploy interrupts routing for about a minute.
