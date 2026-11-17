@@ -111,6 +111,9 @@ ignore = [
 # Tests legitimately use `assert`, and hard-coded local credentials are the point
 # of the integration fixtures.
 "tests/**/*.py" = ["S101", "S105", "S106", "S311"]
+# The backup tooling's tests run backup.sh with `sh`, as the host does, against
+# a fake `docker` on PATH: a fixed command line, nothing untrusted in it.
+"tests/unit/test_offsite_backup.py" = ["S101", "S105", "S106", "S603", "S607"]
 # A command-line tool talks to the operator on stdout. Routing that through
 # the structured logger would put human-readable tables into log ingestion and
 # leave the terminal blank.
