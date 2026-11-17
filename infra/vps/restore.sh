@@ -2,7 +2,7 @@
 # Restore a backup.sh dump, and prove it is the database it claims to be.
 #
 #   restore.sh --into scratch    [--dump FILE]   non-destructive: a throwaway
-#       PostGIS container, restored, verified, then removed. Production is not
+#       PostGIS container, restored, verified, then removed with its volume. Production is not
 #       touched. This is the routine proof that the backups restore.
 #   restore.sh --into production --dump FILE --yes   disaster recovery: takes a
 #       safety backup, stops the API, replaces the `pathable` database with the
@@ -56,7 +56,7 @@ case "$INTO" in scratch|production) ;; *) die "--into scratch|production is requ
 if [ -z "$DUMP" ]; then
     DUMP="$(find "$DEST" -maxdepth 1 -name 'pathable-*.dump' -printf '%T@ %p\n' | sort -n | tail -n 1 | cut -d' ' -f2-)"
 fi
-[ -n "$DUMP" ] && [ -f "$DUMP" ] || die "no dump to restore"
+if [ -z "$DUMP" ] || [ ! -f "$DUMP" ]; then die "no dump to restore"; fi
 if [ -f "$DUMP.sha256" ]; then
     ( cd "$(dirname "$DUMP")" && sha256sum --quiet -c "$(basename "$DUMP").sha256" ) \
         || die "checksum mismatch: $DUMP is not the file backup.sh wrote"
@@ -133,12 +133,36 @@ verify() {
 }
 
 if [ "$INTO" = "scratch" ]; then
-    cleanup() {
-        docker rm -f "$SCRATCH_DB" >/dev/null 2>&1 || true
+    SCRATCH_VOLUMES=""
+    LEAKED=0
+    remove_scratch() {
+        # -v: without it `docker rm` keeps a container's anonymous volumes, and the
+        # PostGIS image declares its data directory one. Every scratch run before
+        # 2026-11-17 left its restored database behind that way: 449.7 MB from the
+        # run of 2026-10-15 sat unattached on the host for a month.
+        docker rm -f -v "$SCRATCH_DB" >/dev/null 2>&1 || true
         docker network rm "$SCRATCH_NETWORK" >/dev/null 2>&1 || true
+        for volume in $SCRATCH_VOLUMES; do
+            if docker volume inspect "$volume" >/dev/null 2>&1; then
+                log "  FAIL  scratch volume $volume is still on this host"
+                LEAKED=1
+            else
+                log "  removed the scratch container and its volume $volume"
+            fi
+        done
+        SCRATCH_VOLUMES=""
     }
-    trap cleanup EXIT INT TERM
-    cleanup
+    on_exit() {
+        status=$?
+        remove_scratch
+        [ "$LEAKED" = "0" ] || status=1
+        exit "$status"
+    }
+    # An interrupted run stops and cleans up; it used to clean up and carry on.
+    trap on_exit EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    remove_scratch   # whatever an interrupted earlier run left
     docker network create --internal "$SCRATCH_NETWORK" >/dev/null
     scratch_password="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')"
     total_started="$(now)"
@@ -147,6 +171,9 @@ if [ "$INTO" = "scratch" ]; then
         -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD="$scratch_password" -e POSTGRES_DB=postgres \
         -e POSTGRES_INITDB_ARGS="--encoding=UTF8 --locale=C" \
         "$POSTGIS_IMAGE" >/dev/null
+    # The image declares its data directory a volume, so the container gets an
+    # anonymous one: remembered here, removed with the container, and checked.
+    SCRATCH_VOLUMES="$(docker inspect -f '{{range .Mounts}}{{if eq .Type "volume"}}{{.Name}} {{end}}{{end}}' "$SCRATCH_DB")"
     # TCP, not the socket: the image's first-boot server listens on the socket only.
     until docker exec "$SCRATCH_DB" psql -h 127.0.0.1 -U postgres -d postgres -Atc 'select 1' >/dev/null 2>&1; do
         sleep 1
