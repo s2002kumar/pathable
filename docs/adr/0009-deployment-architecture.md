@@ -18,19 +18,19 @@ comparison below called Option D and did not recommend _yet_, for one stated
 reason: on a self-managed host, backups, restore, rollback and metrics are all
 ours to build and to prove. Three of the four now are, on this host:
 
-| Piece        | Choice                                                                                                   |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| Topology     | One Compose project: PostGIS, the API, the web server, Caddy. Only Caddy publishes ports (80, 443)       |
-| Database     | `postgis/postgis:17-3.5` on an internal network; the API connects as a role that is not a superuser      |
-| API          | **One worker**, `GRAPH_PRELOAD_REGIONS=waterloo`, 1.5 GiB limit                                          |
-| Web          | The standalone Next.js image, 512 MiB limit, built with the public origin                                |
-| TLS          | Caddy with Let's Encrypt; a 6-day IP-address certificate until a domain exists                           |
-| Images       | Built on the host from `git archive` of a SHA on `main`, tagged with it                                  |
-| Backups      | Daily and pre-deploy `pg_dump`, 14 days, on the host's own disk — **not off-host**                       |
-| Restore      | Exercised twice: into a throwaway container, and as disaster recovery of the live database               |
-| Rollback     | Exercised: to the previous `main` merge and back, guarded by a migration-head check                      |
-| Metrics      | **None.** JSON logs with rotation; no metrics, no alerting, nobody paged                                 |
-| Availability | One host, one API process. **No high-availability claim**, and about a minute without routing per deploy |
+| Piece        | Choice                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Topology     | One Compose project: PostGIS, the API, the web server, Caddy. Only Caddy publishes ports (80, 443)                               |
+| Database     | `postgis/postgis:17-3.5` on an internal network; the API connects as a role that is not a superuser                              |
+| API          | **One worker**, `GRAPH_PRELOAD_REGIONS=waterloo`, 1.5 GiB limit                                                                  |
+| Web          | The standalone Next.js image, 512 MiB limit, built with the public origin                                                        |
+| TLS          | Caddy with Let's Encrypt; a 6-day IP-address certificate until a domain exists                                                   |
+| Images       | Built on the host from `git archive` of a SHA on `main`, tagged with it                                                          |
+| Backups      | Daily and pre-deploy `pg_dump`, 14 days on the host; each copied to S3 (`ca-central-1`) and verified there, 30 days (2026-11-18) |
+| Restore      | Exercised into a throwaway container, as disaster recovery of the live database, and from a copy downloaded from S3              |
+| Rollback     | Exercised: to the previous `main` merge and back, guarded by a migration-head check                                              |
+| Metrics      | Alloy to Grafana Cloud since 2026-11-15: dashboard, availability alert, Synthetic Monitoring; no latency alert                   |
+| Availability | One host, one API process. **No high-availability claim**, and about a minute without routing per deploy                         |
 
 Measured on that host ([evidence](../evidence/vps-deployment.json)): API ready
 a median 51.2 s after a cold start, of which the graph load is 33.9 s (the
@@ -41,9 +41,14 @@ the single worker. The dataset on the host reproduces the content checksum
 `4a179dc0…` the lifecycle evidence records.
 
 Why it is acceptable now when it was not in September: the safety nets that
-were missing exist and have been run, not just written. What it still lacks
-is the fourth — metrics and alerting — and backups off the host; both are
-recorded as known issues rather than implied. The managed options below
+were missing exist and have been run, not just written. What it lacked at the
+decision — metrics and alerting, and backups off the host — has since been
+added and exercised: metrics on 2026-11-15
+([OBSERVABILITY.md](../deployment/OBSERVABILITY.md)), and S3 copies on
+2026-11-18, restored from a downloaded copy the same day
+([`vps-recovery-2026-11-17.json`](../evidence/vps-recovery-2026-11-17.json)).
+What remains is recorded in KI-12: one host, one provider account — which
+lapsed on 2026-11-16 and took the host down for 13 h 40 min. The managed options below
 remain the path if the pilot needs more than one host can give, and their
 measurements still describe what the containers need anywhere.
 

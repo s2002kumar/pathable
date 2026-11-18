@@ -48,6 +48,8 @@ revision; the images are tagged with the full SHA and carry it in their
 /srv/pathable/stack                 compose.yaml, Caddyfile, db-init/ in use (copied by deploy.sh)
 /srv/pathable/secrets/pathable.env  0600: POSTGRES_SUPERUSER_PASSWORD, PATHABLE_DB_PASSWORD
 /srv/pathable/secrets/grafana-cloud.env  0600, optional: metrics credentials (OBSERVABILITY.md)
+/srv/pathable/secrets/aws-backup.credentials  0600: the backup IAM user's key (below)
+/srv/pathable/offsite.env           the S3 bucket, region and prefix for backups (not secret)
 /srv/pathable/site.env              PATHABLE_HOST, PATHABLE_TLS_PROFILE (not secret)
 /srv/pathable/release.env           the revision being served; release.env.previous before it
 /srv/pathable/deployments.log       one line per switch, with its live and ready times
@@ -59,7 +61,9 @@ revision; the images are tagged with the full SHA and carry it in their
 `ubuntu`), and have never been printed, committed or copied off the host. No
 image contains a credential. The superuser is used only over the container's
 local socket, by `backup.sh` and `restore.sh`; nothing logs in as it over the
-network.
+network. The AWS key for backups was typed in by the founder at the host's
+terminal (`offsite.py install-credentials`, input hidden) and is read only by
+the AWS CLI container, as a read-only mount.
 
 ## From nothing to serving
 
@@ -112,8 +116,12 @@ This is the sequence that built the pilot on 2026-10-14/15.
    first `up`; see [Upgrading the place index](#upgrading-the-place-index).
 
 5. **Serve.** `infra/vps/deploy.sh up origin/main`.
-6. **Backups.** Copy the two units from `infra/vps/systemd/` to
-   `/etc/systemd/system/` and `systemctl enable --now pathable-backup.timer`.
+6. **Backups.** Write `/srv/pathable/offsite.env` (bucket, region, prefix) and
+   have the founder install the backup key
+   ([below](#the-off-host-copy-in-s3)); `offsite.py check` must pass. Then copy
+   the two units from `infra/vps/systemd/` to `/etc/systemd/system/` and
+   `systemctl enable --now pathable-backup.timer`. The timer fails its run
+   without a verified S3 copy.
 
 ## Deploying
 
@@ -289,30 +297,84 @@ check it had before this change passes, and the two new ones fail. Details in
 ## Backups and restore
 
 `backup.sh` writes a full custom-format `pg_dump` of the `pathable` database
-(32 MB, about 6 s) with a `.sha256` beside it: daily at 07:15 UTC from the
-systemd timer, before every deploy, and before every production restore.
-Files older than 14 days are deleted, never below the newest three.
+(32.6 MB, about 5 s) with a `.sha256` and a manifest beside it: daily at
+07:15 UTC from the systemd timer, before every deploy, and before every
+production restore. The manifest records the file's SHA-256, the release that
+was serving, the Alembic revision, the active datasets with their recorded
+checksums, the place index and every table's row count. Local files older than
+14 days are deleted, never below the newest three. Its output, in
+`journalctl -u pathable-backup.service`, is one JSON object per line.
 
-**They are on the same disk as the database.** They cover a bad deploy, a bad
-migration and operator error, not losing the host. Until off-host storage
-exists, copy one off by hand:
+### The off-host copy, in S3
+
+Each backup is then copied by [`offsite.py`](../../infra/vps/offsite.py) to the
+S3 bucket named in `/srv/pathable/offsite.env` (`ca-central-1`, prefix
+`backups/`), and **a backup is done only once S3 provably holds it**:
+
+- one PUT per file, carrying its SHA-256, which S3 checks on receipt; SSE-S3
+  encryption; `If-None-Match`, so an object already there is never replaced.
+  The bucket is versioned and expires a replaced version after 7 days, so a
+  replacement would quietly destroy the earlier backup a week later;
+- then S3's own record of the object — size, SHA-256, encryption — must be
+  exactly the local file's. Only then is `<dump>.offsite.json` written;
+- a failure keeps the local backup, fails the run (and the timer unit), and
+  every later run retries a dump that has a manifest and no receipt;
+- nothing on the host deletes from S3. The bucket's lifecycle rule expires
+  copies after 30 days, replaced versions after 7, unfinished uploads after 1.
+
+The timer requires the copy (`PATHABLE_BACKUP_OFFSITE=required` in the unit).
+A deploy's pre-deploy backup requires it too whenever `offsite.env` exists;
+during an S3 outage, `PATHABLE_BACKUP_OFFSITE=skip deploy.sh up <sha>` deploys
+with a local backup only, and says so.
+
+**The key.** A dedicated IAM user may list, upload and download under
+`backups/`, including multipart uploads there, and nothing else: on
+2026-11-18 deleting, writing or listing outside the prefix, other buckets,
+IAM, EC2 and KMS were each refused when tried
+([evidence](../evidence/vps-recovery-2026-11-17.json) → `iam`). The founder
+installs its key at the host's terminal, as `ubuntu`:
 
 ```bash
-scp ubuntu@51.222.36.79:/var/backups/pathable/pathable-<time>-scheduled-<sha>.dump{,.sha256} .
+python3 /srv/pathable/repo/infra/vps/offsite.py install-credentials
 ```
 
-**Proving a backup restores** — non-destructive, any time:
+It reads both values with echo off — and stops rather than read them visibly —
+validates their shape, and writes `secrets/aws-backup.credentials` atomically,
+mode 0600. Every request runs the AWS CLI image pinned in `offsite.py`, as
+`ubuntu`, with that file mounted read-only: the key never appears in a command
+line, an environment variable or a log. `offsite.py check` shows the identity
+and that the prefix lists, writing nothing; `offsite.py list` lists the copies.
+
+### Proving a backup restores
+
+Non-destructive, any time:
 
 ```bash
-/srv/pathable/repo/infra/vps/restore.sh --into scratch          # newest backup
+/srv/pathable/repo/infra/vps/restore.sh --into scratch [--dump FILE] [--route]
 ```
 
-Restores into a throwaway PostGIS container on its own internal network,
-checks the revision, node, segment and place-index counts, the sealed-dataset
-triggers and the role, then recomputes the dataset's content checksum with
-the release's own image, and removes the container.
+Restores into a throwaway PostGIS container on its own internal network and
+checks the revision, the node, segment and place-index counts, the
+sealed-dataset triggers and that the application role is not a superuser.
+With a manifest beside the dump, it first checks the dump's SHA-256 against
+it, and afterwards every table's row count, the revision and the active
+datasets. It then recomputes the dataset's content checksum with the release's
+own image. `--route` also starts that image against the restored database and
+requires the recorded journey's exact answer; it needs 1,500 MiB available
+beside production. Finally it removes the container **and its volume** —
+before 2026-11-17 it left the volume, which is how 449.7 MB from 2026-10-15
+came to sit unattached on the disk.
 
-**Disaster recovery** — replaces the live database:
+**Drilled from S3 on 2026-11-18** ([evidence](../evidence/vps-recovery-2026-11-17.json)
+→ `disaster_recovery_drill`). A fresh backup was uploaded and verified, then
+downloaded into a separate directory, and its SHA-256 checked again. It was
+restored into scratch: 6.3 s of `pg_restore`, every table and the checksum
+`4a179dc0…bc5238f00` matched, and the journey answered 401.3 m with 3
+stairways against 503.7 m with none. Production answered readiness throughout.
+
+### Replacing the live database
+
+Disaster recovery on this host:
 
 ```bash
 /srv/pathable/repo/infra/vps/restore.sh --into production --yes [--dump FILE]
@@ -334,6 +396,26 @@ printf 'FROM pathable-api:%s\nUSER root\nRUN apt-get update && apt-get install -
   | docker build -t "pathable-api-cli:$SHA" -
 ```
 
+### If the host is lost
+
+The S3 copies outlive the host. On a new one: provision it and deploy as in
+[From nothing to serving](#from-nothing-to-serving), up to the dataset; put
+back `offsite.env` and the key (`install-credentials`); then
+
+```bash
+python3 infra/vps/offsite.py fetch latest /srv/pathable/recovery
+```
+
+downloads the newest backup and its manifest, checks both against S3 and each
+other, and writes the `.sha256` that `restore.sh` checks. Prove it with
+`restore.sh --into scratch --dump <file> --route`.
+
+**Not yet exercised: loading it into a new host's live database.**
+`restore.sh --into production` expects a running stack (it stops and restarts
+the API), and the first-deployment dataset step restores a dataset archive,
+not a whole-database backup. The download, the checks and a full restore with
+a route answered from it have been done; that last step has not.
+
 ## Logs
 
 All four containers log to stdout as JSON where the process supports it, kept
@@ -343,7 +425,7 @@ by Docker as `json-file`, rotated at 10 MB with five files per container.
 cd /srv/pathable/stack
 docker compose --env-file ../secrets/pathable.env --env-file ../site.env --env-file ../release.env logs -f api
 docker logs --since 1h pathable-caddy-1          # access log
-journalctl -u pathable-backup.service           # backups
+journalctl -u pathable-backup.service           # backups and their S3 copies (JSON lines)
 ```
 
 - **API**: structured JSON, each line tagged with the service, environment and
@@ -491,9 +573,12 @@ rollback release (`release.env.previous`) and build cache unused for ten days
 reclaimed 7,253,262,336 bytes, leaving it 60% used
 ([`vps-load-2026-11-15.json`](../evidence/vps-load-2026-11-15.json) →
 `disk_cleanup`). Keep the serving and rollback images, every volume, the
-backups and the evidence. Never run a blind `docker system prune -a --volumes`:
-an unattached anonymous volume holding a PostgreSQL 17 data directory, created
-2026-10-15T00:28Z, is still on the host awaiting a decision.
+backups and the evidence. Never run a blind `docker system prune -a --volumes`.
+The unattached 449.7 MB volume a scratch restore left on 2026-10-15 was
+identified (its cluster's `initdb` time, dockerd's own log of the scratch
+container) and removed on 2026-11-18, freeing 444,399,616 bytes
+([evidence](../evidence/vps-recovery-2026-11-17.json) → `orphan_volume`);
+`restore.sh` no longer leaves one.
 
 ## Certificates
 

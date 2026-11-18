@@ -170,8 +170,13 @@ Monitoring is connected (2026-11-15: Grafana Cloud ingestion, dashboard,
 Grafana-managed availability alert, Synthetic Monitoring); the route p95 alert
 is unset. Load was measured on 2026-11-15
 (`docs/evidence/VPS_CAPACITY.md`): one event loop serves about six short
-routes a second, and a long route holds it for seconds (KI-17). Backups sit on
-the host's own disk, and a deploy interrupts routing for about a minute.
+routes a second, and a long route holds it for seconds (KI-17). `backup.sh`
+copies each backup to S3 and counts it only once verified there
+(`infra/vps/offsite.py`, PR #135); the host's timer does so once its checkout
+is on that merge and the unit is reinstalled. On 2026-11-18 a copy downloaded
+from S3 restored into scratch and answered the journey. A deploy interrupts routing for about a minute. On 2026-11-16 a lapsed
+OVH subscription powered the host off for 13 h 40 min
+(`docs/evidence/VPS_INCIDENT_2026-11-16.md`).
 
 Gate C has not started on `main`. `feature/c01-ml-production-readiness` (PR #22)
 is frozen legacy work: do not merge it or use its `0006_perception` migration as
