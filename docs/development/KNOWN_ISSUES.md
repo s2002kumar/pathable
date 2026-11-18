@@ -539,9 +539,9 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    itself degrades and can answer 503 while the database is healthy
    ([KI-17](#ki-17--one-route-request-can-hold-the-api-for-seconds-and-the-rate-limit-counts-requests-not-work)).
 2. **Backups now leave the host; the way back onto a new one is unrehearsed.**
-   Since 2026-11-18 each backup is copied to S3 and counts only once S3 holds
-   exactly its bytes; one downloaded from S3 restored into a throwaway database
-   and answered the recorded journey
+   `backup.sh` copies each backup to S3 and counts it only once S3 holds
+   exactly its bytes (first run 2026-11-18). One downloaded from S3 restored
+   into a throwaway database and answered the recorded journey
    ([`vps-recovery-2026-11-17.json`](../evidence/vps-recovery-2026-11-17.json)).
    Not exercised: loading such a copy into a _new_ host's live database
    (`restore.sh --into production` expects a running stack). Nothing alerts on
