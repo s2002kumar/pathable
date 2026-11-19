@@ -52,7 +52,8 @@ revision; the images are tagged with the full SHA and carry it in their
 /srv/pathable/offsite.env           the S3 bucket, region and prefix for backups (not secret)
 /srv/pathable/site.env              PATHABLE_HOST, PATHABLE_TLS_PROFILE (not secret)
 /srv/pathable/release.env           the revision being served; release.env.previous before it
-/srv/pathable/deployments.log       one line per switch, with its live and ready times
+/srv/pathable/deployments.log       one line per switch: live and ready times, and backup=
+                                    verified-in-s3, local-only (skipped) or none (a rollback)
 /var/backups/pathable/              pg_dump archives and their .sha256 files
 ```
 
@@ -115,13 +116,15 @@ This is the sequence that built the pilot on 2026-10-14/15.
    holding an older gazetteer version than the release reads is upgraded on the
    first `up`; see [Upgrading the place index](#upgrading-the-place-index).
 
-5. **Serve.** `infra/vps/deploy.sh up origin/main`.
-6. **Backups.** Write `/srv/pathable/offsite.env` (bucket, region, prefix) and
-   have the founder install the backup key
-   ([below](#the-off-host-copy-in-s3)); `offsite.py check` must pass. Then copy
-   the two units from `infra/vps/systemd/` to `/etc/systemd/system/` and
-   `systemctl enable --now pathable-backup.timer`. The timer fails its run
-   without a verified S3 copy.
+5. **Off-host backups.** Write `/srv/pathable/offsite.env` (bucket, region,
+   prefix) and have the founder install the backup key
+   ([below](#the-off-host-copy-in-s3)); `offsite.py check` must pass. `up`
+   refuses without them, since its backup must reach S3. This step was added
+   on 2026-11-18; the pilot was first served without it.
+6. **Serve.** `infra/vps/deploy.sh up origin/main`.
+7. **Daily backups.** Copy the two units from `infra/vps/systemd/` to
+   `/etc/systemd/system/` and `systemctl enable --now pathable-backup.timer`.
+   The timer fails its run without a verified S3 copy.
 
 ## Deploying
 
@@ -132,9 +135,11 @@ This is the sequence that built the pilot on 2026-10-14/15.
 What it does, in order: refuses a commit that is not on `origin/main` (unless
 `ALLOW_UNMERGED=1`); builds `pathable-api:<sha>` and `pathable-web:<sha>` from
 `git archive <sha>` — never from a working tree — unless they exist; takes a
-`pre-deploy` backup, and refuses to continue if the database is running but
-cannot be read; restarts the API alone and waits for `/health/ready`; then
-brings up web and Caddy; and appends to `deployments.log`.
+`pre-deploy` backup and switches nothing until S3 holds it, verified
+([below](#the-off-host-copy-in-s3)), and refuses to continue if the database
+is running but cannot be read; restarts the API alone and waits for
+`/health/ready`; then brings up web and Caddy; and appends to
+`deployments.log`.
 
 The tooling (this directory) runs from whatever `/srv/pathable/repo` has
 checked out; the application comes from the SHA you name. Pull the repository
@@ -322,10 +327,20 @@ S3 bucket named in `/srv/pathable/offsite.env` (`ca-central-1`, prefix
 - nothing on the host deletes from S3. The bucket's lifecycle rule expires
   copies after 30 days, replaced versions after 7, unfinished uploads after 1.
 
-The timer requires the copy (`PATHABLE_BACKUP_OFFSITE=required` in the unit).
-A deploy's pre-deploy backup requires it too whenever `offsite.env` exists;
-during an S3 outage, `PATHABLE_BACKUP_OFFSITE=skip deploy.sh up <sha>` deploys
-with a local backup only, and says so.
+**Which backups require it.** Three do, whether or not `offsite.env` exists:
+the timer's (`PATHABLE_BACKUP_OFFSITE=required` in the unit), `deploy.sh up`'s
+pre-deploy backup, and the safety backup `restore.sh --into production` takes
+before replacing the database. Without `offsite.env`, `up` refuses before it
+builds anything. If the copy fails, `up` refuses to switch, and the restore
+stops nothing. Run by hand, `backup.sh` keeps its default: it requires the copy
+if `offsite.env` exists, and otherwise says its backup is local only.
+
+**Skipping it, on purpose.** During an S3 outage that a deploy cannot wait out,
+use `PATHABLE_BACKUP_OFFSITE=skip deploy.sh up <sha>`; the restore takes the
+same variable. The backup is then on this host only, and that is written in
+three places: a `WARNING` line from the script, an `offsite_skipped` event
+from `backup.sh`, and `backup=local-only` in `deployments.log`. Any other value
+is refused, `auto` included.
 
 **The key.** A dedicated IAM user may list, upload and download under
 `backups/`, including multipart uploads there, and nothing else: on
@@ -380,9 +395,9 @@ Disaster recovery on this host:
 /srv/pathable/repo/infra/vps/restore.sh --into production --yes [--dump FILE]
 ```
 
-Takes a `pre-restore` safety backup, stops the API, drops and recreates the
-database from the dump, runs the same verification, and starts the API only if
-it passed. Exercised on 2026-10-15: 6.5 s of `pg_restore`, checksum matched,
+Takes a `pre-restore` safety backup and waits for S3 to hold it, then stops the
+API, drops and recreates the database from the dump, runs the same
+verification, and starts the API only if it passed. Exercised on 2026-10-15: 6.5 s of `pg_restore`, checksum matched,
 94.9 s from stopping the API to ready again (30 s of that is the checksum).
 
 Images built from `a3f6448` cannot start the `pathable` CLI (pyosmium needs

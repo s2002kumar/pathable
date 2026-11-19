@@ -540,13 +540,20 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    ([KI-17](#ki-17--one-route-request-can-hold-the-api-for-seconds-and-the-rate-limit-counts-requests-not-work)).
 2. **Backups now leave the host; the way back onto a new one is unrehearsed.**
    `backup.sh` copies each backup to S3 and counts it only once S3 holds
-   exactly its bytes (first run 2026-11-18). One downloaded from S3 restored
-   into a throwaway database and answered the recorded journey
+   exactly its bytes (first run 2026-11-18). A deploy switches, and a
+   production restore stops the API, only once S3 holds the backup taken just
+   before. A missing `offsite.env` refuses them rather than falling back to a
+   local copy; only an explicit `PATHABLE_BACKUP_OFFSITE=skip` does without,
+   and it is logged. One copy downloaded from S3 restored into a throwaway
+   database and answered the recorded journey
    ([`vps-recovery-2026-11-17.json`](../evidence/vps-recovery-2026-11-17.json)).
-   Not exercised: loading such a copy into a _new_ host's live database
-   (`restore.sh --into production` expects a running stack). Nothing alerts on
-   a failed backup; the timer unit fails and only `systemctl --failed` shows
-   it.
+   Two things are tracked as follow-ups:
+   - Never exercised: loading such a copy into a _new_ host's live database
+     (`restore.sh --into production` expects a running stack). Tracked in
+     [#137](https://github.com/s2002kumar/pathable/issues/137).
+   - Nothing alerts on a failed backup: the timer unit fails, and only
+     `systemctl --failed` shows it. Tracked in
+     [#136](https://github.com/s2002kumar/pathable/issues/136).
 3. **About a minute without routing per deploy or restart.** One API process
    holds the graph: the old one takes ~9 s to exit, the new one ~42 s to load
    and become ready, and the landing page drops for a few seconds when its own
@@ -589,8 +596,10 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
 
 **Check when:** anyone is pointed at the URL, a domain is bought, a second
 host is considered, or the provider subscription is due. Metrics (2026-11-15)
-and off-host backups (2026-11-18) are done; rehearsing a restore onto a new
-host, and an alert on a failed backup, are the next cheapest items.
+and off-host backups (2026-11-18) are done. The next cheapest items are
+rehearsing a restore onto a new host
+([#137](https://github.com/s2002kumar/pathable/issues/137)) and an alert on a
+failed backup ([#136](https://github.com/s2002kumar/pathable/issues/136)).
 
 ---
 
