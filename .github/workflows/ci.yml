@@ -501,8 +501,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: The backup and restore scripts pass ShellCheck
-        run: shellcheck --shell=sh infra/vps/backup.sh infra/vps/restore.sh infra/vps/tests/scratch-restore-cleanup.sh
+      - name: The deploy, backup and restore scripts pass ShellCheck
+        run: shellcheck --shell=sh infra/vps/deploy.sh infra/vps/backup.sh infra/vps/restore.sh infra/vps/tests/scratch-restore-cleanup.sh
 
       # Regression: every scratch restore before 2026-11-17 left its restored
       # database behind in an anonymous volume (449.7 MB on the pilot from one

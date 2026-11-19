@@ -7,7 +7,8 @@
 #       backups restore. --route also starts the release's API image against
 #       the restored database and checks the recorded journey's answer.
 #   restore.sh --into production --dump FILE --yes   disaster recovery: takes a
-#       safety backup, stops the API, replaces the `pathable` database with the
+#       safety backup and waits for S3 to hold it (PATHABLE_BACKUP_OFFSITE=skip
+#       does without), stops the API, replaces the `pathable` database with the
 #       dump, verifies it, and starts the API again.
 #
 # Without --dump, the newest file in the backup directory is used. A dump
@@ -58,7 +59,7 @@ while [ $# -gt 0 ]; do
         --dump) DUMP="$2"; shift 2 ;;
         --yes) YES=1; shift ;;
         --route) ROUTE=1; shift ;;
-        *) sed -n '2,14p' "$0"; exit 2 ;;
+        *) sed -n '2,15p' "$0"; exit 2 ;;
     esac
 done
 
@@ -322,8 +323,21 @@ if [ "$INTO" = "scratch" ]; then
     log "scratch restore and verification took $(elapsed "$total_started" "$(now)")s in all"
 else
     [ "$YES" = "1" ] || die "--into production replaces the live database; add --yes"
+    # The safety backup is the way back from this, so it must be held by S3
+    # before anything stops, whether or not offsite.env exists, unless that is
+    # skipped on purpose (deploy.sh has the same rule for its backup).
+    offsite="${PATHABLE_BACKUP_OFFSITE:-required}"
+    case "$offsite" in
+        required) ;;
+        skip) log "WARNING: PATHABLE_BACKUP_OFFSITE=skip: the safety backup will exist on this host only" ;;
+        *) die "refusing: PATHABLE_BACKUP_OFFSITE=$offsite. The safety backup is verified in S3 (unset, or required), or skipped on purpose (skip)" ;;
+    esac
     log "safety backup of the database being replaced"
-    "$HERE/backup.sh" pre-restore
+    if ! PATHABLE_BACKUP_OFFSITE="$offsite" "$HERE/backup.sh" pre-restore; then
+        [ "$offsite" = "skip" ] \
+            || log "if S3 itself is down and this cannot wait: PATHABLE_BACKUP_OFFSITE=skip $0 --into production --yes --dump $DUMP"
+        die "refusing to restore: no verified safety backup (backup.sh's last line says why). Nothing was stopped or replaced"
+    fi
     total_started="$(now)"
     docker stop "$PROD_API" >/dev/null
     log "API stopped; restoring into $PROD_DB"

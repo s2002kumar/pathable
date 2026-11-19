@@ -5,8 +5,10 @@ losing its host. What they must never do: call a backup done when S3 does not
 hold exactly its bytes; replace an object already in the bucket (it is
 versioned with a 7-day expiry of old versions, so a replacement destroys the
 earlier backup a week later); put the AWS keys on a command line or in a log;
-or read the keys with echo on. A fake `docker` (fake_docker.py) plays the
-database container and S3 both, and records every command it is sent.
+or read the keys with echo on. Nor may deploy.sh or restore.sh change
+production on a backup S3 does not hold, unless told to skip it. A fake `docker`
+(fake_docker.py) plays the database container and S3 both, and records every
+command it is sent.
 """
 
 from __future__ import annotations
@@ -851,3 +853,243 @@ def test_the_timer_requires_the_off_host_copy() -> None:
 
     assert "Environment=PATHABLE_BACKUP_OFFSITE=required" in unit
     assert "TimeoutStartSec=" in unit
+
+
+# --- deploy.sh and restore.sh: the backup before production changes -------------
+#
+# Found in review on 2026-11-19: deploy.sh ran `backup.sh pre-deploy` without
+# asking for the off-host copy, and backup.sh's default (auto) keeps a backup
+# local whenever offsite.env is absent. A host that had lost that file would have
+# deployed with its only way back sitting on itself.
+
+GIT_ENV = {
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_AUTHOR_NAME": "test",
+    "GIT_AUTHOR_EMAIL": "test@example.invalid",
+    "GIT_COMMITTER_NAME": "test",
+    "GIT_COMMITTER_EMAIL": "test@example.invalid",
+}
+
+
+def git(*args: str) -> str:
+    proc = subprocess.run(
+        ["git", *args],
+        env={**os.environ, **GIT_ENV},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    return proc.stdout.strip()
+
+
+@pytest.fixture
+def production(host: Host) -> None:
+    """The site and database settings deploy.sh and restore.sh read."""
+    (host.root / "site.env").write_text(
+        "PATHABLE_HOST=pilot.test\nPATHABLE_TLS_PROFILE=shortlived\n"
+    )
+    database_secrets = host.root / "secrets" / "pathable.env"
+    database_secrets.write_text("PATHABLE_DB_PASSWORD=" + "p" * 24 + "\n")
+    database_secrets.chmod(0o600)
+
+
+@pytest.fixture
+def release(host: Host, production: None) -> str:
+    """A checkout whose origin/main holds a release, as deploy.sh needs. Its SHA."""
+    origin = host.root.parent / "origin.git"
+    repo = host.root / "repo"
+    git("init", "--quiet", "--bare", "--initial-branch=main", str(origin))
+    git("init", "--quiet", "--initial-branch=main", str(repo))
+    pyproject = repo / "services" / "api" / "pyproject.toml"
+    pyproject.parent.mkdir(parents=True)
+    pyproject.write_text('[project]\nname = "pathable-api"\nversion = "0.1.0"\n')
+    git("-C", str(repo), "add", ".")
+    git("-C", str(repo), "commit", "--quiet", "-m", "a release")
+    git("-C", str(repo), "remote", "add", "origin", str(origin))
+    git("-C", str(repo), "push", "--quiet", "origin", "main")
+    return git("-C", str(repo), "rev-parse", "HEAD")
+
+
+@dataclass
+class Run:
+    code: int
+    log: list[str]
+    """The script's own lines."""
+    events: list[dict[str, Any]]
+    """backup.sh's and offsite.py's JSON lines."""
+    stderr: str
+
+
+def run_script(host: Host, script: str, *args: str, offsite_mode: str | None = None) -> Run:
+    env = {**host.env, **GIT_ENV}
+    env.pop("PATHABLE_BACKUP_OFFSITE", None)
+    if offsite_mode is not None:
+        env["PATHABLE_BACKUP_OFFSITE"] = offsite_mode
+    proc = subprocess.run(
+        ["sh", str(VPS / script), *args],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    lines = proc.stdout.splitlines()
+    return Run(
+        code=proc.returncode,
+        log=[line for line in lines if not line.startswith("{")],
+        events=[json.loads(line) for line in lines if line.startswith("{")],
+        stderr=proc.stderr,
+    )
+
+
+def deploy(host: Host, offsite_mode: str | None = None) -> Run:
+    return run_script(host, "deploy.sh", "up", "origin/main", offsite_mode=offsite_mode)
+
+
+def restore_into_production(host: Host, dump: Path, offsite_mode: str | None = None) -> Run:
+    args = ["--into", "production", "--yes", "--dump", str(dump)]
+    return run_script(host, "restore.sh", *args, offsite_mode=offsite_mode)
+
+
+def first_switch(host: Host) -> int | None:
+    """Where deploy.sh first touched the running stack, if it did."""
+    return next((i for i, call in enumerate(host.calls()) if call[0] == "compose"), None)
+
+
+def serving(host: Host) -> str:
+    return (host.root / "release.env").read_text()
+
+
+def history(host: Host) -> list[str]:
+    return (host.root / "deployments.log").read_text().splitlines()
+
+
+def test_a_deploy_switches_only_once_s3_holds_its_backup(host: Host, release: str) -> None:
+    run = deploy(host)
+
+    assert run.code == 0, run
+    dump = the_new_dump(host)
+    assert "-pre-deploy-" in dump.name
+    assert set(host.s3_objects()) == {f"backups/{dump.name}", f"backups/{dump.name}.manifest.json"}
+    assert dump.with_name(dump.name + ".offsite.json").is_file()
+    s3_requests = host.aws_calls()
+    last_s3_request = max(i for i, call in enumerate(host.calls()) if call in s3_requests)
+    switch = first_switch(host)
+    assert switch is not None
+    assert last_s3_request < switch
+    assert f"PATHABLE_REVISION={release}\n" in serving(host)
+    assert history(host)[-1].endswith(" backup=verified-in-s3")
+
+
+def test_a_deploy_without_offsite_env_no_longer_falls_back_to_a_local_backup(
+    host: Host, release: str
+) -> None:
+    (host.root / "offsite.env").unlink()
+    before = serving(host)
+
+    run = deploy(host)
+
+    assert run.code == 1, run
+    # Refused before building, backing up or switching anything.
+    assert host.calls() == []
+    assert list(host.backups.iterdir()) == []
+    assert serving(host) == before
+    assert not (host.root / "deployments.log").exists()
+    assert "offsite.env is missing" in run.log[-1]
+    assert "PATHABLE_BACKUP_OFFSITE=skip" in run.log[-1]
+
+
+@pytest.mark.parametrize("breakage", ["s3-holds-other-bytes", "access-denied", "no-key"])
+def test_a_deploy_whose_backup_s3_does_not_hold_is_not_switched(
+    host: Host, release: str, monkeypatch: pytest.MonkeyPatch, breakage: str
+) -> None:
+    if breakage == "no-key":
+        (host.root / "secrets" / "aws-backup.credentials").unlink()
+    else:
+        fault = {"s3-holds-other-bytes": "corrupt-head", "access-denied": "deny-put"}[breakage]
+        host.faults(monkeypatch, fault)
+    before = serving(host)
+
+    run = deploy(host)
+
+    assert run.code == 1, run
+    assert first_switch(host) is None
+    dump = the_new_dump(host)
+    assert not dump.with_name(dump.name + ".offsite.json").exists()
+    assert run.events[-1] == {**run.events[-1], "event": "backup_failed", "label": "pre-deploy"}
+    assert serving(host) == before
+    assert not (host.root / "deployments.log").exists()
+    assert run.log[-1].endswith(
+        f"{release} was not deployed; the release that was serving still is"
+    )
+    assert any("PATHABLE_BACKUP_OFFSITE=skip" in line for line in run.log)
+
+
+def test_skip_deploys_on_a_local_backup_and_says_so_in_every_log(host: Host, release: str) -> None:
+    (host.root / "offsite.env").unlink()
+
+    run = deploy(host, offsite_mode="skip")
+
+    assert run.code == 0, run
+    assert "WARNING: PATHABLE_BACKUP_OFFSITE=skip" in run.log[0]
+    assert [e["event"] for e in run.events] == [
+        "offsite_skipped",
+        "manifest_written",
+        "local_backup_written",
+        "backup_complete",
+    ]
+    assert run.events[-1]["offsite"] == "skipped (PATHABLE_BACKUP_OFFSITE=skip)"
+    assert host.aws_calls() == []
+    assert f"PATHABLE_REVISION={release}\n" in serving(host)
+    assert history(host)[-1].endswith(" backup=local-only")
+
+
+@pytest.mark.parametrize("mode", ["auto", "Skip"])
+def test_a_deploy_takes_no_other_backup_mode(host: Host, release: str, mode: str) -> None:
+    # auto is backup.sh's own default, the one that falls back to local only.
+    run = deploy(host, offsite_mode=mode)
+
+    assert run.code == 1, run
+    assert host.calls() == []
+    assert f"PATHABLE_BACKUP_OFFSITE={mode}." in run.log[-1]
+
+
+@pytest.mark.usefixtures("production")
+def test_a_production_restore_stops_nothing_until_s3_holds_its_safety_backup(
+    host: Host,
+) -> None:
+    dump = host.dump()
+    (host.root / "offsite.env").unlink()
+
+    run = restore_into_production(host, dump)
+
+    assert run.code == 1, run
+    assert not any(call[0] == "stop" for call in host.calls())
+    assert run.events[-1] == {**run.events[-1], "event": "backup_failed", "label": "pre-restore"}
+    assert run.log[-1].endswith("Nothing was stopped or replaced")
+
+
+@pytest.mark.usefixtures("production")
+def test_skip_lets_a_production_restore_go_ahead_on_a_local_safety_backup(
+    host: Host, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dump = host.dump()
+    (host.root / "offsite.env").unlink()
+    host.faults(monkeypatch, "stop-fails")
+
+    run = restore_into_production(host, dump, offsite_mode="skip")
+
+    assert any("WARNING: PATHABLE_BACKUP_OFFSITE=skip" in line for line in run.log)
+    assert [e["event"] for e in run.events] == [
+        "offsite_skipped",
+        "manifest_written",
+        "local_backup_written",
+        "backup_complete",
+    ]
+    assert host.aws_calls() == []
+    # It went on to stop the API, which this fake refuses, so it ends there.
+    assert ["stop", "pathable-api-1"] in host.calls()
+    assert run.code == 1

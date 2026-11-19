@@ -16,8 +16,11 @@
 # done. PATHABLE_BACKUP_OFFSITE says whether that is needed:
 #   auto      (default) required if offsite.env exists; otherwise local only,
 #             and the last line says so
-#   required  fail unless the off-host copy is verified (the systemd timer)
-#   skip      local only, deliberately: a deploy during an S3 outage
+#   required  fail unless the off-host copy is verified: the systemd timer,
+#             deploy.sh's pre-deploy backup and restore.sh's safety backup
+#             before it replaces production, whether or not offsite.env exists
+#   skip      local only, deliberately: a deploy during an S3 outage. Said
+#             first (offsite_skipped) and last
 # When the copy fails, the local backup stays and this exits non-zero. Every
 # later run retries each dump that has a manifest and no off-host receipt.
 #
@@ -67,6 +70,8 @@ case "$OFFSITE" in
     required|skip) ;;
     *) fail reason="PATHABLE_BACKUP_OFFSITE must be auto, required or skip" ;;
 esac
+[ "$OFFSITE" != "skip" ] || event offsite_skipped label="$LABEL" \
+    warning="PATHABLE_BACKUP_OFFSITE=skip: this backup will exist on this host only"
 
 revision="$(sed -n 's/^PATHABLE_REVISION=//p' "$RELEASE" 2>/dev/null | cut -c1-12)"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"

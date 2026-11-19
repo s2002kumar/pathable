@@ -5,8 +5,9 @@
 #   deploy.sh init <ref>     first deployment only: build, start the database and
 #                            migrate it to <ref>'s head, serve nothing. Restore
 #                            the dataset next, then `up`.
-#   deploy.sh up <ref>       build if needed, back up the database, switch, wait
-#                            until the API is ready, record the release
+#   deploy.sh up <ref>       build if needed, back up the database and wait for S3
+#                            to hold the copy, switch, wait until the API is
+#                            ready, record the release
 #   deploy.sh rollback       switch back to the previous release's images
 #   deploy.sh status         what is running, and from which revision
 #
@@ -19,6 +20,13 @@
 # code first and refuses, unless PLACE_INDEX_ARTIFACT names an artifact built
 # from the network's own extract (`pathable gazetteer export`): that is verified
 # before the switch and installed, in one transaction, right after it.
+#
+# The pre-deploy backup is the rollback point, so `up` switches only once S3
+# provably holds it (backup.sh, offsite.py). That holds whether or not
+# offsite.env exists: a host that has lost its configuration refuses to deploy
+# rather than quietly keep the only copy on itself. The one way past it is
+# asking: PATHABLE_BACKUP_OFFSITE=skip, for when S3 is down and the deploy
+# cannot wait. It is logged here, in backup.sh's output and in deployments.log.
 #
 # <ref> is anything `git rev-parse` resolves (origin/main, a tag, a SHA). It must
 # be reachable from origin/main — the public pilot serves merged code only —
@@ -36,8 +44,10 @@
 #   /srv/pathable/secrets/grafana-cloud.env  optional (0600): metrics credentials;
 #                                       Alloy runs only when it exists
 #   /srv/pathable/site.env              PATHABLE_HOST, PATHABLE_TLS_PROFILE
+#   /srv/pathable/offsite.env           the S3 bucket for backups (offsite.py)
 #   /srv/pathable/release.env           current release; .previous is the one before
-#   /srv/pathable/deployments.log       one line per switch
+#   /srv/pathable/deployments.log       one line per switch, with whether its
+#                                       backup was verified in S3
 
 set -eu
 
@@ -51,6 +61,10 @@ RELEASE="$ROOT/release.env"
 HISTORY="$ROOT/deployments.log"
 READY_TIMEOUT="${READY_TIMEOUT:-300}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+# What deployments.log says of a switch's backup: verified-in-s3; local-only
+# (PATHABLE_BACKUP_OFFSITE=skip); none (no database was running, or a rollback,
+# which changes no data).
+BACKUP=none
 
 log() { printf '%s deploy: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1"; }
 die() { log "$1"; exit 1; }
@@ -241,9 +255,9 @@ switch_to() {
             log "  $body"
             # Web and Caddy follow only once the API can route.
             compose up -d --remove-orphans
-            printf '%s %s previous=%s live_s=%s ready_s=%s by=%s\n' \
+            printf '%s %s previous=%s live_s=%s ready_s=%s by=%s backup=%s\n' \
                 "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sha" "${previous:-none}" \
-                "$live_at" "$ready_at" "$(id -un)" >> "$HISTORY"
+                "$live_at" "$ready_at" "$(id -un)" "$BACKUP" >> "$HISTORY"
             return 0
         fi
         sleep 1
@@ -275,6 +289,17 @@ case "${1:-}" in
         ;;
     up)
         [ -n "${2:-}" ] || die "usage: $0 up <ref>"
+        # Asked before minutes of building, not after them.
+        offsite="${PATHABLE_BACKUP_OFFSITE:-required}"
+        case "$offsite" in
+            required)
+                [ -f "$ROOT/offsite.env" ] \
+                    || die "refusing: $ROOT/offsite.env is missing, so the pre-deploy backup cannot be copied off this host (docs/deployment/VPS.md, 'The off-host copy'). Nothing was changed. If S3 cannot be used and this cannot wait: PATHABLE_BACKUP_OFFSITE=skip $0 up $2" ;;
+            skip)
+                log "WARNING: PATHABLE_BACKUP_OFFSITE=skip: the pre-deploy backup will exist on this host only; nothing waits for S3" ;;
+            *)
+                die "refusing: PATHABLE_BACKUP_OFFSITE=$offsite. A deploy's backup is verified in S3 (unset, or required), or skipped on purpose (skip)" ;;
+        esac
         sha="$(resolve "$2")"
         build "$sha"
         # Is the stored place index the one this release reads? Asked before
@@ -288,11 +313,21 @@ case "${1:-}" in
                 || die "refusing: $PLACE_INDEX_ARTIFACT does not fit $sha or this database's network"
             index_upgrade=1
         fi
-        # Never switch a live database without a backup taken just before it.
+        # Never switch a live database without a backup taken just before it,
+        # and held by S3 unless that was skipped on purpose.
         if db_running; then
             [ -n "$(db_revision)" ] \
                 || die "the database is running but its revision cannot be read; not deploying without a backup"
-            "$HERE/backup.sh" "pre-deploy"
+            if ! PATHABLE_BACKUP_OFFSITE="$offsite" "$HERE/backup.sh" pre-deploy; then
+                if [ "$offsite" = "required" ]; then
+                    log "refusing to switch: the pre-deploy backup is not verified in S3 (backup.sh's last line says why)"
+                    log "if S3 itself is down and this cannot wait: PATHABLE_BACKUP_OFFSITE=skip $0 up $2"
+                else
+                    log "refusing to switch: the pre-deploy backup failed (backup.sh's last line says why)"
+                fi
+                die "$sha was not deployed; the release that was serving still is"
+            fi
+            if [ "$offsite" = "skip" ]; then BACKUP=local-only; else BACKUP=verified-in-s3; fi
         fi
         switch_to "$sha"
         if [ "$index_upgrade" = "1" ]; then

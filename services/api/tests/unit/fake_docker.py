@@ -1,11 +1,16 @@
 """A stand-in `docker` for the backup tooling's tests (test_offsite_backup.py).
 
-It answers the commands backup.sh and offsite.py send, from a state directory
+It answers the commands backup.sh and offsite.py send, and those deploy.sh and
+restore.sh send around their backups, from a state directory
 ($FAKE_DOCKER_STATE), and logs every one of them to calls.jsonl:
 
 * ``docker exec … pg_dump`` writes dump.bin; ``pg_dump --version`` answers 17.5
 * ``docker exec -i … pg_restore --list`` lists twelve tables with data
-* ``docker exec -i … psql`` answers with db.json, whatever SQL it is sent
+* ``docker exec -i … psql`` answers with db.json, whatever SQL it is sent;
+  ``psql … -c "select version_num from alembic_version"`` with its revision
+* ``docker inspect --format '{{.State.Running}}' …`` says the container runs
+* ``docker compose …``, ``docker build``, ``docker stop`` and ``docker run`` of
+  any other image succeed, doing nothing
 * ``docker run … amazon/aws-cli:… <args>`` behaves as S3 would for the requests
   offsite.py makes, against s3/: a PUT carrying a SHA-256 is refused if the
   bytes do not hash to it, If-None-Match refuses an existing name, HEAD and GET
@@ -13,7 +18,8 @@ It answers the commands backup.sh and offsite.py send, from a state directory
   and refuses to read or write a file the container was not given.
 
 $FAKE_S3_FAULTS (comma-separated) breaks it on purpose: deny-put, flaky-put=N,
-corrupt-head, corrupt-download, no-sse, psql-fails.
+corrupt-head, corrupt-download, no-sse, psql-fails, and stop-fails (so a
+production restore under test goes no further than stopping the API).
 """
 
 from __future__ import annotations
@@ -254,6 +260,7 @@ def docker_exec(argv: list[str]) -> int:
     index = 0
     while argv[index].startswith("-"):
         index += 2 if argv[index] in TAKES_VALUE else 1
+    interactive = "-i" in argv[:index]
     command = argv[index + 1 :]
     if command[0] == "pg_dump":
         if "--version" in command:
@@ -266,10 +273,17 @@ def docker_exec(argv: list[str]) -> int:
         out("".join(f"{n}; 0 {n} TABLE DATA public t{n} postgres\n" for n in range(12)))
         return 0
     if command[0] == "psql":
-        sys.stdin.buffer.read()
+        # Without -i, docker gives the command no standard input.
+        if interactive:
+            sys.stdin.buffer.read()
         if fault("psql-fails"):
             return fail(2, 'psql: error: relation "alembic_version" does not exist')
-        out((STATE / "db.json").read_text().strip() + "\n")
+        database = (STATE / "db.json").read_text().strip()
+        query = option(command, "-c")
+        if query is not None and "alembic_version" in query:
+            out(json.loads(database)["alembic_revision"] + "\n")
+            return 0
+        out(database + "\n")
         return 0
     return 0
 
@@ -279,6 +293,11 @@ def main(argv: list[str]) -> int:
         log.write(json.dumps(argv) + "\n")
     if argv[0] == "exec":
         return docker_exec(argv[1:])
+    if argv[0] == "inspect" and option(argv, "--format") == "{{.State.Running}}":
+        out("true\n")
+        return 0
+    if argv[0] == "stop" and fault("stop-fails"):
+        return fail(1, f"Error response from daemon: cannot stop container {argv[-1]}")
     if argv[0] == "run":
         options, image, command = split_run(argv[1:])
         if not image.startswith("amazon/aws-cli:"):
