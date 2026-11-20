@@ -62,9 +62,20 @@ overrides:
 #
 # Remove this entry as soon as a patched braces can be installed: a release
 # >= 3.0.4 on npm, or an @next/eslint-plugin-next that no longer depends on it.
+#
+# GHSA-fc5q-39xc-vjpf (high): picomatch <= 4.0.7, ReDoS through repeated
+# extglobs. Accepted 2026-11-18 by the founder. There is no patched release:
+# GitHub's advisory lists none, and npm's latest picomatch is 4.0.7. It
+# reaches us only through build, test and lint tooling (vite, tinyglobby, fdir,
+# micromatch under ESLint); `pnpm why picomatch --prod` finds no production
+# path, so nothing in the built site or at runtime loads it, and the patterns
+# it matches are our own repository's globs, not input from a visitor.
+#
+# Remove this entry as soon as picomatch >= 4.0.8 is on npm.
 auditConfig:
   ignoreGhsas:
     - GHSA-vfj7-8cjw-p6xm
+    - GHSA-fc5q-39xc-vjpf
 
 allowBuilds:
   # Native module resolver used by eslint-plugin-import-x (via eslint-config-next).

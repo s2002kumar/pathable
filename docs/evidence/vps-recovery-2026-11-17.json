@@ -1,0 +1,611 @@
+{
+  "what": "The public pilot's recovery after its VPS was powered off on 2026-11-16, and the batch that followed: verified off-host backups in S3, a disaster-recovery drill from a downloaded S3 copy, the backup IAM user's effective permissions, and the removal of the volume a scratch restore left on 2026-10-15. Nothing was restarted or redeployed. The S3 bucket's name and the AWS account number are left out of this public file; both are on the host.",
+  "captured": {
+    "from": "2026-11-17T03:16Z",
+    "to": "2026-11-18T02:38Z"
+  },
+  "repository": {
+    "main_at_start": "779e468391d8031f17986a33d23db4b51af09780",
+    "serving": "f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc",
+    "tooling_commit": "8bd641332c34648834eb3c3a8584c5132a1a26c0",
+    "tooling_location": "the branch's infra/vps, from `git archive`, in /srv/pathable/candidate/8bd641332c34. The production checkout (/srv/pathable/repo, main f3f1a76) and the backup timer were not changed"
+  },
+  "incident": {
+    "cause": "The OVH subscription had lapsed (expired 2026-11-15, the founder's account). The VM's journal shows a hypervisor-initiated, orderly power-off; it booted again when the subscription was renewed (2026-11-16, the founder's account).",
+    "timeline_utc": [
+      {
+        "at": "2026-11-16T06:02:32Z",
+        "event": "f3f1a76 deployed",
+        "source": "deployments.log"
+      },
+      {
+        "at": "2026-11-16T07:22:58Z",
+        "event": "scheduled backup written (local)",
+        "source": "backup unit journal"
+      },
+      {
+        "at": "2026-11-16T09:40:30.707Z",
+        "event": "qemu-ga: guest-shutdown called, mode: powerdown",
+        "source": "system journal, boot -1"
+      },
+      {
+        "at": "2026-11-16T09:40:30.714Z",
+        "event": "systemd-logind: The system will power off now!",
+        "source": "system journal, boot -1"
+      },
+      {
+        "at": "2026-11-16T09:40:33.280Z",
+        "event": "journal stopped; power off",
+        "source": "system journal, boot -1"
+      },
+      {
+        "at": "2026-11-16T09:40:33Z",
+        "event": "PostgreSQL shut down cleanly",
+        "source": "PostgreSQL log after boot"
+      },
+      {
+        "at": "2026-11-16T23:19:56.964Z",
+        "event": "kernel booted (7.0.0-43-generic, unchanged)",
+        "source": "system journal, boot 0"
+      },
+      {
+        "at": "2026-11-16T23:20:06Z",
+        "event": "Docker started all five containers",
+        "source": "docker inspect"
+      },
+      {
+        "at": "2026-11-16T23:20:07.748Z",
+        "event": "PostgreSQL ready, no crash recovery",
+        "source": "PostgreSQL log"
+      },
+      {
+        "at": "2026-11-16T23:20:18Z",
+        "event": "first public probes reach Caddy: 502 while the graph loads",
+        "source": "Caddy access log"
+      },
+      {
+        "at": "2026-11-16T23:20:49.6Z",
+        "event": "routing graph loaded",
+        "source": "API log"
+      },
+      {
+        "at": "2026-11-16T23:20:56.6Z",
+        "event": "API ready; readiness 200",
+        "source": "API log, Caddy access log"
+      },
+      {
+        "at": "2026-11-17T01:10:08Z",
+        "event": "certificate renewed on its ARI schedule (old one valid to 2026-11-20T09:01:59Z)",
+        "source": "Caddy log"
+      }
+    ],
+    "host_off_seconds": 49163.7,
+    "routing_unavailable_seconds": 49225.9,
+    "data_loss": "none: clean shutdown; the last backup was 2 h 18 min old and nothing writes the database in normal operation",
+    "not_observed": [
+      "OOM kills, in any boot",
+      "kernel errors in the current boot",
+      "a disk, network or container failure",
+      "a package upgrade on 2026-11-15 or 11-16",
+      "a change to the firewall, SSH configuration or listening ports"
+    ],
+    "uncertainty": [
+      "The provider's own times for the expiry, suspension and renewal are not visible from inside the VM.",
+      "The Grafana-managed availability alert and Synthetic Monitoring were not read (the host's token is write-only): whether the alert fired is the founder's to confirm."
+    ]
+  },
+  "production_after_recovery": {
+    "checked_at": "2026-11-17T03:19Z to 03:25Z",
+    "release": "f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc (0.1.0+f3f1a76c9d28), deployed 2026-11-16T06:02:32Z",
+    "alembic_revision": "0008_place_codes",
+    "containers": "db, api, web, caddy, alloy: running since 2026-11-16T23:20:06Z, 0 restarts, no OOM; db, api and web healthy",
+    "dataset": {
+      "id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+      "content_checksum_recomputed": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00",
+      "matches_recorded": true,
+      "recompute_seconds": 21.32,
+      "dataset_versions_rows": "identical to the post-deploy rows of 2026-11-16 (diffed)"
+    },
+    "smoke": {
+      "external": {
+        "started_at": "2026-11-17T03:21:17+00:00",
+        "client": "laptop",
+        "passed": 19,
+        "checks": 19,
+        "failed": [],
+        "journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 599 ms",
+        "sequential_routes": "round trip {'n': 10, 'min': 297.8, 'p50': 413.3, 'p95': 1445.3, 'max': 1445.3, 'mean': 554.3}, server {'n': 10, 'min': 116.1, 'p50': 129.8, 'p95': 152.7, 'max': 152.7, 'mean': 133.9}"
+      },
+      "host": {
+        "started_at": "2026-11-17T03:21:58+00:00",
+        "client": "host",
+        "passed": 19,
+        "checks": 19,
+        "failed": [],
+        "journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 203 ms",
+        "sequential_routes": "round trip {'n': 10, 'min': 164.7, 'p50': 171.6, 'p95': 186.3, 'max': 186.3, 'mean': 174.4}, server {'n': 10, 'min': 126.5, 'p50': 131.1, 'p95': 147.8, 'max': 147.8, 'mean': 134.4}"
+      }
+    },
+    "alloy": "4 components healthy; remote write 41,407 to 41,845 samples in 60 s with 0 failed, 0 retried, 0 pending",
+    "exposure": "5432, 8000, 3000, 9464 and 12345 time out from outside; /metrics and /api/v1/metrics answer 404 with no exposition",
+    "host": "Ubuntu kernel 7.0.0-43-generic; ufw default deny in, 22/80/443 allowed; sshd keys only, AllowUsers ubuntu; disk 69% used"
+  },
+  "iam": {
+    "checked_at": "2026-11-18T02:24:30+00:00",
+    "principal": "user/pathable-backup-vps",
+    "account": "<redacted>",
+    "method": "every action tried with the installed key through offsite.py's pinned CLI; outcome as AWS answered",
+    "required_all_allowed": true,
+    "prohibited_all_refused": true,
+    "least_privilege_refused": [
+      "upload outside the prefix",
+      "list the whole bucket",
+      "list another prefix",
+      "read bucket configuration (get-bucket-policy)",
+      "read bucket configuration (get-bucket-lifecycle-configuration)",
+      "read bucket configuration (get-bucket-versioning)",
+      "read bucket configuration (get-bucket-encryption)",
+      "read bucket configuration (get-bucket-acl)"
+    ],
+    "least_privilege_allowed": [],
+    "probes": [
+      {
+        "probe": "identity",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "list the backup prefix",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "upload under the prefix (SSE-S3, SHA-256, If-None-Match)",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "read its metadata and stored checksum",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "download it",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "refuse to replace it (If-None-Match)",
+        "kind": "required-refusal",
+        "outcome": "refused",
+        "error": "PreconditionFailed"
+      },
+      {
+        "probe": "start a multipart upload",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "upload a part",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "list its parts",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "list unfinished multipart uploads",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "abort the multipart upload",
+        "kind": "required",
+        "outcome": "allowed",
+        "error": null
+      },
+      {
+        "probe": "delete the probe object",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "delete a version permanently",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "upload outside the prefix",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "list the whole bucket",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "list another prefix",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "list all buckets",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read an unrelated public bucket",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read bucket configuration (get-bucket-policy)",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read bucket configuration (get-bucket-lifecycle-configuration)",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read bucket configuration (get-bucket-versioning)",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read bucket configuration (get-bucket-encryption)",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read bucket configuration (get-bucket-acl)",
+        "kind": "least-privilege",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read IAM (get-user)",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read IAM (list-users)",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "read its own policies",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDenied"
+      },
+      {
+        "probe": "EC2 (describe-instances)",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "UnauthorizedOperation"
+      },
+      {
+        "probe": "KMS (list-keys)",
+        "kind": "prohibited",
+        "outcome": "refused",
+        "error": "AccessDeniedException"
+      }
+    ],
+    "probe_object": "backups/iam-probe-20261118T022346Z.txt (47 bytes) stays until the 30-day lifecycle rule expires it; deleting it is refused",
+    "console_access": "not verified: the key cannot read IAM. The founder has not yet confirmed that console sign-in is disabled.",
+    "policy_changed": false
+  },
+  "offsite_tooling": {
+    "aws_cli_image": "amazon/aws-cli:2.39.3@sha256:d557b3524475d70dd3104cf44d96568ee3188897b73a6ece2b37aa50e1af362f",
+    "image_bytes": 141184969,
+    "pull_seconds": 11.1,
+    "credentials": "secrets/aws-backup.credentials: owner ubuntu, mode 0600, 116 bytes; installed by the founder with `offsite.py install-credentials` at 2026-11-18T02:18:59Z; read here only by stat",
+    "bucket": "<redacted>; region ca-central-1; prefix backups/; versioned; lifecycle 30 days current, 7 days noncurrent, 1 day unfinished uploads (the founder's configuration; the key cannot read it)"
+  },
+  "disaster_recovery_drill": {
+    "started": "2026-11-18T02:25:20Z",
+    "1_backup": {
+      "file": "pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump",
+      "label": "dr-drill",
+      "bytes": 32611561,
+      "sha256": "724bb240495b1b8e638718ff0549ba3726065306c7bd66499a0cf0eb5b1b0260",
+      "pg_dump_seconds": 4.7,
+      "tables_with_data": 12,
+      "manifest_bytes": 2078,
+      "release_in_manifest": {
+        "revision": "f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc",
+        "app_version": "0.1.0+f3f1a76c9d28",
+        "deployed_at": "2026-11-16T06:02:32Z"
+      },
+      "database_in_manifest": {
+        "alembic_revision": "0008_place_codes",
+        "place_index": {
+          "entries": 33225,
+          "builds": 1
+        },
+        "table_rows": {
+          "alembic_version": 1,
+          "dataset_activation_events": 0,
+          "dataset_versions": 3,
+          "gazetteer_builds": 1,
+          "gazetteer_entries": 33225,
+          "graph_edges": 180580,
+          "graph_nodes": 155732,
+          "ingestion_runs": 3,
+          "pilot_regions": 2,
+          "route_regression_acceptances": 0,
+          "route_regression_runs": 0
+        }
+      },
+      "exit": 0,
+      "wall_seconds": 16.46
+    },
+    "2_upload": {
+      "dump_put_seconds": 2.27,
+      "manifest_put_seconds": 1.6,
+      "offsite_stage_seconds": 10.38,
+      "verified_by": "S3's own ContentLength, ChecksumSHA256 (FULL_OBJECT) and ServerSideEncryption=AES256 read back after the PUT",
+      "objects": [
+        {
+          "object": "backups/pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump",
+          "bytes": 32611561,
+          "sha256": "724bb240495b1b8e638718ff0549ba3726065306c7bd66499a0cf0eb5b1b0260",
+          "version_id": "2Kr4zCgfm_ardKqz81NlOl33Kur8F4wm",
+          "encryption": "AES256",
+          "uploaded": true
+        },
+        {
+          "object": "backups/pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump.manifest.json",
+          "bytes": 2078,
+          "sha256": "89579bbf9ba97e95992e1a37862fd75821048e6ec8befadf4783f5990c3e578a",
+          "version_id": "n5RaN3GfxorH0yg7Q4725.zGmyzktxcv",
+          "encryption": "AES256",
+          "uploaded": true
+        }
+      ],
+      "result": "verified"
+    },
+    "3_download": {
+      "into": "/srv/pathable/dr-drill-20261118 (new directory; not the backup directory)",
+      "command": "offsite.py fetch latest",
+      "dump_get_seconds": 2.24,
+      "fetch_seconds": 3.9,
+      "wall_seconds": 5.68,
+      "checks": "S3's stored SHA-256 and the manifest's SHA-256 and size, on download",
+      "version_ids_match_upload": true
+    },
+    "4_verify_before_restore": [
+      "== 2026-11-18T02:26:07Z sha256sum -c on the downloaded copy",
+      "pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump: OK",
+      "== downloaded vs local original: same bytes, different files",
+      "/srv/pathable/dr-drill-20261118/pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump inode=251109 bytes=32611561",
+      "/var/backups/pathable/pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump inode=251101 bytes=32611561",
+      "byte-identical",
+      "== manifest copy identical to the one uploaded",
+      "manifest byte-identical"
+    ],
+    "5_restore": {
+      "into": "a throwaway postgis/postgis:17-3.5 container on an internal network (restore.sh --into scratch --route), from the downloaded copy",
+      "pg_restore_seconds": 6.3,
+      "alembic_revision": "0008_place_codes",
+      "nodes": 155714,
+      "segments": 180554,
+      "place_index_entries": 33225,
+      "sealed_dataset_triggers": 3,
+      "application_role_superuser": "f",
+      "manifest_comparison": {
+        "ts": "2026-11-18T02:26:33Z",
+        "component": "offsite",
+        "event": "restore_matches_manifest",
+        "file": "pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump",
+        "alembic_revision": "0008_place_codes",
+        "tables": 11,
+        "rows": 369547,
+        "active_datasets": [
+          "003f529b-f2b4-47d4-ba9d-ab34fc98e62f",
+          "51585450-8ff5-409d-a02e-66d5a3c5e260"
+        ],
+        "place_index": {
+          "entries": 33225,
+          "builds": 1
+        }
+      },
+      "content_checksum": "4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00",
+      "content_checksum_matches": true,
+      "checksum_rows_seconds": 20.17,
+      "checksum_with_container_seconds": 29.6,
+      "total_seconds": 94.4,
+      "exit": 0
+    },
+    "6_route_from_restored_database": {
+      "scratch_api_ready_seconds": 47.5,
+      "scratch_api_peak_mib": 1096,
+      "available_mib_at_start": 1841,
+      "answer": {
+        "standard": [
+          401.3,
+          3
+        ],
+        "accessible": [
+          503.7,
+          0
+        ],
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "ml_predictions_used": false
+      },
+      "expected": {
+        "standard": [
+          401.3,
+          3
+        ],
+        "accessible": [
+          503.7,
+          0
+        ],
+        "dataset_id": "51585450-8ff5-409d-a02e-66d5a3c5e260",
+        "ml_predictions_used": false
+      }
+    },
+    "production_meanwhile": {
+      "whole_drill": {
+        "samples": 94,
+        "first": "2026-11-18T02:24:58.837Z",
+        "last": "2026-11-18T02:28:09.225Z",
+        "non_200": 0,
+        "ready_s_max": 0.045936,
+        "mem_available_mib_min": 839,
+        "mem_available_mib_max": 2002
+      },
+      "during_restore": {
+        "samples": 47,
+        "first": "2026-11-18T02:26:18.563Z",
+        "last": "2026-11-18T02:27:52.895Z",
+        "non_200": 0,
+        "ready_s_max": 0.045936,
+        "mem_available_mib_min": 839,
+        "mem_available_mib_max": 1986
+      }
+    },
+    "afterwards": {
+      "scratch_volume_removed": true,
+      "docker_volumes_unchanged": true,
+      "containers_unchanged": true,
+      "downloaded_copy": "deleted after these checks; the same bytes are in the backup directory and in S3"
+    },
+    "s3_after": [
+      {
+        "object": "backups/iam-probe-20261118T022346Z.txt",
+        "bytes": 47
+      },
+      {
+        "object": "backups/pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump",
+        "bytes": 32611561
+      },
+      {
+        "object": "backups/pathable-20261118T022514Z-dr-drill-f3f1a76c9d28.dump.manifest.json",
+        "bytes": 2078
+      }
+    ],
+    "not_exercised": "loading an S3 copy into a new host's live database"
+  },
+  "orphan_volume": {
+    "name": "c4dd65156f50e6d12fbe346857735836c64c4f0d6bae337256a60fd595ace34d",
+    "identified_by": {
+      "docker": "anonymous label, created 2026-10-15T00:28:11Z, referenced by no container in any state",
+      "cluster_initdb": "2026-10-15T00:28:12+00:00",
+      "production_cluster_initdb": "2026-10-15T00:01:39+00:00",
+      "postmaster_start": "2026-10-15T00:28:15Z (postmaster.pid)",
+      "dockerd_journal": "2026-10-15T00:28:11.797Z: endpoint pathable-restore-check-db joined network pathable-restore-check — restore.sh's scratch names",
+      "contents": "a PostgreSQL 17 data directory, 449,654,931 bytes; the database it held was at 0007 (2026-11-16 reading)"
+    },
+    "removed_at": "2026-11-18T02:29:11Z",
+    "command": "docker volume rm <that ID> (no prune)",
+    "disk_used_bytes": {
+      "before": 28251914240,
+      "after": 27807514624
+    },
+    "disk_free_bytes": {
+      "before": 12156137472,
+      "after": 12600537088,
+      "freed": 444399616
+    },
+    "volumes_left": [
+      "pathable-alloy-data",
+      "pathable-caddy-config",
+      "pathable-caddy-data",
+      "pathable-db-data"
+    ]
+  },
+  "final_verification": {
+    "at": "2026-11-18T02:36Z to 02:38Z",
+    "smoke": {
+      "external": {
+        "started_at": "2026-11-18T02:36:10+00:00",
+        "client": "laptop",
+        "passed": 19,
+        "checks": 19,
+        "failed": [],
+        "journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 555 ms",
+        "sequential_routes": "round trip {'n': 10, 'min': 333.6, 'p50': 434.5, 'p95': 1981.6, 'max': 1981.6, 'mean': 716.7}, server {'n': 10, 'min': 117.7, 'p50': 121.6, 'p95': 161.3, 'max': 161.3, 'mean': 133.4}"
+      },
+      "host": {
+        "started_at": "2026-11-18T02:37:03+00:00",
+        "client": "host",
+        "passed": 19,
+        "checks": 19,
+        "failed": [],
+        "journey": "200, standard (401.3, 3) (expected (401.3, 3)), accessible (503.7, 0) (expected (503.7, 0)), dataset 51585450-8ff5-409d-a02e-66d5a3c5e260, ml_predictions_used False, 181 ms",
+        "sequential_routes": "round trip {'n': 10, 'min': 151.8, 'p50': 170.2, 'p95': 215.4, 'max': 215.4, 'mean': 179.6}, server {'n': 10, 'min': 118.8, 'p50': 137.2, 'p95': 177.6, 'max': 177.6, 'mean': 143.3}"
+      }
+    },
+    "alloy_remote_write_samples": {
+      "first": 699088,
+      "30_s_later": 699324,
+      "failed": 0,
+      "retried": 0,
+      "pending": 0
+    },
+    "containers": [
+      "/pathable-db-1 running health=healthy restarts=0 started=2026-11-16T23:20:06.472181271Z oom=false",
+      "/pathable-api-1 running health=healthy restarts=0 started=2026-11-16T23:20:06.462023729Z oom=false",
+      "/pathable-web-1 running health=healthy restarts=0 started=2026-11-16T23:20:06.460823514Z oom=false",
+      "/pathable-caddy-1 running health=none restarts=0 started=2026-11-16T23:20:06.457327452Z oom=false",
+      "/pathable-alloy-1 running health=none restarts=0 started=2026-11-16T23:20:06.458330616Z oom=false"
+    ],
+    "release": "f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc",
+    "alembic_revision": "0008_place_codes",
+    "exposure": {
+      "at": "2026-11-18T02:37:55+00:00",
+      "from": "outside (laptop)",
+      "ports": {
+        "5432": "TimeoutError",
+        "8000": "TimeoutError",
+        "3000": "TimeoutError",
+        "9464": "TimeoutError",
+        "12345": "TimeoutError"
+      },
+      "paths": {
+        "/metrics": {
+          "status": 404,
+          "exposition": false
+        },
+        "/api/v1/metrics": {
+          "status": 404,
+          "exposition": false
+        }
+      }
+    }
+  },
+  "host_evidence": {
+    "directory": "/srv/pathable/evidence/recovery-20261117/",
+    "files": 42,
+    "manifest": "SHA256SUMS"
+  }
+}

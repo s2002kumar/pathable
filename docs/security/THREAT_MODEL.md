@@ -204,11 +204,12 @@ install time in CI or on a developer's machine.
   dependency in a PR run has nothing to steal.
 
 **Residual.** A compromised pinned version is still trusted until the audit
-catches it. Weekly scheduled scans shorten that window. One known advisory is
-accepted by id: `braces` GHSA-vfj7-8cjw-p6xm (high), which has no patched
-release and reaches us only through lint tooling under `eslint-config-next`.
-Its reason, date and removal condition are in `pnpm-workspace.yaml`
-(`auditConfig.ignoreGhsas`).
+catches it. Weekly scheduled scans shorten that window. Two known advisories
+are accepted by id, each with no patched release and no production path:
+`braces` GHSA-vfj7-8cjw-p6xm (high), through lint tooling under
+`eslint-config-next`, and `picomatch` GHSA-fc5q-39xc-vjpf (high, accepted
+2026-11-18), through build, test and lint tooling. Their reasons, dates and
+removal conditions are in `pnpm-workspace.yaml` (`auditConfig.ignoreGhsas`).
 
 ---
 

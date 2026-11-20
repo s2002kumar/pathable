@@ -1,13 +1,20 @@
 [Unit]
-Description=PathAble database backup (pg_dump, custom format)
+Description=PathAble database backup (pg_dump, custom format) and its verified copy in S3
 Requires=docker.service
-After=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=ubuntu
 Group=ubuntu
+# The scheduled backup has failed unless S3 holds a verified copy of it
+# (backup.sh, offsite.py). A failure leaves this unit failed, which
+# `systemctl --failed` and `journalctl -u pathable-backup.service` show.
+Environment=PATHABLE_BACKUP_OFFSITE=required
 ExecStart=/srv/pathable/repo/infra/vps/backup.sh scheduled
+# A oneshot otherwise waits forever; uploads retry for a few minutes at most.
+TimeoutStartSec=1h
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7

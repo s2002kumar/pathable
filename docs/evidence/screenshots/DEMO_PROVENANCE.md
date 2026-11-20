@@ -6,10 +6,11 @@ before/after captures and their provenance are in
 [`../FRONTEND_POLISH.md`](../FRONTEND_POLISH.md). The files below are kept as
 the record of what was released, not refreshed to the candidate.
 
-**These are not pictures of a deployment. PathAble is not deployed anywhere.**
-Every image below was captured from the production container images running on
-one laptop, against the real Waterloo dataset, with the routes computed live by
-the engine at capture time.
+**These are not pictures of the public pilot**, which went live a month later
+(2026-10-15, [`VPS.md`](../../deployment/VPS.md)). Every image below was
+captured from the production container images running on one laptop, against
+the real Waterloo dataset, with the routes computed live by the engine at
+capture time.
 
 |                   |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

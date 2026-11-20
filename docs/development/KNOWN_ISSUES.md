@@ -316,7 +316,7 @@ reached readiness at a median **51.2 s**, the graph load itself 33.9 s — about
 twice the laptop's 14.6 s on a slower CPU — with **997 MiB** resident and a
 **1,085 MiB** cgroup peak under a 1.5 GiB limit. The load window is now a
 real, user-visible cost: about a minute without routing per deploy
-([KI-12](#ki-12--the-public-pilot-is-one-host-with-its-backups-on-the-same-disk)).
+([KI-12](#ki-12--the-public-pilot-is-one-host)).
 
 **Check when:** a second region is added, or the deploy outage starts to matter.
 
@@ -522,7 +522,7 @@ anything is routed.
 
 ---
 
-## KI-12 — The public pilot is one host, with its backups on the same disk
+## KI-12 — The public pilot is one host
 
 **Status: Open** · 2026-10-15 · [ADR 0009](../adr/0009-deployment-architecture.md) · [runbook](../deployment/VPS.md)
 
@@ -538,9 +538,22 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    [VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md). Under saturation, readiness
    itself degrades and can answer 503 while the database is healthy
    ([KI-17](#ki-17--one-route-request-can-hold-the-api-for-seconds-and-the-rate-limit-counts-requests-not-work)).
-2. **Backups live on the host's own disk.** Daily and pre-deploy `pg_dump`s, 14
-   days, restore exercised twice — but losing the VPS loses them too. They are
-   copied off only by hand.
+2. **Backups now leave the host; the way back onto a new one is unrehearsed.**
+   `backup.sh` copies each backup to S3 and counts it only once S3 holds
+   exactly its bytes (first run 2026-11-18). A deploy switches, and a
+   production restore stops the API, only once S3 holds the backup taken just
+   before. A missing `offsite.env` refuses them rather than falling back to a
+   local copy; only an explicit `PATHABLE_BACKUP_OFFSITE=skip` does without,
+   and it is logged. One copy downloaded from S3 restored into a throwaway
+   database and answered the recorded journey
+   ([`vps-recovery-2026-11-17.json`](../evidence/vps-recovery-2026-11-17.json)).
+   Two things are tracked as follow-ups:
+   - Never exercised: loading such a copy into a _new_ host's live database
+     (`restore.sh --into production` expects a running stack). Tracked in
+     [#137](https://github.com/s2002kumar/pathable/issues/137).
+   - Nothing alerts on a failed backup: the timer unit fails, and only
+     `systemctl --failed` shows it. Tracked in
+     [#136](https://github.com/s2002kumar/pathable/issues/136).
 3. **About a minute without routing per deploy or restart.** One API process
    holds the graph: the old one takes ~9 s to exit, the new one ~42 s to load
    and become ready, and the landing page drops for a few seconds when its own
@@ -574,10 +587,19 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
 6. **Images built from `a3f6448` cannot start the `pathable` CLI** (fixed in
    the Dockerfile in `490c8a7`, and every release since has a working CLI);
    only a rollback that far back needs the release image plus `libexpat1`.
+7. **The host is only as available as its provider account.** On 2026-11-16
+   the OVH subscription had lapsed and the hypervisor powered the VM off: no
+   routing, page or SSH for 13 h 40 min, until the founder renewed it and it
+   booted and recovered unattended
+   ([incident](../evidence/VPS_INCIDENT_2026-11-16.md)). Nothing on the host can
+   prevent that or report it; the S3 copies are in a separate account.
 
-**Check when:** anyone is pointed at the URL, a domain is bought, or a second
-host is considered. Off-host backups and connecting the metrics are the two
-cheapest items; both need an account or a decision outside this repository.
+**Check when:** anyone is pointed at the URL, a domain is bought, a second
+host is considered, or the provider subscription is due. Metrics (2026-11-15)
+and off-host backups (2026-11-18) are done. The next cheapest items are
+rehearsing a restore onto a new host
+([#137](https://github.com/s2002kumar/pathable/issues/137)) and an alert on a
+failed backup ([#136](https://github.com/s2002kumar/pathable/issues/136)).
 
 ---
 
@@ -771,7 +793,7 @@ What follows from it:
   health, readiness and search responsive but adds no throughput (the GIL), and
   needs its own load test;
 - a second process or a bigger host, which needs about 1 GiB more RAM
-  ([KI-12](#ki-12--the-public-pilot-is-one-host-with-its-backups-on-the-same-disk)).
+  ([KI-12](#ki-12--the-public-pilot-is-one-host)).
 
 **Check when:** real traffic includes cross-region journeys, the access log
 shows one client sending long routes back to back, or readiness reports the
