@@ -1,0 +1,57 @@
+# PathAble AI — the backup alerts for the public pilot, in Prometheus rule
+# format. Complete as they stand: no threshold to choose, so load-alerts.sh
+# loads them whenever it runs. Tested with promtool in CI (alerts.test.yaml).
+#
+# The series are written by infra/vps/backup_metrics.py after every run of
+# pathable-backup.service and read by Alloy's textfile collector
+# (infra/vps/alloy/config.alloy, job "pathable-backup"). A unit test fails if
+# either side renames one.
+#
+# Only a backup S3 is verified to hold counts. A local-only or skipped copy
+# leaves no receipt, so it never resets the 26-hour clock.
+#
+# Load them only once Alloy reads the backup status on the host: before that,
+# PathAbleBackupStatusMissing fires on the missing series, as it would for a
+# host that has stopped reporting.
+
+groups:
+  - name: pathable-backup
+    interval: 1m
+    rules:
+      # The unit's last run failed: the dump, its copy to S3, or S3's
+      # verification of it. The series keeps its value until the next run, so
+      # this stays firing until a run succeeds (the next timer run, or
+      # `systemctl start pathable-backup.service` once the cause is fixed).
+      - alert: PathAbleBackupFailed
+        expr: pathable_backup_last_run_success == 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "The pilot's last backup run failed (stage: {{ $labels.stage }})."
+          description: "pathable-backup.service failed at stage {{ $labels.stage }}: dump (database side), upload (S3 or its credentials), verification (S3 does not hold the bytes), timeout, or other. A local backup, if one was made, is kept. On the host: journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+
+      # The newest backup S3 is verified to hold was taken over 26 hours ago, or
+      # none ever was. The timer runs daily at 07:15 UTC, up to 10 minutes late,
+      # so this fires about two hours after a missed or failed day — including
+      # a run that never started and so reported no failure at all.
+      - alert: PathAbleBackupNotVerifiedInS3
+        expr: time() - max(pathable_backup_offsite_last_verified_dump_timestamp_seconds) > 26 * 3600
+        labels:
+          severity: critical
+        annotations:
+          summary: "No backup has been verified in S3 for over 26 hours."
+          description: "The newest backup that S3 is verified to hold was taken over 26 hours ago, or none ever was. The daily timer missed or failed, or its copies stayed local. On the host: systemctl list-timers pathable-backup.timer and journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+
+      # Silence is not health. No backup status for 30 minutes (host, Docker or
+      # Alloy down, the status directory gone or unmounted), or a status file
+      # Alloy cannot parse. An Alloy restart's minute-long gap does not fire it.
+      - alert: PathAbleBackupStatusMissing
+        expr: |
+          absent_over_time(pathable_backup_offsite_last_verified_dump_timestamp_seconds[30m])
+          or
+          max(node_textfile_scrape_error{job="pathable-backup"}) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "The pilot has stopped reporting whether its backups work."
+          description: "No backup status has reached Grafana for 30 minutes, or Alloy cannot read a status file, so a failed or missed backup would go unnoticed. Check the host, Alloy (docker compose logs alloy) and /srv/pathable/metrics. See docs/deployment/OBSERVABILITY.md."

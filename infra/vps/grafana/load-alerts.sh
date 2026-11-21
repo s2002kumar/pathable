@@ -11,7 +11,7 @@
 # /api/prom/push path. The token is not the one Alloy holds: Alloy's can only
 # write metrics, and this one never needs to live on the pilot host.
 #
-# The availability alert is always loaded. The route latency alert is loaded
+# The availability and backup alerts are always loaded. The route latency alert is loaded
 # only when ROUTE_P95_THRESHOLD_SECONDS is set, because its threshold is to be
 # chosen from observed latency; until then it is left out, not guessed.
 #
@@ -41,7 +41,11 @@ trap 'rm -rf "$work"' EXIT
     echo "namespace: pathable"
     cat "$HERE/availability.rules.yaml"
 } > "$work/availability.rules.yaml"
-files="/rules/availability.rules.yaml"
+{
+    echo "namespace: pathable"
+    cat "$HERE/backup.rules.yaml"
+} > "$work/backup.rules.yaml"
+files="/rules/availability.rules.yaml /rules/backup.rules.yaml"
 if [ -n "${ROUTE_P95_THRESHOLD_SECONDS:-}" ]; then
     {
         echo "namespace: pathable"
@@ -57,7 +61,7 @@ docker run --rm \
     "$MIMIRTOOL_IMAGE" rules load $files
 
 if [ -n "${ROUTE_P95_THRESHOLD_SECONDS:-}" ]; then
-    echo "load-alerts: loaded availability, and route latency with a p95 threshold of ${ROUTE_P95_THRESHOLD_SECONDS}s"
+    echo "load-alerts: loaded availability, backups, and route latency with a p95 threshold of ${ROUTE_P95_THRESHOLD_SECONDS}s"
 else
-    echo "load-alerts: loaded availability; route latency left out until ROUTE_P95_THRESHOLD_SECONDS is chosen"
+    echo "load-alerts: loaded availability and backups; route latency left out until ROUTE_P95_THRESHOLD_SECONDS is chosen"
 fi
