@@ -141,7 +141,7 @@ build() {
     git -C "$REPO" archive "$sha" | tar -x -C "$src"
     created="$(git -C "$REPO" show -s --format=%cI "$sha")"
     labels="--label org.opencontainers.image.revision=$sha
-            --label org.opencontainers.image.source=https://github.com/s2002kumar/pathable-ai
+            --label org.opencontainers.image.source=https://github.com/s2002kumar/pathable
             --label org.opencontainers.image.created=$created"
 
     if [ "$api_ok" = "0" ]; then

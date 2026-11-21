@@ -79,7 +79,7 @@ This is the sequence that built the pilot on 2026-10-14/15.
 2. **Repository and configuration.**
 
    ```bash
-   git clone https://github.com/s2002kumar/pathable-ai.git /srv/pathable/repo
+   git clone https://github.com/s2002kumar/pathable.git /srv/pathable/repo
    umask 077
    printf 'POSTGRES_SUPERUSER_PASSWORD=%s\nPATHABLE_DB_PASSWORD=%s\n' \
      "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > /srv/pathable/secrets/pathable.env

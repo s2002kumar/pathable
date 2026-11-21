@@ -71,7 +71,7 @@ def http_json_fetcher(*, timeout_seconds: float = 30.0) -> JsonFetcher:
     """
     session = requests.Session()
     session.headers["User-Agent"] = (
-        "pathable-overture-intake (+https://github.com/s2002kumar/pathable-ai)"
+        "pathable-overture-intake (+https://github.com/s2002kumar/pathable)"
     )
 
     def fetch(url: str) -> dict[str, Any]:

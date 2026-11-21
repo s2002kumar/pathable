@@ -5,7 +5,7 @@
  * methodology and data-source links point at the documents that actually
  * define the behaviour rather than at marketing copy about it.
  */
-export const REPOSITORY_URL = 'https://github.com/s2002kumar/pathable-ai';
+export const REPOSITORY_URL = 'https://github.com/s2002kumar/pathable';
 
 export const LINKS = {
   repository: REPOSITORY_URL,
