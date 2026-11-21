@@ -1,4 +1,4 @@
-# promtool unit tests for availability.rules.yaml and
+# promtool unit tests for availability.rules.yaml, backup.rules.yaml and
 # latency.rules.yaml.template, run in CI:
 #
 #   ROUTE_P95_THRESHOLD_SECONDS=0.5 render-alerts.sh > latency.rules.yaml
@@ -12,6 +12,7 @@
 
 rule_files:
   - availability.rules.yaml
+  - backup.rules.yaml
   - latency.rules.yaml
 
 evaluation_interval: 1m
@@ -118,3 +119,182 @@ tests:
       - eval_time: 15m
         alertname: PathAbleRouteLatencyP95High
         exp_alerts: []
+
+  # --- backups (backup.rules.yaml) -------------------------------------------
+  #
+  # Alloy scrapes the status every minute. When the stage changes, the old
+  # series disappears from the scrape and Alloy sends a staleness marker for it.
+  # promtool's clock starts at 0, so a dump "taken" at 3600 was taken at 1h.
+
+  # A run fails at the upload: the alert fires at the next evaluation, with the
+  # stage, and holds until a run succeeds.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_last_run_success{job="pathable-backup", instance="waterloo-pilot", stage="none"}'
+        values: "1x10 stale _x30 1x10"
+      - series: 'pathable_backup_last_run_success{job="pathable-backup", instance="waterloo-pilot", stage="upload"}'
+        values: "_x11 0x30 stale"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PathAbleBackupFailed
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: PathAbleBackupFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: pathable-backup
+              instance: waterloo-pilot
+              stage: upload
+            exp_annotations:
+              summary: "The pilot's last backup run failed (stage: upload)."
+              description: "pathable-backup.service failed at stage upload: dump (database side), upload (S3 or its credentials), verification (S3 does not hold the bytes), timeout, or other. A local backup, if one was made, is kept. On the host: journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+      - eval_time: 40m
+        alertname: PathAbleBackupFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: pathable-backup
+              instance: waterloo-pilot
+              stage: upload
+            exp_annotations:
+              summary: "The pilot's last backup run failed (stage: upload)."
+              description: "pathable-backup.service failed at stage upload: dump (database side), upload (S3 or its credentials), verification (S3 does not hold the bytes), timeout, or other. A local backup, if one was made, is kept. On the host: journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+      - eval_time: 43m
+        alertname: PathAbleBackupFailed
+        exp_alerts: []
+
+  # S3 answering with other bytes is a failure too, and says so.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_last_run_success{job="pathable-backup", instance="waterloo-pilot", stage="verification"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: PathAbleBackupFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: pathable-backup
+              instance: waterloo-pilot
+              stage: verification
+            exp_annotations:
+              summary: "The pilot's last backup run failed (stage: verification)."
+              description: "pathable-backup.service failed at stage verification: dump (database side), upload (S3 or its credentials), verification (S3 does not hold the bytes), timeout, or other. A local backup, if one was made, is kept. On the host: journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+
+  # The timer stops firing. Nothing fails, so the last run still reads as a
+  # success, and no failure is ever reported: the age of the newest verified
+  # copy is what catches it, once it passes 26 hours.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_last_run_success{job="pathable-backup", instance="waterloo-pilot", stage="none"}'
+        values: "1x1700"
+      - series: 'pathable_backup_offsite_last_verified_dump_timestamp_seconds{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "3600x1700"
+    alert_rule_test:
+      - eval_time: 26h50m
+        alertname: PathAbleBackupNotVerifiedInS3
+        exp_alerts: []
+      - eval_time: 27h10m
+        alertname: PathAbleBackupNotVerifiedInS3
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "No backup has been verified in S3 for over 26 hours."
+              description: "The newest backup that S3 is verified to hold was taken over 26 hours ago, or none ever was. The daily timer missed or failed, or its copies stayed local. On the host: systemctl list-timers pathable-backup.timer and journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+      - eval_time: 27h10m
+        alertname: PathAbleBackupFailed
+        exp_alerts: []
+
+  # A verified copy every day, the third one 45 minutes later than the day
+  # before allows for (a host back from a reboot, the timer catching up): no
+  # alert at any point in three days.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_offsite_last_verified_dump_timestamp_seconds{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "3600x1509 90600x1544 183300x1264"
+    alert_rule_test:
+      - eval_time: 25h9m
+        alertname: PathAbleBackupNotVerifiedInS3
+        exp_alerts: []
+      - eval_time: 50h54m
+        alertname: PathAbleBackupNotVerifiedInS3
+        exp_alerts: []
+      - eval_time: 72h
+        alertname: PathAbleBackupNotVerifiedInS3
+        exp_alerts: []
+
+  # No backup has ever been verified: the status says 0. In production time()
+  # is about 1.8e9, so this fires at the first evaluation; here the clock starts
+  # at 0, so it fires once 26 hours have passed.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_offsite_last_verified_dump_timestamp_seconds{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "0x1600"
+    alert_rule_test:
+      - eval_time: 26h1m
+        alertname: PathAbleBackupNotVerifiedInS3
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "No backup has been verified in S3 for over 26 hours."
+              description: "The newest backup that S3 is verified to hold was taken over 26 hours ago, or none ever was. The daily timer missed or failed, or its copies stayed local. On the host: systemctl list-timers pathable-backup.timer and journalctl -u pathable-backup.service. See docs/deployment/VPS.md, Backups."
+
+  # The status stops arriving (host, Docker or Alloy down): silence fires its
+  # own alert after 30 minutes, rather than reading as healthy.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_offsite_last_verified_dump_timestamp_seconds{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "3600x10"
+      - series: 'node_textfile_scrape_error{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: PathAbleBackupStatusMissing
+        exp_alerts: []
+      - eval_time: 41m
+        alertname: PathAbleBackupStatusMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "The pilot has stopped reporting whether its backups work."
+              description: "No backup status has reached Grafana for 30 minutes, or Alloy cannot read a status file, so a failed or missed backup would go unnoticed. Check the host, Alloy (docker compose logs alloy) and /srv/pathable/metrics. See docs/deployment/OBSERVABILITY.md."
+
+  # Alloy recreated by a deploy: two minutes without a scrape. No alert.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_offsite_last_verified_dump_timestamp_seconds{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "3600x10 _x2 3600x30"
+      - series: 'node_textfile_scrape_error{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "0x10 _x2 0x30"
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: PathAbleBackupStatusMissing
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: PathAbleBackupStatusMissing
+        exp_alerts: []
+
+  # A status file Alloy cannot parse: whatever it held is gone, so this fires at
+  # once rather than waiting for the series to age out.
+  - interval: 1m
+    input_series:
+      - series: 'pathable_backup_offsite_last_verified_dump_timestamp_seconds{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "3600x20"
+      - series: 'node_textfile_scrape_error{job="pathable-backup", instance="waterloo-pilot"}'
+        values: "0x5 1x15"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PathAbleBackupStatusMissing
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: PathAbleBackupStatusMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "The pilot has stopped reporting whether its backups work."
+              description: "No backup status has reached Grafana for 30 minutes, or Alloy cannot read a status file, so a failed or missed backup would go unnoticed. Check the host, Alloy (docker compose logs alloy) and /srv/pathable/metrics. See docs/deployment/OBSERVABILITY.md."

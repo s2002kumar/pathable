@@ -1,0 +1,159 @@
+{
+  "what": "Issue #136, PR #138: the backup unit's status written after every run, carried by the existing Alloy agent to Grafana Cloud, and three alert rules over it. Measured on the pilot's VPS before merge (the status writer from the PR's candidate tree, Alloy recreated alone), with a controlled failure of the real unit, the first unattended timer run after it, and the alert path proven end to end in CI. Grafana's own evaluation and e-mail are not proven: the rules are not loaded in Grafana yet.",
+  "captured": { "from": "2026-11-21T05:20Z", "to": "2026-11-21T07:20Z" },
+  "repository": {
+    "main": "33ad88aa951c2d13848286863a666ce89e1614b4",
+    "serving": "f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc",
+    "branch": "ops/backup-alerting-136",
+    "pr": 138,
+    "issue": 136,
+    "host_checkout": "/srv/pathable/repo stayed on main 33ad88a, clean, throughout; its origin was changed from the old repository name to https://github.com/s2002kumar/pathable.git",
+    "candidate": "the branch's infra/vps, from `git archive`, in /srv/pathable/candidate/<sha12>: cdf5efb62205 from 05:28Z, replaced at 07:18Z by dc73d17e6e55 (the PR head, whose infra/vps differs from cdf5efb only in backup_metrics.py's handling of a malformed journal line); the old candidate was removed"
+  },
+  "what_counts": {
+    "verified": "a dump whose receipt describes it: receipt format, file name, the dump object's sha256 equal to the manifest's, and the manifest object recorded. Its time is the dump's own timestamp, from its name, not the time of the copy",
+    "not_verified": "a dump with a manifest and no receipt (local only, or PATHABLE_OFFSITE=skip), or a receipt that does not describe its dump",
+    "labels": "job=pathable-backup, instance=waterloo-pilot, and stage on one series (none, dump, upload, verification, timeout, other). No bucket, object key, path, credential or database value is in any label or value; node_textfile_mtime_seconds, whose file label is a path, is dropped by Alloy before remote write"
+  },
+  "host_before": {
+    "containers": [
+      "pathable-alloy-1 aae0dfb138a8 Up 4 days",
+      "pathable-api-1 64fbe25547fd Up 4 days (healthy)",
+      "pathable-caddy-1 8ac466b75c05 Up 4 days",
+      "pathable-db-1 eb8e3bd5ea56 Up 4 days (healthy)",
+      "pathable-web-1 8153ddff54f2 Up 4 days (healthy)"
+    ],
+    "rollback_copies": "/srv/pathable/evidence/backup-alerting-20261121/before/: the stack's compose.yaml and alloy/config.alloy, and the installed pathable-backup.service, as they were"
+  },
+  "compose_mount_probe": {
+    "why": "Alloy's mount is a long-syntax bind with create_host_path: false, so a missing /srv/pathable/metrics must fail loudly rather than be created empty and owned by root",
+    "host": "Docker 29.1.3, Compose 2.40.3 on the VPS",
+    "result": "refused: invalid mount config for type \"bind\": bind source path does not exist (the probe's missing directory); nothing was created",
+    "docker_desktop": "Docker Desktop on Windows created the missing directory instead, so this behaviour is only claimed for the Linux engine"
+  },
+  "activation_before_merge": {
+    "at": "2026-11-21T05:28Z to 05:32Z",
+    "steps": [
+      "mkdir /srv/pathable/metrics; backup_metrics.py refresh at 05:28:57Z: 2 verified, 0 pending, newest verified dump 2026-11-20T18:12:59Z",
+      "drop-in /etc/systemd/system/pathable-backup.service.d/10-backup-status.conf adds ExecStopPost=-/usr/bin/python3 <candidate>/infra/vps/backup_metrics.py record-run; daemon-reload; systemctl show reports one ExecStopPost with ignore_errors=yes",
+      "the stack's compose.yaml and alloy/config.alloy replaced with the candidate's; the compose diff against the serving release was the Alloy mount hunk only",
+      "docker compose ... --profile observability up -d --no-deps alloy: Alloy alone recreated (aae0dfb138a8 to 0c6e1bc45f82, started 05:29:15Z)"
+    ],
+    "alloy_after": {
+      "components_healthy": 8,
+      "backup_target": "up, labels job=pathable-backup instance=waterloo-pilot",
+      "relabel_backup": { "processed": 51, "written": 18 },
+      "remote_write_samples": { "total": 1664, "failed": 0, "retried": 0 }
+    },
+    "rollback": "copy the three files in before/ back, remove the drop-in, daemon-reload, and recreate Alloy with the same compose command; /srv/pathable/metrics can then be removed"
+  },
+  "controlled_failure": {
+    "how": "a runtime drop-in (/run/systemd/system/pathable-backup.service.d/drill.conf, removed after) pointed the real unit at a drill root with no AWS key, so offsite.py refused before any S3 request. The database was dumped read-only, as every backup is",
+    "invocation": "c18f1fa27e8b4b4bbc61edbc5e22be52",
+    "started": "2026-11-21T05:33:47Z",
+    "ended": "2026-11-21T05:33:54Z",
+    "result": "exit-code, status 1",
+    "journal": [
+      "local_backup_written pathable-20261121T053347Z-scheduled-f3f1a76c9d28.dump, 32,611,561 bytes, 4.9 s",
+      "offsite_failed: no credentials; run offsite.py install-credentials",
+      "backup_failed: the local backup was written, but its off-host copy is not verified",
+      "run_recorded: service_result exit-code, exit_status 1, stage upload, success 0",
+      "status_refreshed: verified 2, pending 1, newest verified 11.35 h old"
+    ],
+    "alloy": "scraped at 05:34:52Z and exported pathable_backup_last_run_success{stage=\"upload\"} 0; relabel forwarded 38 samples in all; remote write 3,278 samples, 0 failed",
+    "left_in_place": "the failed status was left for the next scheduled run to clear, so that run is also the recovery"
+  },
+  "first_unattended_run": {
+    "timer": "pathable-backup.timer, scheduled about 07:16Z with its randomized delay",
+    "invocation": "ab717d02989140e99cfd244d2385fd10",
+    "started": "2026-11-21T07:15:43Z",
+    "ended": "2026-11-21T07:16:12Z",
+    "result": "success, status 0; 29.33 s wall clock, 2.153 s CPU, 89 MB memory peak",
+    "status_writer": "cdf5efb62205's backup_metrics.py (the drop-in was moved to dc73d17e6e55 at 07:18Z)",
+    "journal": [
+      "local_backup_written pathable-20261121T071543Z-scheduled-f3f1a76c9d28.dump, 32,611,561 bytes, sha256 f3ae74beacfacf8511a3b9b6646c1a131bf7fa58d4e5e4b9da95b0a5b6330cbc, 4.7 s",
+      "uploaded and verified the dump (2.53 s) and its manifest (1.76 s); offsite_copy_verified, 32,613,641 bytes, 11.37 s",
+      "push-pending copied the drill's dump: sha256 89867f265e5cb70d66a3154353bbd067bf9601df8103c3e918a6e0361fdcfdfd, offsite_copy_verified 11.57 s; pending_pushed 1, failed 0",
+      "backup_complete, offsite verified",
+      "run_recorded: service_result success, exit_status 0, stage none, success 1",
+      "status_refreshed: verified 4, pending 0, newest verified 0.01 h old"
+    ],
+    "status_files": {
+      "pathable_backup_last_run_success{stage=\"none\"}": 1,
+      "pathable_backup_offsite_last_verified_dump_timestamp_seconds": 1795245343,
+      "pathable_backup_local_last_dump_timestamp_seconds": 1795245343,
+      "pathable_backup_offsite_verified_dumps": 4,
+      "pathable_backup_offsite_pending_dumps": 0
+    },
+    "alloy": "scraped at 07:16:52Z, 40 s after the run ended, and exported the recovered status; relabel forwarded 855 samples in all; remote write 59,445 samples, 0 failed, 0 retried",
+    "next_run": "2026-11-22T07:19:52Z"
+  },
+  "alert_rules": {
+    "file": "infra/vps/grafana/backup.rules.yaml, group pathable-backup, evaluated every 1 m",
+    "rules": [
+      "PathAbleBackupFailed (warning): pathable_backup_last_run_success == 0",
+      "PathAbleBackupNotVerifiedInS3 (critical): no backup verified in S3 for over 26 h, or none ever; this is how a timer that never fires shows up",
+      "PathAbleBackupStatusMissing (warning): no status for 30 min, or Alloy cannot read a status file"
+    ],
+    "promtool": "prom/prometheus:v3.15.1 promtool test rules: the 8 backup cases pass (failure and recovery at upload; verification stage; a stopped timer firing at 27h10m and not at 26h50m with PathAbleBackupFailed quiet; a late daily run not alerting; never verified; silence firing at 41 min and not at 35 min; a 2-minute gap not alerting; a scrape error)",
+    "mutation": "7 rule mutants, each caught by promtool; 11 mutants of the writer, Alloy config and unit, each caught by the Linux pytest suite. Run before bf66758, whose str() hardening changed one mutated line"
+  },
+  "end_to_end": {
+    "what": "infra/vps/tests/backup-alert-e2e.sh: backup_metrics.py writes the status, Alloy (grafana/alloy:v1.21.2, uid 473, all capabilities dropped, status volume read-only) reads and remote-writes it, Prometheus v3.15.1 evaluates the rules, Alertmanager v0.28.1 delivers to a webhook. Shortened: Alloy's backup scrape 60 s to 10 s and the rule interval 1 m to 5 s. Seconds are from the status change to the webhook's receipt",
+    "ci_dc73d17": {
+      "run": 44871871140,
+      "delivered_after_s": {
+        "1 StatusMissing firing": 9.8,
+        "2 StatusMissing resolved": 7.6,
+        "3 Failed firing, stage upload": 10.8,
+        "4 Failed resolved": 8.7,
+        "5 NotVerifiedInS3 firing": 10.8
+      },
+      "result": "all 5 notifications delivered in order, and nothing else"
+    },
+    "local_docker_desktop": {
+      "delivered_after_s": [7.8, 7.4, 9.6, 8.4, 10.2],
+      "result": "all 5 delivered in order, and nothing else"
+    }
+  },
+  "tests": {
+    "linux_pytest_backup_files": "test_backup_metrics.py and test_offsite_backup.py in python:3.13-slim as a non-root user: 92 passed",
+    "ci_dc73d17": "CI run 44871871140 success, all 12 jobs; backend unit tests 1,641 passed, 1 skipped; Security run 44871871138 success"
+  },
+  "grafana": {
+    "loaded": false,
+    "why": "the rules are imported into Grafana-managed alerting through the Grafana UI (Alerting, Alert rules, Import to Grafana-managed rules); the only Grafana token on the host is Alloy's write-only one, and no Grafana read or rules credential was used",
+    "evaluation": "not observed in Grafana",
+    "notification": "not delivered: no backup alert has reached anyone"
+  },
+  "production_after": {
+    "at": "2026-11-21T07:18Z to 07:20Z",
+    "smoke": {
+      "laptop": "18/18 with --skip-rate-limit-check (started 07:18:49Z): revision 0.1.0+f3f1a76c9d28, readiness ok, place index version 2, recorded journey standard (401.3, 3) and accessible (503.7, 0), 10 sequential routes p50 333.0 ms round trip, server p50 134.8 ms",
+      "host": "18/18 with --runs 3 --skip-rate-limit-check"
+    },
+    "dataset_checksum": "51585450-8ff5-409d-a02e-66d5a3c5e260 rows hash 4a179dc08319a1d8524dfb949a3cec42b02988b40a71e4fbc869870bc5238f00, matches the recorded one (22.80 s)",
+    "release_env": "PATHABLE_REVISION f3f1a76c9d28a35c2d15e33b2a7b923aebc254cc, deployed 2026-11-16T06:02:32Z, unchanged",
+    "containers": [
+      "pathable-alloy-1 0c6e1bc45f82 grafana/alloy:v1.21.2 Up 2 hours, 0 restarts",
+      "pathable-api-1 64fbe25547fd Up 4 days (healthy)",
+      "pathable-caddy-1 8ac466b75c05 Up 4 days",
+      "pathable-db-1 eb8e3bd5ea56 Up 4 days (healthy)",
+      "pathable-web-1 8153ddff54f2 Up 4 days (healthy)"
+    ],
+    "failed_units": "none",
+    "exposure": "from outside: /metrics, /api/metrics, /api/v1/metrics and two status-file paths answer 404; ports 12345, 9100 and 9090 take no connection",
+    "disk": "70% of 38 GB used"
+  },
+  "not_changed": [
+    "the serving release, its images and the API, web, database and Caddy containers",
+    "the production database: only read, by pg_dump and the checksum",
+    "the availability alert and every other existing threshold",
+    "offsite.py's own failure events, which name the expected credentials file's location in the host's journal; the journal is not shipped anywhere"
+  ],
+  "host_evidence": {
+    "directory": "/srv/pathable/evidence/backup-alerting-20261121/",
+    "files": 20,
+    "manifest": "SHA256SUMS"
+  }
+}

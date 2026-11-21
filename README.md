@@ -7,8 +7,8 @@ map — and a mobility profile. PathAble returns the ordinary shortest walking r
 that profile, and explains the difference using what OpenStreetMap actually records: steps, surfaces, gradients,
 kerbs. Where nothing has been recorded, it says so.
 
-[![CI](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml)
-[![Security](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml)
+[![CI](https://github.com/s2002kumar/pathable/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable/actions/workflows/ci.yml)
+[![Security](https://github.com/s2002kumar/pathable/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable/actions/workflows/security.yml)
 
 ## Recorded demo
 
@@ -126,7 +126,7 @@ the cached graph relies on ([ADR 0010](docs/adr/0010-dataset-lifecycle.md)).
 
 Counted separately on purpose — these suites overlap in what they cover, and adding them up would be a bigger
 number describing less. The counts change with every card; these are from CI run
-[38908538697](https://github.com/s2002kumar/pathable-ai/actions/runs/38908538697), on commit `d1e63c9`.
+[38908538697](https://github.com/s2002kumar/pathable/actions/runs/38908538697), on commit `d1e63c9`.
 
 | Suite                                   | Count                                                                              | Command                                                    |
 | --------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------- |

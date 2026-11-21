@@ -74,6 +74,10 @@ MANIFEST_FORMAT = "pathable-backup-manifest/1"
 RECEIPT_FORMAT = "pathable-offsite-receipt/1"
 MANIFEST_SUFFIX = ".manifest.json"
 RECEIPT_SUFFIX = ".offsite.json"
+#: The two ways S3 can answer and still not hold a backup. backup_metrics.py
+#: reports a run that stopped on either as a verification failure, not an upload.
+NAME_TAKEN = "a different object already has this name; refusing to replace it"
+NOT_HELD = "remote verification failed: S3 does not hold these bytes"
 #: S3's limit for one PUT. Above it the upload would have to be multipart,
 #: whose checksum is no longer the file's own SHA-256.
 SINGLE_PUT_LIMIT = 5 * 1024**3
@@ -215,12 +219,13 @@ def hex_of(b64_digest: str | None) -> str | None:
         return None
 
 
-def write_atomic(path: Path, data: bytes) -> None:
-    """Write `data` to `path` as mode 0600, so a reader sees all of it or none."""
+def write_atomic(path: Path, data: bytes, mode: int = 0o600) -> None:
+    """Write `data` to `path` (mode 0600 unless told), so a reader sees all of it or none."""
     tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, mode)
     try:
         with os.fdopen(fd, "wb") as handle:
+            os.fchmod(handle.fileno(), mode)
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
@@ -477,7 +482,7 @@ def put_verified(config: Config, path: Path, content_type: str) -> dict[str, Any
     if existing is not None:
         if not holds(existing, size, checksum):
             raise OffsiteError(
-                "a different object already has this name; refusing to replace it",
+                NAME_TAKEN,
                 object=name,
                 bytes=size,
                 sha256=digest,
@@ -532,7 +537,7 @@ def put_verified(config: Config, path: Path, content_type: str) -> dict[str, Any
     verified = head(config, name)
     if verified is None or not holds(verified, size, checksum):
         raise OffsiteError(
-            "remote verification failed: S3 does not hold these bytes",
+            NOT_HELD,
             object=name,
             bytes=size,
             sha256=digest,

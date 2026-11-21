@@ -45,6 +45,8 @@
 #                                       Alloy runs only when it exists
 #   /srv/pathable/site.env              PATHABLE_HOST, PATHABLE_TLS_PROFILE
 #   /srv/pathable/offsite.env           the S3 bucket for backups (offsite.py)
+#   /srv/pathable/metrics               the backups' status, which Alloy reads
+#                                       (backup_metrics.py)
 #   /srv/pathable/release.env           current release; .previous is the one before
 #   /srv/pathable/deployments.log       one line per switch, with whether its
 #                                       backup was verified in S3
@@ -139,7 +141,7 @@ build() {
     git -C "$REPO" archive "$sha" | tar -x -C "$src"
     created="$(git -C "$REPO" show -s --format=%cI "$sha")"
     labels="--label org.opencontainers.image.revision=$sha
-            --label org.opencontainers.image.source=https://github.com/s2002kumar/pathable-ai
+            --label org.opencontainers.image.source=https://github.com/s2002kumar/pathable
             --label org.opencontainers.image.created=$created"
 
     if [ "$api_ok" = "0" ]; then
@@ -212,7 +214,8 @@ write_release() {
     # The stack files in use are the ones from this checkout; copied rather than
     # bind-mounted from the repository so a `git pull` never changes a running
     # container's Caddyfile underneath it.
-    mkdir -p "$STACK/db-init" "$STACK/alloy"
+    # metrics/: the backups' status, which Alloy reads (backup_metrics.py).
+    mkdir -p "$STACK/db-init" "$STACK/alloy" "$ROOT/metrics"
     cp "$HERE/compose.yaml" "$HERE/Caddyfile" "$STACK/"
     cp "$HERE/db-init/20-pathable.sh" "$STACK/db-init/"
     cp "$HERE/alloy/config.alloy" "$STACK/alloy/"

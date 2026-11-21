@@ -266,6 +266,11 @@ def docker_exec(argv: list[str]) -> int:
         if "--version" in command:
             out("pg_dump (PostgreSQL) 17.5 (Debian 17.5-1.pgdg110+1)\n")
             return 0
+        if fault("pg-dump-fails"):
+            return fail(
+                1,
+                "pg_dump: error: connection to server on socket failed: FATAL:  the database system is shutting down",
+            )
         sys.stdout.buffer.write((STATE / "dump.bin").read_bytes())
         return 0
     if command[0] == "pg_restore" and "--list" in command:

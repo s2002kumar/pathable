@@ -75,7 +75,7 @@ class RequestsTransport:
     def __init__(self, *, timeout_seconds: float = 120.0) -> None:
         self._session = requests.Session()
         self._session.headers["User-Agent"] = (
-            "pathable-kitchener-audit (+https://github.com/s2002kumar/pathable-ai)"
+            "pathable-kitchener-audit (+https://github.com/s2002kumar/pathable)"
         )
         self._timeout = timeout_seconds
 

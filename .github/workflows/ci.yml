@@ -460,7 +460,8 @@ jobs:
       - name: The Alloy service starts as compose defines it
         run: |
           set -euo pipefail
-          mkdir -p infra/secrets
+          # The status directory deploy.sh creates; compose refuses to invent it.
+          mkdir -p infra/secrets infra/metrics
           printf '%s\n' \
             GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus.example.invalid/api/prom/push \
             GRAFANA_CLOUD_PROMETHEUS_USER=0 \
@@ -484,13 +485,20 @@ jobs:
           mkdir -p "$RUNNER_TEMP/alerts"
           ROUTE_P95_THRESHOLD_SECONDS=0.5 sh infra/vps/grafana/render-alerts.sh \
             > "$RUNNER_TEMP/alerts/latency.rules.yaml"
-          cp infra/vps/grafana/availability.rules.yaml infra/vps/grafana/alerts.test.yaml \
-            "$RUNNER_TEMP/alerts/"
+          cp infra/vps/grafana/availability.rules.yaml infra/vps/grafana/backup.rules.yaml \
+            infra/vps/grafana/alerts.test.yaml "$RUNNER_TEMP/alerts/"
           docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
             --entrypoint promtool prom/prometheus:v3.15.1 check rules \
-            availability.rules.yaml latency.rules.yaml
+            availability.rules.yaml backup.rules.yaml latency.rules.yaml
           docker run --rm -v "$RUNNER_TEMP/alerts:/alerts:ro" -w /alerts \
             --entrypoint promtool prom/prometheus:v3.15.1 test rules alerts.test.yaml
+
+      # Issue #136. The status backup_metrics.py writes, through the real Alloy
+      # image and config, evaluated by Prometheus and delivered by Alertmanager
+      # to a webhook: silence, a failed upload and its recovery, and a day with
+      # no verified copy. Not Grafana Cloud, which CI cannot reach.
+      - name: Backup alerts fire and resolve end to end
+        run: sh infra/vps/tests/backup-alert-e2e.sh
 
   # ---------------------------------------------------------------------------
   # Operations
@@ -502,7 +510,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: The deploy, backup and restore scripts pass ShellCheck
-        run: shellcheck --shell=sh infra/vps/deploy.sh infra/vps/backup.sh infra/vps/restore.sh infra/vps/tests/scratch-restore-cleanup.sh
+        run: shellcheck --shell=sh infra/vps/deploy.sh infra/vps/backup.sh infra/vps/restore.sh infra/vps/tests/scratch-restore-cleanup.sh infra/vps/tests/backup-alert-e2e.sh infra/vps/grafana/load-alerts.sh
 
       # Regression: every scratch restore before 2026-11-17 left its restored
       # database behind in an anonymous volume (449.7 MB on the pilot from one

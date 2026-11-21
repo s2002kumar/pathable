@@ -82,9 +82,7 @@ ACCESSIBILITY_NODE_TAGS: tuple[str, ...] = (
 
 #: Identifies PathAble to Overpass operators so they can contact us if an import
 #: misbehaves, which is the minimum courtesy for using a donated service.
-USER_AGENT = (
-    "PathAble/0.1 (accessibility routing pilot; +https://github.com/s2002kumar/pathable-ai)"
-)
+USER_AGENT = "PathAble/0.1 (accessibility routing pilot; +https://github.com/s2002kumar/pathable)"
 
 
 #: Overpass endpoints to try, in order of preference. All are free, public, and

@@ -1,13 +1,15 @@
 // PathAble AI — the metrics agent on the pilot host.
 //
-// Two sources, one destination:
+// Three sources, one destination:
 //
 //   * the API's own metrics, scraped over the container network from the
 //     listener METRICS_PORT opens (never published, never proxied by Caddy);
 //   * a probe of public readiness, through Caddy and TLS exactly as a visitor
-//     reaches it, so "unavailable" means what a visitor would see.
+//     reaches it, so "unavailable" means what a visitor would see;
+//   * the backups' status, from the files the backup unit writes after every
+//     run (infra/vps/backup_metrics.py), mounted read-only.
 //
-// Both are remote-written to Grafana Cloud. Nothing listens for the internet:
+// All are remote-written to Grafana Cloud. Nothing listens for the internet:
 // Alloy's own HTTP server stays on the container's loopback.
 //
 // Credentials arrive as environment variables from
@@ -51,6 +53,54 @@ prometheus.scrape "public_probe" {
   scrape_interval = "30s"
   scrape_timeout  = "15s"
   forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// The backups' status: only the textfile collector, so nothing about the host
+// itself is collected. The directory holds the status files and nothing else
+// (compose mounts /srv/pathable/metrics there, read-only); the backups, and
+// anything that names the bucket, stay out of Alloy's reach.
+prometheus.exporter.unix "backup" {
+  set_collectors = ["textfile"]
+
+  textfile {
+    directory = "/var/lib/pathable-metrics"
+  }
+}
+
+// The exporter labels its target with the container's hostname, which changes
+// whenever Alloy is recreated; the alerts need one series that lasts.
+discovery.relabel "backup" {
+  targets = prometheus.exporter.unix.backup.targets
+
+  rule {
+    target_label = "job"
+    replacement  = "pathable-backup"
+  }
+
+  rule {
+    target_label = "instance"
+    replacement  = "waterloo-pilot"
+  }
+}
+
+prometheus.scrape "backup" {
+  targets         = discovery.relabel.backup.output
+  scrape_interval = "60s"
+  scrape_timeout  = "10s"
+  forward_to      = [prometheus.relabel.backup.receiver]
+}
+
+// Only the status and whether every file in it parsed. Everything else the
+// collector reports is dropped, node_textfile_mtime_seconds above all: its
+// label is the file's path.
+prometheus.relabel "backup" {
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+  rule {
+    source_labels = ["__name__"]
+    regex         = "pathable_backup_[a-z_]+|node_textfile_scrape_error"
+    action        = "keep"
+  }
 }
 
 prometheus.remote_write "grafana_cloud" {

@@ -14,6 +14,7 @@ command it is sent.
 from __future__ import annotations
 
 import base64
+import datetime as dt
 import hashlib
 import importlib.util
 import json
@@ -1093,3 +1094,140 @@ def test_skip_lets_a_production_restore_go_ahead_on_a_local_safety_backup(
     # It went on to stop the API, which this fake refuses, so it ends there.
     assert ["stop", "pathable-api-1"] in host.calls()
     assert run.code == 1
+
+
+# --- what Alloy is told: backup_metrics.py after a real run --------------------
+#
+# Issue #136: a failed backup left only a failed unit on the host, and a timer
+# that never fired left nothing at all. The unit's ExecStopPost now records how
+# each run ended. These run the real backup.sh, then the real record-run with
+# the environment systemd gives it, and a journalctl that serves that run's own
+# lines.
+
+UNIT_INVOCATION = "fedcba9876543210fedcba9876543210"
+
+
+def record_run(host: Host, code: int, log: list[dict[str, Any]]) -> dict[tuple[str, str], float]:
+    """record-run as the unit's ExecStopPost; the samples it wrote, by (name, stage)."""
+    journal = host.state / "journal.jsonl"
+    journal.write_text("".join(json.dumps(e) + "\n" for e in log))
+    shim = host.root.parent / "bin" / "journalctl"
+    shim.write_text(
+        "#!/bin/sh\n"
+        f'[ "$4" = "_SYSTEMD_INVOCATION_ID={UNIT_INVOCATION}" ] || exit 1\n'
+        f'exec cat "{journal}"\n'
+    )
+    shim.chmod(0o755)
+    env = {
+        **host.env,
+        "PATHABLE_METRICS_DIR": str(host.root / "metrics"),
+        "SERVICE_RESULT": "success" if code == 0 else "exit-code",
+        "EXIT_CODE": "exited",
+        "EXIT_STATUS": str(code),
+        "INVOCATION_ID": UNIT_INVOCATION,
+    }
+    proc = subprocess.run(
+        [sys.executable, str(VPS / "backup_metrics.py"), "record-run"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    found: dict[tuple[str, str], float] = {}
+    for prom in (host.root / "metrics").glob("*.prom"):
+        for line in prom.read_text().splitlines():
+            if line.startswith("#"):
+                continue
+            series, sample = line.rsplit(" ", 1)
+            stage = series.partition('stage="')[2].rstrip('"}')
+            found[(series.partition("{")[0], stage)] = float(sample)
+    return found
+
+
+def stamp_of(dump: Path) -> float:
+    stamp = dump.name.split("-")[1]
+    return dt.datetime.strptime(stamp, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.UTC).timestamp()
+
+
+VERIFIED = "pathable_backup_offsite_last_verified_dump_timestamp_seconds"
+LOCAL = "pathable_backup_local_last_dump_timestamp_seconds"
+SUCCESS = "pathable_backup_last_run_success"
+
+
+def test_a_verified_run_is_reported_as_a_success_and_resets_the_clock(host: Host) -> None:
+    code, log = backup(host, "scheduled", offsite_mode="required")
+
+    status = record_run(host, code, log)
+
+    assert status[(SUCCESS, "none")] == 1
+    assert status[(VERIFIED, "")] == stamp_of(the_new_dump(host))
+
+
+@pytest.mark.parametrize(
+    ("faults", "stage"),
+    [
+        pytest.param(("deny-put",), "upload", id="s3-refuses-the-upload"),
+        pytest.param(("no-key",), "upload", id="no-credentials"),
+        pytest.param(("corrupt-head",), "verification", id="s3-holds-other-bytes"),
+        pytest.param(("pg-dump-fails",), "dump", id="pg-dump-fails"),
+        pytest.param(("psql-fails",), "dump", id="manifest-fails"),
+    ],
+)
+def test_a_failed_run_is_reported_with_where_it_stopped_and_moves_no_clock(
+    host: Host, monkeypatch: pytest.MonkeyPatch, faults: tuple[str, ...], stage: str
+) -> None:
+    if faults == ("no-key",):
+        (host.root / "secrets" / "aws-backup.credentials").unlink()
+    else:
+        host.faults(monkeypatch, *faults)
+
+    code, log = backup(host, "scheduled", offsite_mode="required")
+
+    assert code == 1
+    status = record_run(host, code, log)
+    assert status[(SUCCESS, stage)] == 0
+    assert (SUCCESS, "none") not in status
+    assert status[(VERIFIED, "")] == 0
+    # None of S3's answer, the bucket or the object reaches the status.
+    written = "".join(p.read_text() for p in (host.root / "metrics").glob("*.prom"))
+    assert "pathable-test-bucket" not in written
+    assert "backups/" not in written
+
+
+def test_a_skipped_copy_moves_the_local_clock_but_never_the_verified_one(host: Host) -> None:
+    # The same deploy-time skip test_skip_deploys_on_a_local_backup_... allows:
+    # a backup on this host only. It must not read as a copy in S3.
+    code, log = backup(host, "pre-deploy", offsite_mode="skip")
+    assert code == 0
+    dump = the_new_dump(host)
+
+    status = record_run(host, code, log)
+
+    assert status[(LOCAL, "")] == stamp_of(dump)
+    assert status[(VERIFIED, "")] == 0
+    assert status[("pathable_backup_offsite_pending_dumps", "")] == 1
+
+
+def test_a_later_verified_run_clears_the_failure_and_copies_what_was_left(
+    host: Host, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    host.faults(monkeypatch, "deny-put")
+    code, log = backup(host, "scheduled", offsite_mode="required")
+    assert record_run(host, code, log)[(SUCCESS, "upload")] == 0
+    first = the_new_dump(host)
+    time.sleep(1.1)  # a later stamp in the next dump's name
+
+    host.faults(monkeypatch)
+    code, log = backup(host, "scheduled", offsite_mode="required")
+    status = record_run(host, code, log)
+
+    assert code == 0
+    assert status[(SUCCESS, "none")] == 1
+    newest = max(host.backups.glob("pathable-*.dump"), key=lambda p: p.name)
+    assert newest != first
+    assert status[(VERIFIED, "")] == stamp_of(newest)
+    # push-pending copied the failed day's dump too.
+    assert first.with_name(first.name + ".offsite.json").is_file()
+    assert status[("pathable_backup_offsite_pending_dumps", "")] == 0

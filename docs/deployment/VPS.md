@@ -54,6 +54,7 @@ revision; the images are tagged with the full SHA and carry it in their
 /srv/pathable/release.env           the revision being served; release.env.previous before it
 /srv/pathable/deployments.log       one line per switch: live and ready times, and backup=
                                     verified-in-s3, local-only (skipped) or none (a rollback)
+/srv/pathable/metrics/              the backups' status, which Alloy reads (below)
 /var/backups/pathable/              pg_dump archives and their .sha256 files
 ```
 
@@ -79,7 +80,7 @@ This is the sequence that built the pilot on 2026-10-14/15.
 2. **Repository and configuration.**
 
    ```bash
-   git clone https://github.com/s2002kumar/pathable-ai.git /srv/pathable/repo
+   git clone https://github.com/s2002kumar/pathable.git /srv/pathable/repo
    umask 077
    printf 'POSTGRES_SUPERUSER_PASSWORD=%s\nPATHABLE_DB_PASSWORD=%s\n' \
      "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > /srv/pathable/secrets/pathable.env
@@ -124,7 +125,8 @@ This is the sequence that built the pilot on 2026-10-14/15.
 6. **Serve.** `infra/vps/deploy.sh up origin/main`.
 7. **Daily backups.** Copy the two units from `infra/vps/systemd/` to
    `/etc/systemd/system/` and `systemctl enable --now pathable-backup.timer`.
-   The timer fails its run without a verified S3 copy.
+   The timer fails its run without a verified S3 copy, and every run leaves
+   its status for the backup alerts ([below](#knowing-when-a-backup-fails)).
 
 ## Deploying
 
@@ -360,6 +362,68 @@ mode 0600. Every request runs the AWS CLI image pinned in `offsite.py`, as
 line, an environment variable or a log. `offsite.py check` shows the identity
 and that the prefix lists, writing nothing; `offsite.py list` lists the copies.
 
+### Knowing when a backup fails
+
+After every run, failed or not, the unit's `ExecStopPost` runs
+[`backup_metrics.py`](../../infra/vps/backup_metrics.py) `record-run`. It
+writes two small Prometheus text files to `/srv/pathable/metrics`: whether
+the run succeeded and where a failed one stopped (`dump`, `upload`,
+`verification`, `timeout`, `other`, from systemd's result and that run's own
+journal lines), and when the newest backup S3 is verified to hold was taken.
+Only a receipt that describes its dump counts, so a local-only or skipped
+copy never does. Alloy reads the directory read-only, and three alerts
+follow: a failed run, no verified copy for 26 hours (which is how a timer
+that never fires shows up), and a status that stops arriving
+([OBSERVABILITY.md](OBSERVABILITY.md#backup-alerts)). The `-` on
+`ExecStopPost` means writing the status can never change a backup's result.
+
+A failed run's alert clears with the next run that succeeds: once the cause
+is fixed, `sudo systemctl start pathable-backup.service`. A pre-deploy
+backup counts for the 26 hours too, from the unit's next run.
+
+**Turning it on, on a running host**, without deploying: the checkout on the
+merge, the status written once, the unit reinstalled, and Alloy alone
+recreated with the stack's compose file and agent config from the checkout.
+Copy `compose.yaml` only when it differs from the serving release's in the
+Alloy service alone (`git diff <serving sha> -- infra/vps/compose.yaml`);
+otherwise the next `deploy.sh up` copies both and recreates Alloy anyway.
+
+```bash
+git -C /srv/pathable/repo pull --ff-only
+mkdir -p /srv/pathable/metrics
+python3 /srv/pathable/repo/infra/vps/backup_metrics.py refresh
+sudo install -m 0644 /srv/pathable/repo/infra/vps/systemd/pathable-backup.service /etc/systemd/system/
+sudo systemctl daemon-reload
+cp /srv/pathable/repo/infra/vps/compose.yaml /srv/pathable/stack/
+cp /srv/pathable/repo/infra/vps/alloy/config.alloy /srv/pathable/stack/alloy/
+docker compose --project-directory /srv/pathable/stack -f /srv/pathable/stack/compose.yaml \
+  --env-file /srv/pathable/secrets/pathable.env --env-file /srv/pathable/site.env \
+  --env-file /srv/pathable/release.env --profile observability up -d --no-deps alloy
+```
+
+**The controlled failure.** One run of the real unit, made to fail at the
+upload: a runtime drop-in points it at a drill root that has no AWS key, so
+`offsite.py` refuses before it contacts S3. The run still dumps the database,
+read-only, as every backup does; that dump keeps its manifest and no
+receipt, and the next run copies it. A runtime drop-in (`/run`) cannot
+outlive a reboot.
+
+```bash
+D=/srv/pathable/evidence/backup-alert-drill-$(date -u +%Y%m%d)
+mkdir -p "$D/root" && cp /srv/pathable/release.env "$D/root/"
+printf 'PATHABLE_OFFSITE_BUCKET=drill-no-such-bucket\nPATHABLE_OFFSITE_REGION=ca-central-1\nPATHABLE_OFFSITE_PREFIX=backups/\n' \
+  > "$D/root/offsite.env"
+sudo mkdir -p /run/systemd/system/pathable-backup.service.d
+printf '[Service]\nEnvironment=PATHABLE_ROOT=%s/root\nEnvironment=PATHABLE_METRICS_DIR=/srv/pathable/metrics\n' "$D" \
+  | sudo tee /run/systemd/system/pathable-backup.service.d/drill.conf
+sudo systemctl daemon-reload
+sudo systemctl start pathable-backup.service      # fails: stage upload
+sudo rm /run/systemd/system/pathable-backup.service.d/drill.conf
+sudo systemctl daemon-reload
+# PathAbleBackupFailed fires, once the rules are loaded. A run that succeeds clears it:
+sudo systemctl start pathable-backup.service
+```
+
 ### Proving a backup restores
 
 Non-destructive, any time:
@@ -460,6 +524,8 @@ e-mails the founder, and Synthetic Monitoring probes readiness from Calgary and
 Montreal every two minutes ([OBSERVABILITY.md](OBSERVABILITY.md#current-state)).
 The route latency alert is deliberately unset; its recommended threshold is in
 [VPS_CAPACITY.md](../evidence/VPS_CAPACITY.md#route-p95-alert-threshold-recommendation-not-set).
+The backups' status reaches Grafana Cloud too; its three alerts are loaded by
+the founder ([Knowing when a backup fails](#knowing-when-a-backup-fails)).
 
 ## Rate limits
 
