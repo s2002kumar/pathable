@@ -551,9 +551,14 @@ The pilot at <https://51.222.36.79> is one OVH VPS. What that means, measured
    - Never exercised: loading such a copy into a _new_ host's live database
      (`restore.sh --into production` expects a running stack). Tracked in
      [#137](https://github.com/s2002kumar/pathable/issues/137).
-   - Nothing alerts on a failed backup: the timer unit fails, and only
-     `systemctl --failed` shows it. Tracked in
-     [#136](https://github.com/s2002kumar/pathable/issues/136).
+   - The backup alerts exist but are not yet loaded in Grafana. Every run
+     of the unit leaves its status, which Alloy ships, and three alerts
+     cover a failed run, no copy verified in S3 for 26 hours, and a status
+     that stops arriving
+     ([#136](https://github.com/s2002kumar/pathable/issues/136),
+     [OBSERVABILITY.md](../deployment/OBSERVABILITY.md#backup-alerts)).
+     Until the founder imports them, a failed backup still shows only on
+     the host, in `systemctl --failed`.
 3. **About a minute without routing per deploy or restart.** One API process
    holds the graph: the old one takes ~9 s to exit, the new one ~42 s to load
    and become ready, and the landing page drops for a few seconds when its own

@@ -172,9 +172,13 @@ is unset. Load was measured on 2026-11-15
 (`docs/evidence/VPS_CAPACITY.md`): one event loop serves about six short
 routes a second, and a long route holds it for seconds (KI-17). `backup.sh`
 copies each backup to S3 and counts it only once verified there
-(`infra/vps/offsite.py`, PR #135); the host's timer does so once its checkout
-is on that merge and the unit is reinstalled. On 2026-11-18 a copy downloaded
-from S3 restored into scratch and answered the journey. A deploy interrupts routing for about a minute. On 2026-11-16 a lapsed
+(`infra/vps/offsite.py`, PR #135); the host's daily timer has done so since
+2026-11-20. On 2026-11-18 a copy downloaded from S3 restored into scratch and
+answered the journey. Each backup run's status reaches Grafana Cloud through
+Alloy (`infra/vps/backup_metrics.py`, PR #138, issue #136); the three backup
+alerts in `infra/vps/grafana/backup.rules.yaml` are not loaded in Grafana
+until the founder imports them, and no backup alert has reached anyone yet.
+A deploy interrupts routing for about a minute. On 2026-11-16 a lapsed
 OVH subscription powered the host off for 13 h 40 min
 (`docs/evidence/VPS_INCIDENT_2026-11-16.md`).
 
