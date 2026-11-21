@@ -330,6 +330,17 @@ def test_journal_lines_indexed_late_are_waited_for(places: Any, journal: Path) -
     assert len((journal.parent / "journalctl.calls").read_text().splitlines()) == 2
 
 
+def test_reading_the_journal_ends_well_inside_systemds_stop_timeout() -> None:
+    # TimeoutStopSec defaults to 90 s; past it systemd kills the ExecStopPost and
+    # the run is never recorded.
+    unit = UNIT.read_text()
+    assert "TimeoutStopSec=" not in unit
+    worst = metrics.JOURNAL_ATTEMPTS * (
+        metrics.JOURNAL_TIMEOUT_SECONDS + metrics.JOURNAL_RETRY_SECONDS
+    )
+    assert worst < 90 - 15
+
+
 def test_an_invocation_id_that_is_not_systemds_never_reaches_journalctl(
     places: Any, journal: Path
 ) -> None:

@@ -59,9 +59,11 @@ INVOCATION = re.compile(r"[0-9a-f]{32}")
 SYSTEMD_WORD = re.compile(r"[a-z-]{1,32}")
 EXIT_STATUS = re.compile(r"[A-Z0-9]{1,16}")
 #: journald can index a run's last lines a moment after its process exits.
+#: At worst 5 x (10 s + 1 s), inside the 90 s systemd gives an ExecStopPost
+#: (TimeoutStopSec) before it kills it and the run goes unrecorded.
 JOURNAL_ATTEMPTS = 5
 JOURNAL_RETRY_SECONDS = 1.0
-JOURNAL_TIMEOUT_SECONDS = 30
+JOURNAL_TIMEOUT_SECONDS = 10
 
 
 def emit(event: str, **fields: Any) -> None:
