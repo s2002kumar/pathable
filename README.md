@@ -1,14 +1,20 @@
 # PathAble
 
-**Pedestrian routing that compares the shortest walk against one you can actually make — and shows its working.**
+**Pedestrian routing that compares the shortest walk with a mobility-profile-aware route and explains the evidence and unknowns.**
 
 Choose a start and a destination in Waterloo, Ontario — search for a place, an address or a street, or click the
 map — and a mobility profile. PathAble returns the ordinary shortest walking route alongside a route that respects
 that profile, and explains the difference using what OpenStreetMap actually records: steps, surfaces, gradients,
 kerbs. Where nothing has been recorded, it says so.
 
-[![CI](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/ci.yml)
-[![Security](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable-ai/actions/workflows/security.yml)
+**Explore:** [Public Waterloo pilot](https://51.222.36.79) (availability not guaranteed) ·
+[Recorded walkthrough](docs/evidence/media/pathable-ux04-demo.webm) ·
+[Engineering review](docs/ENGINEERING_REVIEW.md) · [Claims and evidence](docs/CLAIMS_LEDGER.md).
+**Limit:** no mobility-aid user validation or manual screen-reader pass; routes are advice,
+not accessibility certification.
+
+[![CI](https://github.com/s2002kumar/pathable/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable/actions/workflows/ci.yml)
+[![Security](https://github.com/s2002kumar/pathable/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/s2002kumar/pathable/actions/workflows/security.yml)
 
 ## Recorded demo
 
