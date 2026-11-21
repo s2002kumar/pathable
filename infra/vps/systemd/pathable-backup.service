@@ -13,6 +13,11 @@ Group=ubuntu
 # `systemctl --failed` and `journalctl -u pathable-backup.service` show.
 Environment=PATHABLE_BACKUP_OFFSITE=required
 ExecStart=/srv/pathable/repo/infra/vps/backup.sh scheduled
+# After every run, failed or not, what Alloy reports about the backups
+# (backup_metrics.py, docs/deployment/OBSERVABILITY.md). The "-": failing to
+# write the status never changes the backup's own result, and a status that
+# stops being written raises an alert of its own.
+ExecStopPost=-/usr/bin/python3 /srv/pathable/repo/infra/vps/backup_metrics.py record-run
 # A oneshot otherwise waits forever; uploads retry for a few minutes at most.
 TimeoutStartSec=1h
 Nice=10

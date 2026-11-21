@@ -224,6 +224,17 @@ services:
       # The remote-write WAL, so a short Grafana Cloud outage is buffered
       # rather than lost.
       - alloy-data:/var/lib/alloy/data
+      # The backups' status (infra/vps/backup_metrics.py): its directory, not
+      # its files, since each is replaced by a rename that a file mount would
+      # never see. /srv/pathable/metrics, which deploy.sh creates as the
+      # backups' user; never created here, where Docker would make it root's
+      # and the status could not be written.
+      - type: bind
+        source: ../metrics
+        target: /var/lib/pathable-metrics
+        read_only: true
+        bind:
+          create_host_path: false
     networks: [edge]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
