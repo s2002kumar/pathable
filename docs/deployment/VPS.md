@@ -420,7 +420,7 @@ sudo systemctl daemon-reload
 sudo systemctl start pathable-backup.service      # fails: stage upload
 sudo rm /run/systemd/system/pathable-backup.service.d/drill.conf
 sudo systemctl daemon-reload
-# PathAbleBackupFailed fires. Then a run that succeeds clears it:
+# PathAbleBackupFailed fires, once the rules are loaded. A run that succeeds clears it:
 sudo systemctl start pathable-backup.service
 ```
 
