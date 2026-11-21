@@ -203,7 +203,7 @@ def failed(**fields: Any) -> dict[str, Any]:
     return {"component": "backup", "event": "backup_failed", "label": "scheduled", **fields}
 
 
-def offsite_failed(reason: str) -> dict[str, Any]:
+def offsite_failed(reason: Any) -> dict[str, Any]:
     return {"component": "offsite", "event": "offsite_failed", "reason": reason}
 
 
@@ -230,6 +230,9 @@ def offsite_failed(reason: str) -> dict[str, Any]:
         ),
         # Nothing in the journal says why: never guessed into a stage.
         ("exit-code", [], "other"),
+        # A malformed line folds into "other" rather than losing the record.
+        ("exit-code", [failed(stage=["pg_dump"])], "other"),
+        ("exit-code", [offsite_failed([offsite.NOT_HELD]), failed(offsite="failed")], "upload"),
         ("signal", [], "other"),
     ],
 )

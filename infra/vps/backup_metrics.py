@@ -202,11 +202,13 @@ def stage_of(service_result: str, events: Sequence[Mapping[str, Any]]) -> str:
     if not failures:
         return "other"
     last = failures[-1]
-    if last.get("stage") in DUMP_STAGES:
+    # str(): a field that is not a string (a malformed line) never matches, and
+    # never raises; the stage is then "other".
+    if str(last.get("stage")) in DUMP_STAGES:
         return "dump"
     if last.get("offsite") == "failed":
         reasons = {
-            e.get("reason")
+            str(e.get("reason"))
             for e in events
             if e.get("component") == "offsite" and e.get("event") == "offsite_failed"
         }
